@@ -43,9 +43,9 @@ class MemoryRepository:
         sql = """
             INSERT INTO memories (
                 id, memory_type, category, verification_status, confidence,
-                dedup_hash, source_ref, schema_version, encrypted_payload,
+                dedup_hash, source_ref, schema_version, project_id, encrypted_payload,
                 created_at, updated_at, expires_at, is_deleted
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
         with self.db.transaction() as conn:
             conn.execute(
@@ -59,6 +59,7 @@ class MemoryRepository:
                     record.dedup_hash,
                     record.source_ref,
                     record.schema_version,
+                    getattr(record, "project_id", None),
                     encrypted_payload,
                     record.created_at,
                     record.updated_at,

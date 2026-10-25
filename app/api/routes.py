@@ -17,15 +17,27 @@ from app.memory.crypto import (
     TestKeyProvider,
 )
 from app.memory.database import DatabaseManager
+from app.memory.checkpoint_service import CheckpointService
+from app.memory.flight_recorder import FlightRecorderService
 from app.memory.models import (
+    CheckpointCreateRequest,
+    CheckpointRestoreRequest,
+    CheckpointRestoreResponse,
     EpisodicEvent,
     EventCreate,
+    EventQueryFilter,
+    EventSourceType,
+    EvidenceRecord,
+    EvidenceRecordCreate,
+    FlightRecorderEvent,
+    FlightRecorderEventCreate,
     MemoryExport,
     MemoryRecord,
     MemoryType,
     MemoryUpdate,
     PermissionCheckRequest,
     PermissionDecision,
+    ProjectCheckpointManifest,
     SemanticCategory,
     SemanticMemory,
     SemanticMemoryCreate,
@@ -34,6 +46,12 @@ from app.memory.models import (
 )
 from app.memory.permissions import PermissionGateway
 from app.memory.recovery import TaskRecoveryManager
+from app.memory.security_boundary import (
+    ApprovalTamperError,
+    DangerousCommandError,
+    PathTraversalError,
+    SecurityBoundary,
+)
 from app.memory.service import MemoryService
 
 router = APIRouter(prefix="/api", tags=["Memory & Security"])
@@ -50,6 +68,8 @@ class SubsystemContainer:
     recovery_manager: Optional[TaskRecoveryManager] = None
     permission_gateway: Optional[PermissionGateway] = None
     consolidation_engine: Optional[MemoryConsolidationEngine] = None
+    flight_recorder: Optional[FlightRecorderService] = None
+    checkpoint_service: Optional[CheckpointService] = None
 
     @classmethod
     def initialize(
@@ -64,7 +84,9 @@ class SubsystemContainer:
             key_provider = CompositeKeyProvider()
             cls.crypto = EncryptionService(key_provider)
 
-        cls.memory_service = MemoryService(cls.db, cls.crypto)
+        cls.flight_recorder = FlightRecorderService(cls.db)
+        cls.checkpoint_service = CheckpointService(cls.db)
+        cls.memory_service = MemoryService(cls.db, cls.crypto, flight_recorder=cls.flight_recorder)
         cls.recovery_manager = TaskRecoveryManager(cls.db, cls.crypto)
         cls.permission_gateway = PermissionGateway(cls.db)
         cls.consolidation_engine = MemoryConsolidationEngine(cls.memory_service)
@@ -92,6 +114,18 @@ def get_consolidation_engine() -> MemoryConsolidationEngine:
     if SubsystemContainer.consolidation_engine is None:
         SubsystemContainer.initialize()
     return SubsystemContainer.consolidation_engine
+
+
+def get_flight_recorder() -> FlightRecorderService:
+    if SubsystemContainer.flight_recorder is None:
+        SubsystemContainer.initialize()
+    return SubsystemContainer.flight_recorder
+
+
+def get_checkpoint_service() -> CheckpointService:
+    if SubsystemContainer.checkpoint_service is None:
+        SubsystemContainer.initialize()
+    return SubsystemContainer.checkpoint_service
 
 
 # ============================================================================
@@ -252,6 +286,7 @@ def _format_for_frontend(record: MemoryRecord) -> Dict[str, Any]:
 @router.get("/memories")
 def list_memories_frontend(
     type: Optional[str] = Query(None, description="episodic or semantic"),
+    project_id: Optional[str] = Query(None, description="Filter by project scope"),
     query: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     limit: int = Query(default=100, ge=1, le=500),
@@ -267,6 +302,7 @@ def list_memories_frontend(
             pass
     records = service.search_memories(
         query=query,
+        project_id=project_id,
         memory_type=mem_type,
         category=category,
         limit=limit,
@@ -478,3 +514,197 @@ def grant_human_approval(
         ttl_seconds=req.ttl_seconds,
     )
     return {"status": "approved", "token": token, "action": req.action, "resource": req.resource}
+
+
+# ============================================================================
+# Project Flight Recorder Endpoints (FORGE Section 2, 3, 4)
+# ============================================================================
+
+@router.post("/events", response_model=FlightRecorderEvent, status_code=status.HTTP_201_CREATED, tags=["Flight Recorder"])
+def record_flight_event(
+    event: FlightRecorderEventCreate,
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> FlightRecorderEvent:
+    """Durably records an evidence-backed development or agent activity event."""
+    return recorder.record_event(event)
+
+
+@router.get("/events", response_model=List[FlightRecorderEvent], tags=["Flight Recorder"])
+def query_flight_events(
+    project_id: Optional[str] = Query(None),
+    task_id: Optional[str] = Query(None),
+    event_type: Optional[str] = Query(None),
+    source_type: Optional[EventSourceType] = Query(None),
+    start_time: Optional[str] = Query(None),
+    end_time: Optional[str] = Query(None),
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> List[FlightRecorderEvent]:
+    """Chronologically queries flight recorder events with multi-dimensional filtering."""
+    q = EventQueryFilter(
+        project_id=project_id,
+        task_id=task_id,
+        event_type=event_type,
+        source_type=source_type,
+        start_time=start_time,
+        end_time=end_time,
+        limit=limit,
+        offset=offset,
+    )
+    return recorder.query_events(q)
+
+
+@router.get("/events/{event_id}", response_model=FlightRecorderEvent, tags=["Flight Recorder"])
+def get_flight_event(
+    event_id: str,
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> FlightRecorderEvent:
+    """Retrieves a single flight recorder event by ID."""
+    evt = recorder.get_event(event_id)
+    if not evt:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Event '{event_id}' not found.")
+    return evt
+
+
+@router.get("/events/{event_id}/evidence", tags=["Flight Recorder"])
+def get_flight_event_evidence(
+    event_id: str,
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> Dict[str, Any]:
+    """Resolves an event along with all its linked bounded evidence records."""
+    data = recorder.get_event_with_evidence(event_id)
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Event '{event_id}' not found.")
+    return data
+
+
+@router.post("/events/evidence", response_model=EvidenceRecord, status_code=status.HTTP_201_CREATED, tags=["Flight Recorder"])
+def store_evidence_record(
+    evidence: EvidenceRecordCreate,
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> EvidenceRecord:
+    """Stores a standalone evidence record with automatic digest computation and secret redaction."""
+    return recorder.store_evidence(evidence)
+
+
+@router.get("/evidence/{evidence_id}", response_model=EvidenceRecord, tags=["Flight Recorder"])
+def get_evidence_record(
+    evidence_id: str,
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> EvidenceRecord:
+    """Retrieves bounded evidence metadata and redacted excerpt by ID."""
+    ev = recorder.get_evidence(evidence_id)
+    if not ev:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Evidence '{evidence_id}' not found.")
+    return ev
+
+
+@router.post("/events/prune", tags=["Flight Recorder"])
+def prune_flight_events(
+    project_id: Optional[str] = Query(None),
+    max_events: int = Query(default=5000, ge=100),
+    retention_days: Optional[int] = Query(None, ge=1),
+    recorder: FlightRecorderService = Depends(get_flight_recorder),
+) -> Dict[str, Any]:
+    """Enforces bounded retention policy on flight recorder event log."""
+    count = recorder.prune_events(project_id=project_id, max_events=max_events, retention_days=retention_days)
+    return {"pruned": count, "project_id": project_id, "max_events": max_events}
+
+
+# ============================================================================
+# Project Checkpoints & Safe Recovery Endpoints (FORGE Section 5 & 9)
+# ============================================================================
+
+@router.post("/checkpoints", response_model=ProjectCheckpointManifest, status_code=status.HTTP_201_CREATED, tags=["Checkpoints & Recovery"])
+def create_checkpoint(
+    req: CheckpointCreateRequest,
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> ProjectCheckpointManifest:
+    """Captures a new inspectable project checkpoint manifest (status: CREATED)."""
+    return checkpoints.create_checkpoint(req)
+
+
+@router.get("/checkpoints", response_model=List[ProjectCheckpointManifest], tags=["Checkpoints & Recovery"])
+def list_checkpoints(
+    project_id: Optional[str] = Query(None),
+    limit: int = Query(default=50, ge=1, le=200),
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> List[ProjectCheckpointManifest]:
+    """Lists project checkpoint manifests ordered chronologically descending."""
+    return checkpoints.list_checkpoints(project_id=project_id, limit=limit)
+
+
+@router.get("/checkpoints/{checkpoint_id}", response_model=ProjectCheckpointManifest, tags=["Checkpoints & Recovery"])
+def get_checkpoint(
+    checkpoint_id: str,
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> ProjectCheckpointManifest:
+    """Retrieves detailed checkpoint manifest, hashes, and validation status."""
+    chk = checkpoints.get_checkpoint(checkpoint_id)
+    if not chk:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Checkpoint '{checkpoint_id}' not found.")
+    return chk
+
+
+@router.post("/checkpoints/{checkpoint_id}/validate", response_model=ProjectCheckpointManifest, tags=["Checkpoints & Recovery"])
+def validate_checkpoint(
+    checkpoint_id: str,
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> ProjectCheckpointManifest:
+    """Validates manifest integrity hash and disk consistency (transitions to VALIDATED if sound)."""
+    try:
+        return checkpoints.validate_checkpoint(checkpoint_id)
+    except KeyError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/checkpoints/{checkpoint_id}/validate_restorable", response_model=ProjectCheckpointManifest, tags=["Checkpoints & Recovery"])
+def validate_restorable_checkpoint(
+    checkpoint_id: str,
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> ProjectCheckpointManifest:
+    """Validates recovery procedure against permitted root (transitions to RESTORABLE if sound)."""
+    try:
+        return checkpoints.validate_restorable(checkpoint_id)
+    except KeyError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/checkpoints/{checkpoint_id}/health", response_model=ProjectCheckpointManifest, tags=["Checkpoints & Recovery"])
+def mark_checkpoint_healthy(
+    checkpoint_id: str,
+    test_evidence_id: str = Query(..., description="ID of passed test evidence proving health"),
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> ProjectCheckpointManifest:
+    """Marks checkpoint HEALTHY only when tied to verified test execution evidence."""
+    try:
+        return checkpoints.mark_healthy(checkpoint_id, test_evidence_id)
+    except KeyError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/checkpoints/{checkpoint_id}/restore", response_model=CheckpointRestoreResponse, tags=["Checkpoints & Recovery"])
+def restore_checkpoint(
+    checkpoint_id: str,
+    req: CheckpointRestoreRequest,
+    checkpoints: CheckpointService = Depends(get_checkpoint_service),
+) -> CheckpointRestoreResponse:
+    """
+    Performs safe, non-destructive restoration.
+    Refuses to clobber dirty or untracked developer work without explicit approval token.
+    """
+    try:
+        return checkpoints.restore_checkpoint(checkpoint_id, req)
+    except KeyError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PathTraversalError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ApprovalTamperError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
