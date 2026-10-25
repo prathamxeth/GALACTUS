@@ -25,7 +25,7 @@ def utc_now() -> str:
 # ============================================================================
 
 def _apply_migration_v1(conn: sqlite3.Connection) -> None:
-    """Initial schema for Galactus / Ragnarok Memory & Security Subsystem."""
+    """Initial schema for MEMORAG / Ragnarok Memory & Security Subsystem."""
     cursor = conn.cursor()
 
     # 1. Memories Table (Episodic & Semantic)
@@ -115,8 +115,84 @@ def _apply_migration_v1(conn: sqlite3.Connection) -> None:
     )
 
 
+def _apply_migration_v2(conn: sqlite3.Connection) -> None:
+    """Migration v2: Project Flight Recorder, Evidence Store, and Project Checkpoints."""
+    cursor = conn.cursor()
+
+    # 1. Flight Recorder Events Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS flight_recorder_events (
+            event_id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            task_id TEXT,
+            timestamp TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            source_type TEXT NOT NULL,
+            actor TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            phase TEXT,
+            evidence_refs TEXT NOT NULL DEFAULT '[]',
+            metadata TEXT NOT NULL DEFAULT '{}',
+            schema_version INTEGER NOT NULL DEFAULT 1
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_fre_project_time ON flight_recorder_events(project_id, timestamp);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_fre_task ON flight_recorder_events(task_id);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_fre_type ON flight_recorder_events(event_type);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_fre_source ON flight_recorder_events(source_type);")
+
+    # 2. Evidence Store (Redacted & Bounded)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS evidence_store (
+            evidence_id TEXT PRIMARY KEY,
+            evidence_type TEXT NOT NULL,
+            command TEXT,
+            exit_code INTEGER,
+            started_at TEXT,
+            completed_at TEXT,
+            duration_ms INTEGER,
+            working_dir TEXT,
+            stdout_digest TEXT,
+            stderr_digest TEXT,
+            redacted_excerpt TEXT,
+            is_agent_hypothesis INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_evidence_type ON evidence_store(evidence_type);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_evidence_created ON evidence_store(created_at);")
+
+    # 3. Project Checkpoints (Durable Project Manifests)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS project_checkpoints_v2 (
+            checkpoint_id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            permitted_root TEXT NOT NULL,
+            git_revision TEXT NOT NULL DEFAULT '{}',
+            tracked_changes TEXT NOT NULL DEFAULT '[]',
+            dependency_fingerprints TEXT NOT NULL DEFAULT '{}',
+            toolchain_versions TEXT NOT NULL DEFAULT '{}',
+            status TEXT NOT NULL,
+            integrity_hash TEXT NOT NULL,
+            validation_notes TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chk_v2_project ON project_checkpoints_v2(project_id, created_at);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chk_v2_status ON project_checkpoints_v2(status);")
+
+    # 4. Add project_id column to memories table if not present
+    cursor.execute("PRAGMA table_info(memories);")
+    columns = [row[1] for row in cursor.fetchall()]
+    if "project_id" not in columns:
+        cursor.execute("ALTER TABLE memories ADD COLUMN project_id TEXT;")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_project ON memories(project_id);")
+
+
 MIGRATIONS = {
     1: _apply_migration_v1,
+    2: _apply_migration_v2,
 }
 
 
@@ -131,7 +207,10 @@ class DatabaseManager:
     """
 
     def __init__(self, db_path: str = "galactus_memory.db"):
-        self.db_path = os.path.abspath(db_path)
+        resolved_path = db_path
+        if db_path == "galactus_memory.db":
+            resolved_path = os.environ.get("MEMORAG_DB_PATH") or os.environ.get("GALACTUS_DB_PATH", db_path)
+        self.db_path = os.path.abspath(resolved_path)
         # Ensure parent directory exists
         parent_dir = os.path.dirname(self.db_path)
         if parent_dir and not os.path.exists(parent_dir):

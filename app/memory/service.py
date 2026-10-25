@@ -59,9 +59,15 @@ class MemoryService:
     - Inspection, update, soft/hard deletion, export, and expiration purging
     """
 
-    def __init__(self, db: DatabaseManager, crypto: EncryptionService):
+    def __init__(
+        self,
+        db: DatabaseManager,
+        crypto: EncryptionService,
+        flight_recorder: Optional[Any] = None,
+    ):
         self.db = db
         self.crypto = crypto
+        self.flight_recorder = flight_recorder
         self.repo = MemoryRepository(db)
 
     # =========================================================================
@@ -76,10 +82,12 @@ class MemoryService:
         source_ref: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        project_id: Optional[str] = None,
     ) -> EpisodicEvent:
         """
         Encrypts and stores a chronological episodic interaction event.
         Calculates expiration timestamp if TTL is specified.
+        Mirrors to canonical Flight Recorder if service is configured.
         """
         event_id = str(uuid.uuid4())
         now = utc_now()
@@ -107,6 +115,7 @@ class MemoryService:
             dedup_hash=None,
             source_ref=source_ref,
             schema_version=1,
+            project_id=project_id,
             payload=payload_dict,
             created_at=now,
             updated_at=now,
@@ -115,6 +124,36 @@ class MemoryService:
         )
 
         self.repo.insert_memory(record, encrypted_payload)
+
+        # Mirror to canonical Flight Recorder if service is configured
+        if self.flight_recorder:
+            try:
+                from app.memory.models import EventSourceType, FlightRecorderEventCreate
+                task_id = metadata.get("task_id") if metadata else None
+                phase = metadata.get("phase") if metadata else None
+                evidence_refs = metadata.get("evidence_refs", []) if metadata else []
+                summary_str = ""
+                if isinstance(content, dict):
+                    summary_str = content.get("text") or content.get("message") or str(content)
+                else:
+                    summary_str = str(content)
+
+                self.flight_recorder.record_event(
+                    FlightRecorderEventCreate(
+                        event_id=event_id,
+                        project_id=project_id or "default",
+                        task_id=task_id,
+                        event_type=event_type,
+                        source_type=EventSourceType.SYSTEM,
+                        actor=metadata.get("actor", "agent") if metadata else "agent",
+                        summary=summary_str[:200] if summary_str else f"Episodic: {event_type}",
+                        phase=phase,
+                        evidence_refs=evidence_refs,
+                        metadata=metadata or {},
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to mirror episodic event to flight recorder: {e}")
 
         return EpisodicEvent(
             id=event_id,
@@ -142,6 +181,7 @@ class MemoryService:
         source_ref: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
         context: Optional[Dict[str, Any]] = None,
+        project_id: Optional[str] = None,
     ) -> SemanticMemory:
         """
         Stores structured fact/preference.
@@ -206,6 +246,7 @@ class MemoryService:
             dedup_hash=dedup_hash,
             source_ref=source_ref,
             schema_version=1,
+            project_id=project_id,
             payload=payload_dict,
             created_at=now,
             updated_at=now,
@@ -296,6 +337,7 @@ class MemoryService:
     def search_memories(
         self,
         query: Optional[str] = None,
+        project_id: Optional[str] = None,
         memory_type: Optional[MemoryType] = None,
         category: Optional[str] = None,
         limit: int = 50,
@@ -322,6 +364,10 @@ class MemoryService:
                 record = self._row_to_record(row)
             except Exception as e:
                 logger.warning(f"Skipping corrupt or un-decryptable record {row['id']}: {e}")
+                continue
+
+            # Project scope filtering
+            if project_id and record.project_id and record.project_id != project_id:
                 continue
 
             if not clean_query:
@@ -446,6 +492,7 @@ class MemoryService:
     def _row_to_record(self, row: Any) -> MemoryRecord:
         """Converts raw SQLite row into decrypted in-memory MemoryRecord."""
         decrypted_payload = self.crypto.decrypt_json(row["encrypted_payload"])
+        project_id = row["project_id"] if "project_id" in row.keys() else None
         return MemoryRecord(
             id=row["id"],
             memory_type=MemoryType(row["memory_type"]),
@@ -455,6 +502,7 @@ class MemoryService:
             dedup_hash=row["dedup_hash"],
             source_ref=row["source_ref"],
             schema_version=row["schema_version"],
+            project_id=project_id,
             payload=decrypted_payload,
             created_at=row["created_at"],
             updated_at=row["updated_at"],
