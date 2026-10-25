@@ -45,9 +45,29 @@ class DAGStep(BaseModel):
     dependencies: List[str] = Field(default_factory=list, description="IDs of prerequisite steps")
     risk_level: RiskLevel = Field(default=RiskLevel.LOW)
     requires_approval: bool = Field(default=False)
-    status: str = Field(default="PENDING", description="PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED")
+    status: str = Field(default="PENDING", description="PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED, CANCELLED")
     output: Optional[Any] = Field(default=None)
     approval_id: Optional[str] = Field(default=None)
+    started_at: Optional[str] = Field(default=None)
+    ended_at: Optional[str] = Field(default=None)
+    exit_code: Optional[int] = Field(default=None)
+    error: Optional[str] = Field(default=None)
+
+    # NEXUS frontend compatibility aliases
+    id: Optional[str] = None
+    stepNumber: Optional[int] = None
+    skillName: Optional[str] = None
+    approvalRequestId: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.id:
+            self.id = self.step_id
+        if self.stepNumber is None:
+            self.stepNumber = self.step_number
+        if not self.skillName:
+            self.skillName = self.skill_name
+        if not self.approvalRequestId and self.approval_id:
+            self.approvalRequestId = self.approval_id
 
 
 class TaskDAG(BaseModel):
@@ -56,12 +76,28 @@ class TaskDAG(BaseModel):
     goal: str = Field(..., description="Original user prompt or task goal")
     model: str = Field(default=DEFAULT_MODEL, description="Target Ollama model")
     plan_source: str = Field(default="deterministic_fallback", description="'model_generated' or 'deterministic_fallback'")
+    fallback_reason: Optional[str] = Field(default=None, description="Observable reason deterministic fallback was used")
+    inference_latency_ms: Optional[float] = Field(default=None, description="Inference latency in milliseconds if model queried")
     injected_context: Dict[str, Any] = Field(default_factory=dict, description="Retrieved verified facts and preferences")
     system_prompt: str = Field(..., description="System prompt passed to LLM containing injected memory")
     steps: List[DAGStep] = Field(default_factory=list)
-    status: str = Field(default="PENDING", description="PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED")
+    status: str = Field(default="PENDING", description="PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED, CANCELLED")
     created_at: str = Field(default_factory=utc_now_iso)
     updated_at: str = Field(default_factory=utc_now_iso)
+
+    # NEXUS frontend compatibility aliases
+    id: Optional[str] = None
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+    priority: str = Field(default="normal")
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.id:
+            self.id = self.task_id
+        if not self.createdAt:
+            self.createdAt = self.created_at
+        if not self.updatedAt:
+            self.updatedAt = self.updated_at
 
 
 # ============================================================================
@@ -79,9 +115,17 @@ class TaskPlanner:
         model: Optional[str] = None,
         ollama_endpoint: Optional[str] = None,
         memory_service: Optional[MemoryService] = None,
+        read_timeout: Optional[float] = None,
+        connect_timeout: Optional[float] = None,
     ):
         self.model = model or DEFAULT_MODEL
         self.ollama_endpoint = (ollama_endpoint or DEFAULT_OLLAMA_ENDPOINT).rstrip("/")
+        self.read_timeout = read_timeout or float(
+            os.environ.get("MEMORAG_OLLAMA_TIMEOUT") or os.environ.get("OLLAMA_TIMEOUT") or 45.0
+        )
+        self.connect_timeout = connect_timeout or float(
+            os.environ.get("MEMORAG_OLLAMA_CONNECT_TIMEOUT") or os.environ.get("OLLAMA_CONNECT_TIMEOUT") or 5.0
+        )
         self.memory_service = memory_service
 
     def build_system_prompt(self, user_goal: str, context: Dict[str, Any]) -> str:
@@ -126,12 +170,14 @@ CRITICAL PLANNING & SECURITY RULES:
         system_prompt = self.build_system_prompt(user_goal, context)
 
         # Step 3: Attempt Ollama generation or use deterministic heuristic DAG
-        steps, plan_source = self._synthesize_dag_steps(user_goal, context, system_prompt)
+        steps, plan_source, fallback_reason, latency_ms = self._synthesize_dag_steps(user_goal, context, system_prompt)
 
         dag = TaskDAG(
             goal=user_goal,
             model=self.model,
             plan_source=plan_source,
+            fallback_reason=fallback_reason,
+            inference_latency_ms=latency_ms,
             injected_context=context,
             system_prompt=system_prompt,
             steps=steps,
@@ -145,39 +191,75 @@ CRITICAL PLANNING & SECURITY RULES:
         user_goal: str,
         context: Dict[str, Any],
         system_prompt: str,
-    ) -> Tuple[List[DAGStep], str]:
+    ) -> Tuple[List[DAGStep], str, Optional[str], Optional[float]]:
         """
         Attempts to call Ollama gemma4:e2b. If Ollama is offline or doesn't return JSON,
         uses the deterministic sovereign planner that adheres to the user constraints.
+        Returns (steps, plan_source, fallback_reason, latency_ms).
         """
-        ollama_response = self._call_ollama(system_prompt, user_goal)
+        ollama_response, fallback_reason, latency_ms = self._call_ollama(system_prompt, user_goal)
         if ollama_response:
             parsed_steps = self._parse_llm_dag(ollama_response)
             if parsed_steps:
-                return parsed_steps, "model_generated"
+                return parsed_steps, "model_generated", None, latency_ms
+            else:
+                fallback_reason = "Model output was not valid structured DAG JSON."
 
         # Deterministic sovereign fallback that respects user constraints
-        return self._generate_deterministic_dag(user_goal, context), "deterministic_fallback"
+        return (
+            self._generate_deterministic_dag(user_goal, context),
+            "deterministic_fallback",
+            fallback_reason or "Deterministic sovereign fallback activated.",
+            latency_ms,
+        )
 
-    def _call_ollama(self, system_prompt: str, user_goal: str) -> Optional[str]:
-        """Queries local Ollama endpoint with 2.5s timeout."""
-        try:
-            with httpx.Client(timeout=2.5) as client:
-                res = client.post(
-                    f"{self.ollama_endpoint}/api/generate",
-                    json={
-                        "model": self.model,
-                        "prompt": f"{system_prompt}\n\nProduce DAG JSON for goal: {user_goal}",
-                        "stream": False,
-                        "format": "json",
-                    },
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    return data.get("response")
-        except Exception as e:
-            logger.debug(f"Ollama local endpoint not available ({e}); using sovereign deterministic engine.")
-        return None
+    def _call_ollama(self, system_prompt: str, user_goal: str) -> Tuple[Optional[str], Optional[str], Optional[float]]:
+        """
+        Queries local Ollama endpoint with configurable timeouts and bounded safe retries.
+        Returns (response_text, fallback_reason, latency_ms).
+        """
+        import time
+        start_time = time.perf_counter()
+        fallback_reason = None
+        max_retries = 1
+
+        for attempt in range(max_retries + 1):
+            try:
+                timeout = httpx.Timeout(self.read_timeout, connect=self.connect_timeout)
+                with httpx.Client(timeout=timeout) as client:
+                    res = client.post(
+                        f"{self.ollama_endpoint}/api/generate",
+                        json={
+                            "model": self.model,
+                            "prompt": f"{system_prompt}\n\nProduce DAG JSON for goal: {user_goal}",
+                            "stream": False,
+                            "format": "json",
+                        },
+                    )
+                    latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                    if res.status_code == 200:
+                        data = res.json()
+                        return data.get("response"), None, latency_ms
+                    elif res.status_code == 404:
+                        fallback_reason = f"Configured model '{self.model}' missing in local Ollama repository."
+                        break
+                    else:
+                        fallback_reason = f"Ollama HTTP {res.status_code}: {res.text[:100]}"
+                        break
+            except httpx.ConnectError:
+                fallback_reason = f"Ollama daemon unreachable at {self.ollama_endpoint}."
+                break
+            except httpx.TimeoutException:
+                fallback_reason = f"Ollama inference timed out after {self.read_timeout}s."
+                if attempt < max_retries:
+                    continue  # Safe bounded retry
+            except Exception as e:
+                fallback_reason = f"Ollama inference error: {str(e)}"
+                break
+
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        logger.debug(f"Ollama local inference unavailable ({fallback_reason}); using sovereign deterministic engine.")
+        return None, fallback_reason, latency_ms
 
     def _parse_llm_dag(self, response_text: str) -> Optional[List[DAGStep]]:
         """Parses structured JSON response from Ollama."""
@@ -194,7 +276,7 @@ CRITICAL PLANNING & SECURITY RULES:
             steps: List[DAGStep] = []
             for idx, item in enumerate(data, start=1):
                 risk = item.get("risk_level", "LOW").upper()
-                skill = item.get("skill_name", "system.execute")
+                skill = item.get("skill_name", "system.analyze")
                 # Intrinsic high-risk skills unconditionally require approval
                 is_high_risk_skill = any(k in skill.lower() for k in ("write", "delete", "execute", "shell", "deploy", "send", "terminal"))
                 risk_enum = RiskLevel.HIGH if (risk == "HIGH" or is_high_risk_skill) else (RiskLevel.MEDIUM if risk == "MEDIUM" else RiskLevel.LOW)
@@ -264,13 +346,29 @@ CRITICAL PLANNING & SECURITY RULES:
 
         # Step 3: Execution Action (High-risk gate requiring explicit user authorization)
         step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
+        if "file" in user_goal.lower():
+            skill_name = "filesystem.write_file"
+            parameters = {
+                "path": "output.txt",
+                "content": f"Verified execution output for goal: {user_goal}\nTimestamp: {utc_now_iso()}\n",
+                "goal": user_goal,
+                "user_preferences": pref_params,
+            }
+        else:
+            skill_name = "terminal.sandboxed_exec"
+            parameters = {
+                "command": ["python", "-c", "import sys; print('Executed side-effect for: ' + sys.argv[1])", user_goal[:30]],
+                "goal": user_goal,
+                "user_preferences": pref_params,
+            }
+
         steps.append(
             DAGStep(
                 step_id=step_3_id,
                 step_number=3,
                 title=f"Execute Side-Effect for Goal: {user_goal[:30]}",
-                skill_name="filesystem.write_file" if "file" in user_goal.lower() else "shell.execute",
-                parameters={"goal": user_goal, "user_preferences": pref_params},
+                skill_name=skill_name,
+                parameters=parameters,
                 dependencies=[step_2_id],
                 risk_level=RiskLevel.HIGH,
                 requires_approval=True,

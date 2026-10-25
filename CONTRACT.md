@@ -23,7 +23,8 @@
   ```
 
 ### `GET /api/agent/status`
-- **Purpose:** Comprehensive sovereign agent runtime status for Member 3's Command Center.
+- **Purpose:** Truthful sovereign agent runtime status for Command Center and flight recorder. Performs real, bounded probes without hardcoding healthy states.
+- **Query Parameters:** `verify` (boolean, default `false`): Run live inference verification.
 - **Request:** None
 - **Response `200 OK`:**
   ```json
@@ -31,11 +32,24 @@
     "status": "healthy",
     "service": "MEMORAG / GALACTUS Sovereign Agent",
     "product": "MEMORAG",
+    "backend": "available",
     "ollama": "connected",
     "model": "gemma4:e2b",
-    "memory_vault": "active_encrypted"
+    "model_present": true,
+    "inference_verified": false,
+    "memory_vault": "active_encrypted",
+    "memory_subsystem": "operational",
+    "runtime_checks": {
+      "ollama_reachable": true,
+      "model_available": true,
+      "inference_verified": false,
+      "probe_latency_ms": 1.25,
+      "probe_error": null,
+      "timestamp": "2026-10-25T18:30:00.000Z"
+    }
   }
   ```
+  *(If Ollama is offline or model is absent, returns `"status": "degraded"`, `"ollama": "unreachable" | "model_missing"`, and truthful probe error details).*
 
 ### `GET /`
 - **Purpose:** Root metadata endpoint with CORS and documentation references.
@@ -59,7 +73,10 @@
 ## 2. Command Center & Chat Handshake
 
 ### `POST /api/agent/chat`
-- **Purpose:** Operator prompt ingress. Performs context retrieval with Member 2's vault, classifies intention, and synthesizes task DAG or conversational response.
+- **Purpose:** Operator prompt ingress. Enforces prompt validation, 32KB length ceiling, and semantic memory retrieval.
+- **Validation Rules:**
+  - `prompt`: String, non-empty, non-whitespace, max 32,768 characters. Rejects empty prompts with `400 Bad Request` and oversized payloads with `413 Payload Too Large`.
+  - `mode`: `"chat"`, `"task"`, or `"memory"`.
 - **Request:**
   ```json
   {
@@ -67,7 +84,6 @@
     "mode": "task"
   }
   ```
-  *(Mode options: `"chat"`, `"task"`, `"memory"`)*
 - **Response `200 OK`:**
   ```json
   {
@@ -77,13 +93,25 @@
     "timestamp": "2026-10-25T18:30:00.000Z",
     "thoughtTrace": "Queried memory context (2 items retrieved). Evaluated risk levels with local model gemma4:e2b.",
     "citedMemoryIds": ["mem-01", "mem-02"],
-    "relatedTaskId": "task-9c41d08e"
+    "relatedTaskId": "task-9c41d08e",
+    "model": "gemma4:e2b",
+    "plan_source": "deterministic_fallback",
+    "fallback_reason": null,
+    "citations": [
+      {
+        "id": "mem-01",
+        "category": "preference",
+        "subject": "operator",
+        "predicate": "preferred_shell",
+        "object": "pwsh"
+      }
+    ]
   }
   ```
 
 ---
 
-## 3. Autonomous Task Planning & DAG Execution
+## 3. Autonomous Task Planning, DAG Execution & Cancellation
 
 ### `POST /api/tasks`
 - **Purpose:** Deconstructs user instruction into a Directed Acyclic Graph (DAG) incorporating verified facts and user preferences via `query_relevant_context()`.
@@ -142,6 +170,26 @@
 ### `GET /api/tasks/{task_id}`
 - **Purpose:** Fetches current state, step outputs, and approval checkpoints for a specific task.
 - **Response `200 OK`:** `TaskDAG`
+- **Error `404 Not Found`:** If `task_id` does not exist.
+
+### `POST /api/tasks/{task_id}/cancel`
+- **Purpose:** Server-side task cancellation. Targets a specific active or paused task, terminates active subprocesses safely, removes pending approvals, marks unexecuted and active steps as `CANCELLED`, persists terminal state, and emits `task_cancelled` SSE event.
+- **Idempotency:** Repeated calls on cancelled or completed tasks are idempotent.
+- **Request:**
+  ```json
+  {
+    "reason": "Aborted by security officer"
+  }
+  ```
+- **Response `200 OK`:**
+  ```json
+  {
+    "success": true,
+    "task_id": "task-b7a48d12",
+    "status": "CANCELLED",
+    "reason": "Aborted by security officer"
+  }
+  ```
 - **Error `404 Not Found`:** If `task_id` does not exist.
 
 ---

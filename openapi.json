@@ -998,6 +998,64 @@
         }
       }
     },
+    "/api/tasks/{task_id}/cancel": {
+      "post": {
+        "tags": [
+          "Tasks & DAGs"
+        ],
+        "summary": "Cancel Task Endpoint",
+        "description": "Cancels an active or paused DAG execution task.\nSafely terminates running subprocesses and records terminal CANCELLED state.\nRepeated cancellation calls are idempotent.",
+        "operationId": "cancel_task_endpoint_api_tasks__task_id__cancel_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CancelTaskRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tasks/{task_id}/events/stream": {
       "get": {
         "tags": [
@@ -1213,14 +1271,38 @@
           "Agent"
         ],
         "summary": "Get Agent Status",
-        "description": "Canonical agent runtime status endpoint.",
+        "description": "Canonical agent runtime status endpoint.\nPerforms real, bounded probe of backend, memory vault, Ollama daemon, and model availability.",
         "operationId": "get_agent_status_api_agent_status_get",
+        "parameters": [
+          {
+            "name": "verify",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Optionally run active model inference verification probe",
+              "default": false,
+              "title": "Verify"
+            },
+            "description": "Optionally run active model inference verification probe"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1253,7 +1335,7 @@
           "Agent"
         ],
         "summary": "Agent Chat",
-        "description": "Command Center chat interface:\nProcesses operator prompts through local memory context and task planner.",
+        "description": "Command Center chat interface:\nProcesses operator prompts through local memory context and task planner.\nEnforces prompt validation, size bounding, and emits citation metadata.",
         "operationId": "agent_chat_api_agent_chat_post",
         "requestBody": {
           "content": {
@@ -1523,10 +1605,30 @@
         "type": "object",
         "title": "ApprovalDecisionRequest"
       },
+      "CancelTaskRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Operator cancellation rationale",
+            "default": "Operator requested cancellation"
+          }
+        },
+        "type": "object",
+        "title": "CancelTaskRequest"
+      },
       "ChatPromptRequest": {
         "properties": {
           "prompt": {
             "type": "string",
+            "maxLength": 32768,
             "title": "Prompt",
             "description": "Operator instruction or chat message"
           },
@@ -1608,7 +1710,7 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED",
+            "description": "PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED, CANCELLED",
             "default": "PENDING"
           },
           "output": {
@@ -1630,6 +1732,94 @@
               }
             ],
             "title": "Approval Id"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "stepNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stepnumber"
+          },
+          "skillName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skillname"
+          },
+          "approvalRequestId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvalrequestid"
           }
         },
         "type": "object",
@@ -2860,6 +3050,30 @@
             "description": "'model_generated' or 'deterministic_fallback'",
             "default": "deterministic_fallback"
           },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason",
+            "description": "Observable reason deterministic fallback was used"
+          },
+          "inference_latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Latency Ms",
+            "description": "Inference latency in milliseconds if model queried"
+          },
           "injected_context": {
             "additionalProperties": true,
             "type": "object",
@@ -2881,7 +3095,7 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED",
+            "description": "PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED, CANCELLED",
             "default": "PENDING"
           },
           "created_at": {
@@ -2891,6 +3105,44 @@
           "updated_at": {
             "type": "string",
             "title": "Updated At"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "default": "normal"
           }
         },
         "type": "object",

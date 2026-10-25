@@ -6,10 +6,13 @@ Milestone 6 Integration:
 - POST /api/approvals/{approval_id} resumes paused DAG branches when approved.
 """
 
+import logging
 import os
+import time
 import uuid
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
+import httpx
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -21,6 +24,8 @@ from app.memory.service import query_relevant_context
 from backend.diagnostics.routes import router as diagnostic_router
 from backend.orchestrator import TaskOrchestrator
 from backend.planner import TaskDAG, TaskPlanner, utc_now_iso
+
+logger = logging.getLogger(__name__)
 
 # Global Orchestrator & Planner Singletons
 orchestrator: Optional[TaskOrchestrator] = None
@@ -59,6 +64,130 @@ def get_planner() -> TaskPlanner:
     return planner
 
 
+def probe_agent_runtime(
+    model_name: Optional[str] = None,
+    ollama_endpoint: Optional[str] = None,
+    verify_inference: bool = False,
+) -> Dict[str, Any]:
+    """
+    Performs a real, bounded probe of the agent runtime.
+    Distinguishes:
+    - Backend available (true)
+    - Ollama reachable / unreachable
+    - Configured model present / missing
+    - Model inference verified / unverified
+    - Memory subsystem available / degraded
+    Never reports an untested state as healthy.
+    """
+    model = model_name or os.environ.get("MEMORAG_MODEL") or os.environ.get("RAGNAROK_MODEL") or "gemma4:e2b"
+    endpoint = (ollama_endpoint or os.environ.get("OLLAMA_ENDPOINT", "http://127.0.0.1:11434")).rstrip("/")
+
+    # 1. Backend probe
+    backend_status = "available"
+
+    # 2. Memory subsystem probe
+    memory_vault = "unavailable"
+    memory_subsystem: Dict[str, Any] = {"status": "unavailable", "encrypted": False}
+    try:
+        if SubsystemContainer.db and SubsystemContainer.memory_service:
+            records = SubsystemContainer.memory_service.search_memories(limit=1)
+            memory_vault = "active_encrypted"
+            memory_subsystem = {
+                "status": "available",
+                "encrypted": True,
+                "record_count_sample": len(records),
+            }
+        else:
+            memory_vault = "degraded"
+            memory_subsystem = {"status": "degraded", "encrypted": False}
+    except Exception as e:
+        memory_vault = "degraded"
+        memory_subsystem = {"status": "degraded", "error": str(e)}
+
+    # 3. Ollama daemon and model presence probe (bounded 2.0s)
+    ollama_reachable = False
+    model_present = False
+    inference_verified = False
+    ollama_status = "unreachable"
+    probe_error = None
+    latency_ms = None
+
+    start_time = time.perf_counter()
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            res = client.get(f"{endpoint}/api/tags")
+            latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            if res.status_code == 200:
+                ollama_reachable = True
+                data = res.json()
+                models_list = data.get("models", [])
+                clean_target = model.split(":")[0]
+                model_present = any(
+                    m.get("name") == model
+                    or m.get("model") == model
+                    or m.get("name", "").startswith(f"{clean_target}:")
+                    for m in models_list
+                )
+                if model_present:
+                    ollama_status = "connected"
+                    if verify_inference:
+                        try:
+                            inf_res = client.post(
+                                f"{endpoint}/api/generate",
+                                json={"model": model, "prompt": "hi", "stream": False},
+                                timeout=4.0,
+                            )
+                            if inf_res.status_code == 200:
+                                inference_verified = True
+                        except Exception:
+                            inference_verified = False
+                else:
+                    ollama_status = "model_missing"
+                    probe_error = f"Model '{model}' not found in Ollama repository."
+            else:
+                ollama_status = "error"
+                probe_error = f"Ollama HTTP {res.status_code}"
+    except httpx.ConnectError:
+        ollama_status = "unreachable"
+        probe_error = "Connection refused at 127.0.0.1:11434"
+    except httpx.TimeoutException:
+        ollama_status = "unreachable"
+        probe_error = "Ollama probe timed out after 2.0s"
+    except Exception as e:
+        ollama_status = "unreachable"
+        probe_error = str(e)
+
+    # 4. Overall truthful status
+    is_healthy = (
+        backend_status == "available"
+        and memory_vault == "active_encrypted"
+        and ollama_reachable
+        and model_present
+    )
+    status_label = "healthy" if is_healthy else "degraded"
+
+    return {
+        "status": status_label,
+        "service": "MEMORAG / GALACTUS Sovereign Agent",
+        "product": "MEMORAG",
+        "backend": backend_status,
+        "ollama": ollama_status,
+        "model": model,
+        "model_present": model_present,
+        "inference_verified": inference_verified,
+        "memory_vault": memory_vault,
+        "memory_subsystem": memory_subsystem,
+        "runtime_checks": {
+            "ollama_reachable": ollama_reachable,
+            "model_available": model_present,
+            "inference_verified": inference_verified,
+            "probe_latency_ms": latency_ms,
+            "probe_error": probe_error,
+            "timestamp": utc_now_iso(),
+        },
+    }
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize SQLite database and services on startup
@@ -67,7 +196,23 @@ async def lifespan(app: FastAPI):
         SubsystemContainer.initialize(db_path=db_path)
     # Initialize orchestrator & planner
     get_orchestrator()
-    get_planner()
+    task_planner = get_planner()
+
+    # Bounded startup check (2s) for Ollama presence
+    try:
+        probe = probe_agent_runtime(
+            model_name=task_planner.model,
+            ollama_endpoint=task_planner.ollama_endpoint,
+        )
+        if not probe.get("runtime_checks", {}).get("ollama_reachable"):
+            logger.warning("Startup probe: Ollama daemon unreachable at %s. Sovereign deterministic fallback will be used.", task_planner.ollama_endpoint)
+        elif not probe.get("model_present"):
+            logger.warning("Startup probe: Configured model '%s' not present in local Ollama repository.", task_planner.model)
+        else:
+            logger.info("Startup probe: Local Ollama daemon reachable with model '%s'.", task_planner.model)
+    except Exception as e:
+        logger.debug(f"Startup probe error: {e}")
+
     yield
     # Checkpoint on shutdown
     if SubsystemContainer.db:
@@ -171,6 +316,26 @@ def get_task_by_id(task_id: str):
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task '{task_id}' not found.")
     return task
+
+
+class CancelTaskRequest(BaseModel):
+    reason: Optional[str] = Field(default="Operator requested cancellation", description="Operator cancellation rationale")
+
+
+@app.post("/api/tasks/{task_id}/cancel", tags=["Tasks & DAGs"])
+async def cancel_task_endpoint(task_id: str, req: Optional[CancelTaskRequest] = None):
+    """
+    Cancels an active or paused DAG execution task.
+    Safely terminates running subprocesses and records terminal CANCELLED state.
+    Repeated cancellation calls are idempotent.
+    """
+    task_orchestrator = get_orchestrator()
+    reason = req.reason if req and req.reason else "Operator requested cancellation"
+    try:
+        result = await task_orchestrator.cancel_task(task_id, reason=reason)
+        return result
+    except KeyError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @app.get(
@@ -288,16 +453,17 @@ def api_health_alias():
 
 
 @app.get("/api/agent/status", tags=["Agent"])
-def get_agent_status():
-    """Canonical agent runtime status endpoint."""
-    return {
-        "status": "healthy",
-        "service": "MEMORAG / GALACTUS Sovereign Agent",
-        "product": "MEMORAG",
-        "ollama": "connected",
-        "model": os.environ.get("MEMORAG_MODEL") or os.environ.get("RAGNAROK_MODEL") or "gemma4:e2b",
-        "memory_vault": "active_encrypted",
-    }
+def get_agent_status(verify: bool = Query(default=False, description="Optionally run active model inference verification probe")):
+    """
+    Canonical agent runtime status endpoint.
+    Performs real, bounded probe of backend, memory vault, Ollama daemon, and model availability.
+    """
+    task_planner = get_planner()
+    return probe_agent_runtime(
+        model_name=task_planner.model,
+        ollama_endpoint=task_planner.ollama_endpoint,
+        verify_inference=verify,
+    )
 
 
 # ============================================================================
@@ -396,7 +562,7 @@ def list_skills():
 # ============================================================================
 
 class ChatPromptRequest(BaseModel):
-    prompt: str = Field(..., description="Operator instruction or chat message")
+    prompt: str = Field(..., description="Operator instruction or chat message", max_length=32768)
     mode: str = Field(default="chat", description="'chat', 'task', or 'memory'")
 
 
@@ -405,14 +571,27 @@ async def agent_chat(req: ChatPromptRequest):
     """
     Command Center chat interface:
     Processes operator prompts through local memory context and task planner.
+    Enforces prompt validation, size bounding, and emits citation metadata.
     """
-    task_planner = get_planner()
     user_goal = req.prompt.strip()
+    if not user_goal:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Chat prompt must not be empty or whitespace.",
+        )
+    if len(req.prompt.encode("utf-8")) > 32768:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Chat prompt exceeds maximum permitted length of 32KB.",
+        )
+
+    task_planner = get_planner()
     context = query_relevant_context(user_goal, memory_service=task_planner.memory_service)
 
     msg_id = f"msg-{uuid.uuid4().hex[:8]}"
     now_iso = utc_now_iso()
     cited_ids = [f["id"] for f in context.get("verified_facts", [])] + [p["id"] for p in context.get("preferences", [])]
+    citations = context.get("verified_facts", []) + context.get("preferences", [])
 
     if req.mode == "task" or any(k in user_goal.lower() for k in ("run", "backup", "deploy", "build", "execute", "task", "audit")):
         dag = task_planner.generate_dag(user_goal)
@@ -428,6 +607,10 @@ async def agent_chat(req: ChatPromptRequest):
             "thoughtTrace": f"Queried memory context ({len(cited_ids)} items retrieved). Evaluated risk levels with local model {task_planner.model}.",
             "citedMemoryIds": cited_ids,
             "relatedTaskId": dag.task_id,
+            "model": task_planner.model,
+            "plan_source": dag.plan_source,
+            "fallback_reason": dag.fallback_reason,
+            "citations": citations,
         }
     else:
         return {
@@ -437,6 +620,8 @@ async def agent_chat(req: ChatPromptRequest):
             "timestamp": now_iso,
             "thoughtTrace": f"Local loopback reasoning active via {task_planner.model}. Zero outbound telemetry.",
             "citedMemoryIds": cited_ids,
+            "model": task_planner.model,
+            "citations": citations,
         }
 
 

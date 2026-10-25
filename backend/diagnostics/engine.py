@@ -61,10 +61,14 @@ class DiagnosticEngine:
         """
         Attempts local Ollama inference for diagnostic reasoning.
         Returns (response_text, error_message).
+        Uses environment-configurable timeouts (default 45s read, 5s connect) for reliable cold starts.
         If Ollama is offline or model is missing, returns (None, error_message) with an honest limitation description.
         """
+        read_timeout = float(os.environ.get("MEMORAG_OLLAMA_TIMEOUT") or os.environ.get("OLLAMA_TIMEOUT") or 45.0)
+        connect_timeout = float(os.environ.get("MEMORAG_OLLAMA_CONNECT_TIMEOUT") or os.environ.get("OLLAMA_CONNECT_TIMEOUT") or 5.0)
         try:
-            with httpx.Client(timeout=2.0) as client:
+            timeout = httpx.Timeout(read_timeout, connect=connect_timeout)
+            with httpx.Client(timeout=timeout) as client:
                 res = client.post(
                     f"{self.ollama_endpoint}/api/generate",
                     json={
@@ -82,6 +86,8 @@ class DiagnosticEngine:
                     return None, f"Ollama returned HTTP {res.status_code}: {res.text[:100]}"
         except httpx.ConnectError:
             return None, "Ollama service unavailable: Local connection refused at 127.0.0.1:11434."
+        except httpx.TimeoutException:
+            return None, f"Ollama diagnostic reasoning timed out after {read_timeout}s."
         except Exception as e:
             return None, f"Ollama inference error: {str(e)}"
 

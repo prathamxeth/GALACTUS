@@ -11,12 +11,14 @@ import json
 import logging
 import os
 import uuid
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from pathlib import Path
+from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 
 from app.memory.models import RiskLevel, TaskCheckpoint, TaskStatus
 from app.memory.permissions import PermissionGateway
 from app.memory.recovery import TaskRecoveryManager
 from backend.planner import DAGStep, TaskDAG
+from backend.tools import ExecutionContext, tool_registry
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,10 @@ class TaskOrchestrator:
         # Pending approvals: approval_id -> metadata
         self._pending_approvals: Dict[str, Dict[str, Any]] = {}
 
+        # Cancellation and subprocess tracking: task_id -> asyncio.Event / Set[Process]
+        self._cancellation_events: Dict[str, asyncio.Event] = {}
+        self._active_subprocesses: Dict[str, Set[Any]] = {}
+
     def register_task(self, dag: TaskDAG) -> None:
         """Registers a newly planned TaskDAG with the orchestrator."""
         self.tasks[dag.task_id] = dag
@@ -60,6 +66,66 @@ class TaskOrchestrator:
     def list_pending_approvals(self) -> List[Dict[str, Any]]:
         """Lists all actions currently awaiting human authorization."""
         return list(self._pending_approvals.values())
+
+    async def cancel_task(self, task_id: str, reason: str = "Operator requested cancellation") -> Dict[str, Any]:
+        """
+        Server-side cancellation targeting a specific running or paused task.
+        Safely terminates active subprocesses, removes pending approvals,
+        persists terminal state, and emits 'task_cancelled' event.
+        Repeated calls on completed or cancelled tasks are idempotent.
+        """
+        task = self.get_task(task_id)
+        if not task:
+            raise KeyError(f"Task '{task_id}' not found.")
+
+        # Completed tasks must not be retroactively cancelled
+        if task.status in ("COMPLETED", "FAILED", "CANCELLED"):
+            return {
+                "success": True,
+                "task_id": task_id,
+                "status": task.status,
+                "message": f"Task '{task_id}' is already in terminal state '{task.status}'.",
+            }
+
+        # Signal cancellation event to running steps
+        if task_id in self._cancellation_events:
+            self._cancellation_events[task_id].set()
+
+        # Bounded termination of any active subprocesses
+        if task_id in self._active_subprocesses:
+            for proc in list(self._active_subprocesses[task_id]):
+                try:
+                    proc.terminate()
+                except Exception:
+                    pass
+
+        # Transition active and pending steps to CANCELLED
+        for step in task.steps:
+            if step.status in ("RUNNING", "PENDING", "PAUSED_APPROVAL"):
+                step.status = "CANCELLED"
+                step.error = f"Cancelled: {reason}"
+
+        task.status = "CANCELLED"
+
+        # Remove pending approvals for this task
+        self._pending_approvals = {
+            k: v for k, v in self._pending_approvals.items() if v.get("task_id") != task_id
+        }
+
+        # Broadcast cancellation event over SSE
+        await self.broadcast_event(
+            task_id,
+            "task_cancelled",
+            {"task_id": task_id, "status": "CANCELLED", "reason": reason},
+        )
+        self._save_checkpoint(task)
+
+        return {
+            "success": True,
+            "task_id": task_id,
+            "status": "CANCELLED",
+            "reason": reason,
+        }
 
     # =========================================================================
     # SSE Event Broadcasting & Subscriptions
@@ -139,12 +205,12 @@ class TaskOrchestrator:
                     evt_type = event.get("event", "message")
                     evt_data = event.get("data", {})
                     yield f"event: {evt_type}\ndata: {json.dumps(evt_data)}\n\n"
-                    if evt_type in ("task_completed", "task_failed", "task_rejected"):
+                    if evt_type in ("task_completed", "task_failed", "task_rejected", "task_cancelled"):
                         break
                 except asyncio.TimeoutError:
                     idle_count += 1
                     current_task = self.get_task(task_id)
-                    if current_task and current_task.status in ("COMPLETED", "FAILED", "REJECTED"):
+                    if current_task and current_task.status in ("COMPLETED", "FAILED", "REJECTED", "CANCELLED"):
                         if queue.empty():
                             break
                     if is_test_env and idle_count >= 3:
@@ -163,6 +229,10 @@ class TaskOrchestrator:
         task = self.get_task(task_id)
         if not task:
             raise KeyError(f"Task '{task_id}' not found.")
+
+        # Initialize cancellation event and active subprocess set
+        self._cancellation_events[task_id] = asyncio.Event()
+        self._active_subprocesses[task_id] = set()
 
         task.status = "RUNNING"
         await self.broadcast_event(
@@ -183,6 +253,11 @@ class TaskOrchestrator:
 
     async def _advance_dag(self, task: TaskDAG) -> None:
         """Evaluates DAG dependencies and advances eligible steps."""
+        if task.status == "CANCELLED" or (
+            task.task_id in self._cancellation_events and self._cancellation_events[task.task_id].is_set()
+        ):
+            return
+
         completed_step_ids = {s.step_id for s in task.steps if s.status == "COMPLETED"}
 
         all_completed = True
@@ -208,7 +283,11 @@ class TaskOrchestrator:
                         any_paused = True
                     else:
                         # Run low-risk step
-                        await self._execute_step(task, step)
+                        await self._execute_step(task, step, is_approved=False)
+                        if step.status in ("FAILED", "CANCELLED"):
+                            task.status = step.status
+                            self._save_checkpoint(task)
+                            return
                         # Re-run advance to pick up newly unlocked dependents
                         await self._advance_dag(task)
                         return
@@ -230,17 +309,30 @@ class TaskOrchestrator:
         approval_id = f"apr-{uuid.uuid4().hex[:10]}"
         step.status = "PAUSED_APPROVAL"
         step.approval_id = approval_id
+        step.approvalRequestId = approval_id
 
-        # Register pending approval record
+        # Register pending approval record (both snake_case and NEXUS camelCase supported)
+        risk_val = step.risk_level.value if hasattr(step.risk_level, "value") else str(step.risk_level)
         self._pending_approvals[approval_id] = {
             "approval_id": approval_id,
+            "id": approval_id,
             "task_id": task.task_id,
+            "taskId": task.task_id,
             "step_id": step.step_id,
+            "stepId": step.step_id,
             "title": step.title,
+            "actionTitle": step.title,
+            "taskGoal": task.goal,
             "action": step.skill_name,
-            "risk_level": step.risk_level.value if hasattr(step.risk_level, "value") else str(step.risk_level),
+            "toolName": step.skill_name,
+            "risk_level": risk_val,
+            "riskLevel": risk_val.lower(),
+            "rationale": f"Privileged action requires operator authorization: {step.title}",
+            "commandOrPayload": json.dumps(step.parameters),
             "parameters": step.parameters,
             "created_at": task.updated_at,
+            "createdAt": task.updated_at,
+            "status": "pending",
         }
 
         # Flush SSE event for human confirmation
@@ -260,29 +352,110 @@ class TaskOrchestrator:
 
         logger.info(f"Task {task.task_id} step {step.step_id} PAUSED for approval: {approval_id}")
 
-    async def _execute_step(self, task: TaskDAG, step: DAGStep) -> None:
-        """Executes a single step and records completion."""
+    async def _execute_step(self, task: TaskDAG, step: DAGStep, is_approved: bool = False) -> None:
+        """Executes a single step via registered ToolRegistry and records truthful outcome."""
+        # Check cancellation before launching
+        if task.status == "CANCELLED" or (
+            task.task_id in self._cancellation_events and self._cancellation_events[task.task_id].is_set()
+        ):
+            step.status = "CANCELLED"
+            step.error = "Cancelled by operator"
+            task.status = "CANCELLED"
+            await self.broadcast_event(
+                task.task_id,
+                "step_cancelled",
+                {"task_id": task.task_id, "step_id": step.step_id, "status": "CANCELLED"},
+            )
+            return
+
         step.status = "RUNNING"
+        from backend.planner import utc_now_iso
+        step.started_at = utc_now_iso()
         await self.broadcast_event(
             task.task_id,
             "step_progress",
             {"task_id": task.task_id, "step_id": step.step_id, "status": "RUNNING", "title": step.title},
         )
 
-        # Simulate execution output
-        step.output = f"Executed {step.skill_name} successfully."
-        step.status = "COMPLETED"
-
-        await self.broadcast_event(
-            task.task_id,
-            "step_completed",
-            {
-                "task_id": task.task_id,
-                "step_id": step.step_id,
-                "status": "COMPLETED",
-                "output": step.output,
-            },
+        from app.api.routes import SubsystemContainer
+        workspace_param = (
+            step.parameters.get("workspace_root")
+            or step.parameters.get("project_root")
+            or os.environ.get("WORKSPACE_ROOT")
+            or os.getcwd()
         )
+        workspace_root = Path(workspace_param).resolve()
+
+        cancel_event = self._cancellation_events.get(task.task_id)
+        subprocesses = self._active_subprocesses.setdefault(task.task_id, set())
+
+        ctx = ExecutionContext(
+            workspace_root=workspace_root,
+            task_id=task.task_id,
+            step_id=step.step_id,
+            cancellation_token=cancel_event,
+            active_subprocesses=subprocesses,
+            memory_service=SubsystemContainer.memory_service,
+            permission_gateway=self.permission_gateway,
+            is_approved=is_approved,
+        )
+
+        tool_res = await tool_registry.execute(step.skill_name, step.parameters, ctx)
+        step.ended_at = tool_res.ended_at
+        step.exit_code = tool_res.exit_code
+        step.error = tool_res.error
+        step.output = {
+            "success": tool_res.success,
+            "exit_code": tool_res.exit_code,
+            "stdout": tool_res.stdout,
+            "stderr": tool_res.stderr,
+            "output": tool_res.output,
+            "started_at": tool_res.started_at,
+            "ended_at": tool_res.ended_at,
+            "verification_evidence": tool_res.verification_evidence,
+            "error": tool_res.error,
+        }
+
+        if tool_res.success:
+            step.status = "COMPLETED"
+            await self.broadcast_event(
+                task.task_id,
+                "step_completed",
+                {
+                    "task_id": task.task_id,
+                    "step_id": step.step_id,
+                    "status": "COMPLETED",
+                    "exit_code": tool_res.exit_code,
+                    "output": step.output,
+                    "verification_evidence": tool_res.verification_evidence,
+                },
+            )
+        else:
+            step.status = "FAILED"
+            task.status = "FAILED"
+            await self.broadcast_event(
+                task.task_id,
+                "step_failed",
+                {
+                    "task_id": task.task_id,
+                    "step_id": step.step_id,
+                    "status": "FAILED",
+                    "exit_code": tool_res.exit_code,
+                    "error": tool_res.error or tool_res.stderr,
+                },
+            )
+            await self.broadcast_event(
+                task.task_id,
+                "task_failed",
+                {
+                    "task_id": task.task_id,
+                    "status": "FAILED",
+                    "failed_step_id": step.step_id,
+                    "error": tool_res.error or tool_res.stderr,
+                },
+            )
+
+        self._save_checkpoint(task)
 
     async def resume_approval(
         self,
@@ -293,7 +466,7 @@ class TaskOrchestrator:
         """
         Milestone 6:
         POST /api/approvals/{approval_id} endpoint execution.
-        Resumes the paused DAG branch when approved.
+        Resumes and executes the paused DAG branch when approved.
         """
         if approval_id not in self._pending_approvals:
             raise KeyError(f"Approval ID '{approval_id}' not found or already processed.")
@@ -332,7 +505,7 @@ class TaskOrchestrator:
                 },
             )
 
-            # Resume paused step
+            # Resume and truthfully execute the target step with approval
             target_step.status = "RUNNING"
             await self.broadcast_event(
                 task_id,
@@ -340,18 +513,14 @@ class TaskOrchestrator:
                 {"task_id": task_id, "step_id": step_id, "status": "RUNNING"},
             )
 
-            target_step.output = f"Authorized execution of {target_step.skill_name} completed."
-            target_step.status = "COMPLETED"
+            await self._execute_step(task, target_step, is_approved=True)
 
-            await self.broadcast_event(
-                task_id,
-                "step_completed",
-                {"task_id": task_id, "step_id": step_id, "status": "COMPLETED", "output": target_step.output},
-            )
-
-            # Advance remaining DAG steps
-            task.status = "RUNNING"
-            await self._advance_dag(task)
+            if target_step.status == "COMPLETED":
+                # Advance remaining DAG steps
+                task.status = "RUNNING"
+                await self._advance_dag(task)
+            else:
+                task.status = "FAILED"
 
             return {
                 "success": True,
@@ -363,12 +532,18 @@ class TaskOrchestrator:
             }
         else:
             # Rejection
-            target_step.status = "REJECTED"
+            target_step.status = "FAILED"
+            target_step.error = f"Approval rejected by operator: {notes or 'No reason provided'}"
             task.status = "FAILED"
             await self.broadcast_event(
                 task_id,
                 "approval_rejected",
                 {"task_id": task_id, "approval_id": approval_id, "step_id": step_id, "notes": notes},
+            )
+            await self.broadcast_event(
+                task_id,
+                "task_failed",
+                {"task_id": task_id, "status": "FAILED", "failed_step_id": step_id, "error": target_step.error},
             )
             self._save_checkpoint(task)
             return {
@@ -391,6 +566,7 @@ class TaskOrchestrator:
             "PAUSED_APPROVAL": TaskStatus.PAUSED,
             "COMPLETED": TaskStatus.COMPLETED,
             "FAILED": TaskStatus.FAILED,
+            "CANCELLED": TaskStatus.FAILED,
         }
         current_step_id = next(
             (s.step_id for s in task.steps if s.status in ("RUNNING", "PAUSED_APPROVAL")),
