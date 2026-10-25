@@ -19,7 +19,7 @@ export type TriggerType = 'file_watcher' | 'cron' | 'inbox_poll' | 'system_event
 
 export type AudienceMode = 'user' | 'developer';
 
-export type AppearancePreset = 'light' | 'dark' | 'oled-light' | 'oled-dark';
+export type AppearancePreset = 'light' | 'dark';
 
 export interface SystemEventLog {
   id: string;
@@ -131,12 +131,64 @@ export interface ApprovalRequest {
   commandOrPayload: string;
   parameters: Record<string, unknown>;
   createdAt: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'denied' | 'expired';
   resolvedAt?: string;
   resolvedBy?: string;
 }
 
-// --- Memory Vault (FR1.1, FR1.2, FR1.3, NFR4.2) ---
+export interface PermissionApprovalPayload {
+  request_id: string;
+  requestId?: string;
+  task_id?: string;
+  approved: boolean;
+  decision: 'approved' | 'denied';
+  notes?: string;
+}
+
+export interface PermissionApprovalResponse {
+  success: boolean;
+  status: 'approved' | 'denied' | 'pending';
+  message?: string;
+}
+
+// --- Memory Vault Backend Contracts (FR1) ---
+export interface BackendEpisodicMemory {
+  id: string | number;
+  timestamp?: string;
+  created_at?: string;
+  title?: string;
+  event_type?: string;
+  content?: string;
+  description?: string;
+  source_event?: string;
+  source?: string;
+  importance_score?: number;
+  importanceScore?: number;
+  tags?: string[];
+  pinned?: boolean;
+}
+
+export interface BackendSemanticMemory {
+  id: string | number;
+  category: string;
+  fact_key: string;
+  fact_content: string;
+  is_verified?: boolean;
+  tokens?: number;
+  created_at?: string;
+  updated_at?: string;
+  subject?: string;
+  statement?: string;
+}
+
+export interface CreateSemanticFactRequest {
+  category: string;
+  fact_key: string;
+  fact_content: string;
+  is_verified: boolean;
+  tokens: number;
+}
+
 export interface EpisodicMemory {
   id: string;
   type: 'episodic';
@@ -147,6 +199,7 @@ export interface EpisodicMemory {
   importanceScore: number; // 0.0 to 1.0
   tags: string[];
   pinned?: boolean;
+  isBackendRecord?: boolean;
 }
 
 export interface SemanticMemory {
@@ -160,9 +213,54 @@ export interface SemanticMemory {
   accessCount: number;
   decayFactor: number; // 0.0 to 1.0 (forgetting mechanism FR1.3)
   embeddingDim?: number;
+  factKey?: string;
+  isVerified?: boolean;
+  tokens?: number;
+  isBackendRecord?: boolean;
 }
 
 export type MemoryRecord = EpisodicMemory | SemanticMemory;
+
+// --- Task & Action Details Backend Contracts (FR3 / FR4) ---
+export type BackendTaskStatus =
+  | 'PAUSED_APPROVAL'
+  | 'awaiting_approval'
+  | 'running'
+  | 'queued'
+  | 'pending'
+  | 'failed'
+  | 'completed';
+
+export interface BackendTaskActionDetails {
+  tool_name?: string;
+  toolName?: string;
+  action_title?: string;
+  actionTitle?: string;
+  description?: string;
+  rationale?: string;
+  parameters?: Record<string, unknown>;
+  risk_level?: RiskLevel;
+  riskLevel?: RiskLevel;
+  command?: string;
+}
+
+export interface BackendIncompleteTask {
+  id: string;
+  goal: string;
+  status: BackendTaskStatus | string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+  steps?: TaskStep[];
+  action_details?: BackendTaskActionDetails;
+  actionDetails?: BackendTaskActionDetails;
+  approval_request_id?: string;
+  approvalRequestId?: string;
+  priority?: 'low' | 'normal' | 'high';
+  error_message?: string;
+  errorMessage?: string;
+}
 
 // --- Registered Skills & Dwarves' Forge (FR2) ---
 export interface SkillParameter {
@@ -186,6 +284,8 @@ export interface SkillDefinition {
   executionCount: number;
   lastExecutedAt?: string;
   enabled: boolean;
+  isMock?: boolean;
+  isIncomplete?: boolean;
 }
 
 // --- Background Sentinel Triggers (FR4.1) ---

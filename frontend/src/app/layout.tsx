@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { RagnarokProvider } from '@/lib/context/RagnarokContext';
 
 export const metadata: Metadata = {
-  title: 'Ragnarok | Sovereign AI Command Center',
+  title: 'Ragnarok | Sovereign AI Agent',
   description:
-    'A sovereign, always-on personal AI agent running on local Ollama stack with persistent memory, multi-step task execution, registered skills, and privacy controls.',
+    'A sovereign personal AI agent running locally on this device with persistent memory, multi-step workflows, and complete user control.',
 };
 
 export default function RootLayout({
@@ -13,9 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#090b0e] text-zinc-100 antialiased min-h-screen">
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-canvas text-main antialiased min-h-screen">
+        <RagnarokProvider>{children}</RagnarokProvider>
       </body>
     </html>
   );

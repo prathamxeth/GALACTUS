@@ -12,21 +12,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm active:translate-y-px border border-emerald-500/30',
+    'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs active:translate-y-px border border-emerald-500/30 font-medium',
   secondary:
-    'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700/60 active:translate-y-px',
+    'bg-elevated hover:bg-subtle text-main border border-subtle active:translate-y-px',
   outline:
-    'bg-transparent hover:bg-zinc-800/60 text-zinc-300 border border-zinc-700 hover:text-white',
+    'bg-transparent hover:bg-elevated text-dim hover:text-main border border-medium',
   ghost:
-    'bg-transparent hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-100 border border-transparent',
+    'bg-transparent hover:bg-elevated text-dim hover:text-main border border-transparent',
   danger:
-    'bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/60 active:translate-y-px',
+    'bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 active:translate-y-px',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
   sm: 'px-2.5 py-1 text-xs gap-1.5',
   md: 'px-3.5 py-1.5 text-sm gap-2',
-  lg: 'px-4 py-2.5 text-base gap-2.5',
+  lg: 'px-4 py-2 text-base gap-2.5',
 };
 
 export const Button: React.FC<ButtonProps> = ({

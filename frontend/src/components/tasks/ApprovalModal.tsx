@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertOctagon, Check, X, ShieldAlert, Terminal } from 'lucide-react';
+import { AlertOctagon, Check, X, ShieldAlert, Terminal, Info } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Badge, BadgeVariant } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { ApprovalRequest, RiskLevel } from '../../lib/api/types';
+import { FadeContent, StarBorder } from '@/components/reactbits';
 
 interface ApprovalModalProps {
   request: ApprovalRequest | null;
@@ -49,113 +50,127 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Gjallarhorn Approval Gate"
-      description="Sensitive operation requires just-in-time user authorization (FR4.3)"
+      title="Permission Gatekeeper (POST /api/permissions/approve)"
+      description="A sensitive operation halted at PAUSED_APPROVAL gate. Authorize or deny execution."
       maxWidth="xl"
     >
-      <div className="space-y-4">
-        {/* Risk Banner */}
-        <div className="p-3.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-start gap-3">
-          <div className="p-2 rounded-md bg-amber-950/60 text-amber-400 border border-amber-800/40 shrink-0">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                Tool: <code className="text-zinc-200 font-semibold">{request.toolName}</code>
-              </span>
-              <Badge variant={riskVariant[request.riskLevel]} dot>
-                {request.riskLevel.toUpperCase()} RISK
-              </Badge>
+      <FadeContent blur duration={250} trigger="mount">
+        <div className="space-y-4 font-mono text-xs">
+          {/* Risk Banner */}
+          <div className="p-3.5 rounded-lg bg-surface border border-subtle flex items-start gap-3">
+            <div className="p-2 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
             </div>
-            <p className="mt-1 text-sm font-medium text-zinc-100">{request.actionTitle}</p>
-            <p className="mt-0.5 text-xs text-zinc-400">{request.rationale}</p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono uppercase tracking-wider text-dim">
+                  Tool: <code className="text-main font-semibold">{request.toolName}</code>
+                </span>
+                <Badge variant={riskVariant[request.riskLevel]} dot>
+                  {request.riskLevel.toUpperCase()} RISK
+                </Badge>
+              </div>
+              <p className="mt-1 text-sm font-medium text-main font-sans">{request.actionTitle}</p>
+              <p className="mt-0.5 text-xs text-dim font-sans">{request.rationale}</p>
+            </div>
           </div>
-        </div>
 
-        {/* Task Context */}
-        <div className="text-xs text-zinc-400 bg-zinc-950/50 p-2.5 rounded-md border border-zinc-850">
-          <span className="font-medium text-zinc-300">Originating Task Goal:</span> {request.taskGoal}
-        </div>
-
-        {/* Command or Payload Inspection */}
-        <div>
-          <label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5 mb-1.5">
-            <Terminal className="w-3.5 h-3.5 text-zinc-400" />
-            Inspected Command / Payload
-          </label>
-          <div className="relative rounded-lg bg-[#090b0e] border border-zinc-800 p-3 overflow-x-auto">
-            <pre className="font-mono text-xs text-emerald-300 leading-relaxed whitespace-pre-wrap break-all">
-              {request.commandOrPayload}
-            </pre>
+          {/* Task Context */}
+          <div className="text-xs text-dim bg-surface p-2.5 rounded-md border border-subtle">
+            <span className="font-medium text-main">Associated Task:</span> {request.taskGoal}
+            <span className="block text-[11px] font-mono text-faint mt-0.5">
+              Request ID: #{request.id} • Step ID: {request.stepId}
+            </span>
           </div>
-        </div>
 
-        {/* Rejection input toggle */}
-        {showRejectionInput && (
-          <div className="space-y-1.5 animate-in fade-in duration-150">
-            <label className="text-xs text-zinc-300">
-              Rejection Directive for Agent Reflection (FR3.3 Self-Correction):
+          {/* Command or Payload Inspection */}
+          <div>
+            <label className="text-xs font-medium text-main flex items-center gap-1.5 mb-1.5">
+              <Terminal className="w-3.5 h-3.5 text-dim" />
+              Action Parameters &amp; Inspected Payload
             </label>
-            <textarea
-              value={rejectionNotes}
-              onChange={(e) => setRejectionNotes(e.target.value)}
-              placeholder="e.g. Do not touch production files. Use test/ directory instead."
-              rows={2}
-              className="w-full text-xs rounded-lg bg-zinc-900 border border-zinc-700/80 p-2 text-zinc-200 placeholder-zinc-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-            />
+            <div className="relative rounded-lg bg-elevated border border-subtle p-3 overflow-x-auto">
+              <pre className="font-mono text-xs text-emerald-600 dark:text-emerald-300 leading-relaxed whitespace-pre-wrap break-all">
+                {request.commandOrPayload || JSON.stringify(request.parameters, null, 2)}
+              </pre>
+            </div>
           </div>
-        )}
 
-        {/* Actions */}
-        <div className="pt-2 border-t border-zinc-800 flex items-center justify-between gap-3">
-          {!showRejectionInput ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowRejectionInput(true)}
-              className="text-xs text-rose-300 hover:text-rose-200 border-rose-900/40 hover:bg-rose-950/30"
-              icon={<AlertOctagon className="w-3.5 h-3.5 text-rose-400" />}
-            >
-              Reject Action...
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="danger"
-              size="sm"
-              onClick={() => handleAction('rejected')}
-              loading={isSubmitting}
-              icon={<X className="w-3.5 h-3.5" />}
-            >
-              Confirm Rejection
-            </Button>
+          {/* Execution Notice */}
+          <div className="flex items-start gap-2 p-2.5 rounded bg-surface border border-subtle text-[11px] text-dim">
+            <Info className="w-3.5 h-3.5 text-sky-500 shrink-0 mt-0.5" />
+            <span>
+              Granting approval will execute this step within the verified sandbox and transition status from PAUSED_APPROVAL to RUNNING.
+            </span>
+          </div>
+
+          {/* Denial Reason Input */}
+          {showRejectionInput && (
+            <div className="space-y-1.5 pt-2 border-t border-subtle">
+              <label className="text-xs font-medium text-rose-600 dark:text-rose-400 block">
+                Denial Reason / Guidance for Agent:
+              </label>
+              <textarea
+                value={rejectionNotes}
+                onChange={(e) => setRejectionNotes(e.target.value)}
+                placeholder="Explain why this action was rejected or suggest an alternative..."
+                rows={2}
+                className="w-full text-xs font-mono rounded bg-surface border border-rose-500/40 p-2 text-main focus:outline-none focus:border-rose-500"
+                autoFocus
+              />
+            </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => handleAction('approved')}
-              loading={isSubmitting}
-              icon={<Check className="w-4 h-4" />}
-            >
-              Authorize &amp; Execute
-            </Button>
+          {/* Actions */}
+          <div className="pt-2 border-t border-subtle flex items-center justify-between gap-3">
+            {!showRejectionInput ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRejectionInput(true)}
+                className="text-xs text-rose-600 dark:text-rose-300 hover:bg-rose-500/10 border-rose-500/30"
+                icon={<AlertOctagon className="w-3.5 h-3.5" />}
+              >
+                Deny action...
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={() => handleAction('rejected')}
+                loading={isSubmitting}
+                icon={<X className="w-3.5 h-3.5" />}
+              >
+                Confirm Denial
+              </Button>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <StarBorder
+                as="button"
+                onClick={() => handleAction('approved')}
+                color="#10b981"
+                trailColor="rgba(16, 185, 129, 0.3)"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Authorize Action</span>
+              </StarBorder>
+            </div>
           </div>
         </div>
-      </div>
+      </FadeContent>
     </Modal>
   );
 };

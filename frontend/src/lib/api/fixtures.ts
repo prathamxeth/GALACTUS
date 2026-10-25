@@ -317,6 +317,7 @@ export const DEMO_SKILLS: SkillDefinition[] = [
     executionCount: 142,
     lastExecutedAt: new Date(Date.now() - 1000 * 60 * 17).toISOString(),
     enabled: true,
+    isMock: true,
   },
   {
     id: 'skill-term',
@@ -334,6 +335,7 @@ export const DEMO_SKILLS: SkillDefinition[] = [
     executionCount: 88,
     lastExecutedAt: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
     enabled: true,
+    isMock: true,
   },
   {
     id: 'skill-mem',
@@ -351,6 +353,7 @@ export const DEMO_SKILLS: SkillDefinition[] = [
     executionCount: 512,
     lastExecutedAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
     enabled: true,
+    isMock: true,
   },
   {
     id: 'skill-inbox',
@@ -368,6 +371,8 @@ export const DEMO_SKILLS: SkillDefinition[] = [
     executionCount: 64,
     lastExecutedAt: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
     enabled: true,
+    isMock: true,
+    isIncomplete: true,
   },
   {
     id: 'skill-git',
@@ -385,6 +390,7 @@ export const DEMO_SKILLS: SkillDefinition[] = [
     executionCount: 79,
     lastExecutedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
     enabled: true,
+    isMock: true,
   },
 ];
 

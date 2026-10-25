@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Button } from './Button';
+import { useRagnarok } from '@/lib/context/RagnarokContext';
 
 interface OfflineBannerProps {
   isLive: boolean;
@@ -15,33 +18,62 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({
   onRetry,
   backendUrl = 'http://127.0.0.1:8000',
 }) => {
+  const { mode } = useRagnarok();
+  const isDev = mode === 'developer';
+
   if (isLive) {
     return (
-      <div className="w-full bg-emerald-950/20 border-b border-emerald-800/30 px-4 py-2 flex items-center justify-between text-xs text-emerald-300">
+      <div className="w-full bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>
-            Connected to Sovereign Local FastAPI Backend at <code className="font-mono text-emerald-200">{backendUrl}</code>
+            {isDev ? (
+              <>
+                Connected to Sovereign Local FastAPI Backend at{' '}
+                <code className="font-mono text-emerald-800 dark:text-emerald-200">
+                  {backendUrl}
+                </code>
+              </>
+            ) : (
+              'Connected to AI service running on this device'
+            )}
           </span>
         </div>
-        <span className="text-[11px] text-emerald-400/80">Local Inference Active (Ollama)</span>
+        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 opacity-90">
+          {isDev ? 'Local Loopback Active (Ollama)' : 'Running locally'}
+        </span>
       </div>
     );
   }
 
   return (
-    <aside aria-label="Backend status banner" className="w-full bg-amber-950/30 border-b border-amber-800/40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200">
+    <aside
+      aria-label="Backend status banner"
+      className="w-full bg-amber-500/10 border-b border-amber-500/25 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200"
+    >
       <div className="flex items-center gap-2.5">
-        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
         <div>
-          <span className="font-medium text-amber-100">
-            Offline Staging Preview Active:
+          <span className="font-semibold text-amber-950 dark:text-amber-100">
+            {isDev ? 'Offline Staging Preview Active:' : 'Preview Mode Active:'}
           </span>{' '}
-          <span className="text-amber-300/90">
-            FastAPI server at <code className="font-mono bg-black/40 px-1 py-0.5 rounded text-amber-200">{backendUrl}</code> is currently offline or starting up.
-          </span>{' '}
-          <span className="text-zinc-400 text-[11px] block sm:inline">
-            (Displaying isolated demonstration fixtures so the interface can be audited. No real external actions are dispatched.)
+          <span className="opacity-90">
+            {isDev ? (
+              <>
+                FastAPI server at{' '}
+                <code className="font-mono bg-black/10 dark:bg-black/40 px-1 py-0.5 rounded text-amber-900 dark:text-amber-200">
+                  {backendUrl}
+                </code>{' '}
+                is currently offline.
+              </>
+            ) : (
+              'The background AI service is currently starting up or resting.'
+            )}{' '}
+          </span>
+          <span className="text-dim text-[11px] block sm:inline">
+            {isDev
+              ? '(Showing isolated test fixtures. No real actions dispatched.)'
+              : '(Showing demonstration items so you can explore the interface safely.)'}
           </span>
         </div>
       </div>
@@ -52,9 +84,9 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({
           onClick={onRetry}
           loading={isChecking}
           icon={<RefreshCw className={`w-3 h-3 ${isChecking ? 'animate-spin' : ''}`} />}
-          className="text-xs py-1 border-amber-700/60 hover:bg-amber-900/40 text-amber-100"
+          className="text-xs py-1 border-amber-500/40 hover:bg-amber-500/15 text-amber-900 dark:text-amber-200"
         >
-          Check Connection
+          {isDev ? 'Test Endpoint' : 'Check Connection'}
         </Button>
       )}
     </aside>
