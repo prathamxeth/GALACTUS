@@ -18,6 +18,7 @@ import httpx
 from app.memory.models import MemoryType, RiskLevel
 from app.memory.service import MemoryService, query_relevant_context
 from backend.diagnostics.inspector import ProjectInspector, SecurityViolationError
+from backend.planner import resolve_ollama_endpoint
 from backend.diagnostics.models import (
     DiagnosticReport,
     DiagnosticSourceType,
@@ -50,8 +51,8 @@ class DiagnosticEngine:
     ):
         self.memory_service = memory_service
         self.event_broadcaster = event_broadcaster
-        self.model = model or os.environ.get("MEMORAG_MODEL") or "gemma4:e2b"
-        self.ollama_endpoint = (ollama_endpoint or os.environ.get("OLLAMA_ENDPOINT", "http://127.0.0.1:11434")).rstrip("/")
+        self.model = model or os.environ.get("MEMORAG_MODEL") or os.environ.get("RAGNAROK_MODEL") or "gemma4:e2b"
+        self.ollama_endpoint = resolve_ollama_endpoint(ollama_endpoint)
         self._tasks: Dict[str, DiagnosticReport] = {}
         self._backups: Dict[str, Dict[str, str]] = {}  # task_id -> {file_path: original_content}
         self._approvals: Dict[str, Dict[str, Any]] = {}  # approval_id -> metadata

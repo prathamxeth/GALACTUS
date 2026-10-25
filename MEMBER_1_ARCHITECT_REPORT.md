@@ -19,8 +19,8 @@ As the **Agent Architect & Backend Lead (Member 1)**, the primary responsibility
 - **Milestone 5 Memory Handshake**: Integrated bidirectional memory retrieval with Member 2's persistence vault via `query_relevant_context(user_goal)`. Injected verified facts and user preferences into the system prompt prior to DAG construction, guaranteeing strict adherence to operator constraints.
 - **Milestone 6 Execution Engine & Zero-Trust Gatekeeper (Gjallarhorn)**: Engineered asynchronous DAG orchestration with strict human-in-the-loop authorization gates. High-risk actions (e.g. destructive commands, file modifications, external syncs) are intercepted into `PAUSED_APPROVAL` status and never execute without cryptographic just-in-time human consent.
 - **Helheim State Recovery (NFR3.2)**: Guaranteed state persistence and resumption via SQLite WAL checkpoints in under 5 seconds following simulated system interrupts or process crashes.
-- **Seamless Frontend Handshake (Member 3)**: Unified FastAPI application surface with localhost CORS, real-time Server-Sent Events (SSE) streaming at `/api/tasks/{task_id}/events/stream`, `/api/skills` discovery, `/api/agent/chat` ingress, `/api/memories` plural aliases, and `/api/agent/status` health probing.
-- **Branch Cleanliness**: All architect deliverables are isolated and tracked strictly on the `ARCHITECT` branch with zero frontend dependencies or external clutter.
+- **Seamless NEXUS Frontend Handshake**: Unified FastAPI application surface with localhost CORS, real-time Server-Sent Events (SSE) streaming at `/api/tasks/{task_id}/events/stream`, `/api/skills` discovery, `/api/agent/chat` ingress, `/api/memories` plural aliases, and `/api/agent/status` health probing.
+- **Branch Cleanliness**: All architect deliverables are isolated and tracked strictly on the `ARCHITECT` branch with zero frontend implementation clutter.
 
 ---
 
@@ -52,7 +52,7 @@ As the **Agent Architect & Backend Lead (Member 1)**, the primary responsibility
 - Streams connection greeting (`task_connected`), task status, step progress, approval prompts, and completion events.
 - Features automatic keep-alive heartbeat pings (`: ping\n\n`) and graceful test-environment termination without hanging blocking portals.
 
-### 2.5 Canonical API Contract & Frontend Bridges (`backend/main.py`)
+### 2.5 Canonical API Contract & NEXUS Frontend Bridge (`backend/main.py`)
 - Standardized RESTful endpoints and OpenAPI 3.1.0 specifications.
 - Implemented `/api/skills` for registered tool capability discovery.
 - Implemented `/api/agent/chat` for bidirectional Command Center chat interactions with memory citation tracking.

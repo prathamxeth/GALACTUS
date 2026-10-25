@@ -105,6 +105,9 @@ export default function CommandCenterPage() {
     try {
       const response = await api.sendPrompt(userText, activeMode);
       setMessages((prev) => [...prev, response.data]);
+      // Update runtime status to reflect successful inference immediately
+      const statusRes = await api.getRuntimeStatus();
+      setRuntimeStatus(statusRes.data);
     } catch {
       // Local fallback in case of catastrophic network trap
       setMessages((prev) => [
@@ -162,6 +165,8 @@ export default function CommandCenterPage() {
             : 0
         }
         ollamaStatus={runtimeStatus?.ollamaStatus || 'connected'}
+        model={runtimeStatus?.model || 'gemma4:e2b'}
+        activeModelLoaded={Boolean(runtimeStatus?.activeModelLoaded)}
       />
 
       {/* Main Content Area */}
@@ -187,14 +192,33 @@ export default function CommandCenterPage() {
           {/* Active Runtime Header Pill */}
           <div className="mb-4 p-3 rounded-xl bg-[#101319] border border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 font-mono text-zinc-300">
-                <Bot className="w-4 h-4 text-emerald-400" />
-                {runtimeStatus?.model || 'llama3.2:3b-instruct-q8_0'}
+              <span id="model-selector-indicator" className="flex items-center gap-1.5 font-mono text-zinc-300">
+                <Bot
+                  className={`w-4 h-4 ${
+                    runtimeStatus?.activeModelLoaded ? 'text-emerald-400' : 'text-amber-400'
+                  }`}
+                />
+                <span className="font-semibold">{runtimeStatus?.model || 'gemma4:e2b'}</span>
+                <span
+                  id="model-indicator-badge"
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded border flex items-center gap-1 ${
+                    runtimeStatus?.activeModelLoaded
+                      ? 'bg-emerald-950/60 border-emerald-800/50 text-emerald-400'
+                      : 'bg-amber-950/60 border-amber-800/50 text-amber-400'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      runtimeStatus?.activeModelLoaded ? 'bg-emerald-400' : 'bg-amber-400'
+                    }`}
+                  />
+                  {runtimeStatus?.activeModelLoaded ? 'Model Ready' : 'Awaiting Inference'}
+                </span>
               </span>
               <span className="text-zinc-600">|</span>
               <span className="flex items-center gap-1.5 font-mono text-zinc-400">
                 <Brain className="w-3.5 h-3.5 text-sky-400" />
-                1,428 Mimir Runes Active
+                Mimir Memory Vault Active
               </span>
             </div>
 

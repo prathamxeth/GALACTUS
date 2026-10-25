@@ -60,14 +60,16 @@ class MemoryRepository:
         finally:
             conn.close()
 
-    def find_by_dedup_hash(self, dedup_hash: str) -> Optional[sqlite3.Row]:
+    def find_by_dedup_hash(self, dedup_hash: str, include_deleted: bool = False) -> Optional[sqlite3.Row]:
         """Looks up an active semantic memory by its deterministic deduplication hash."""
         conn = self.db.get_connection()
         try:
-            return conn.execute(
-                "SELECT * FROM memories WHERE dedup_hash = ? AND is_deleted = 0;",
-                (dedup_hash,),
-            ).fetchone()
+            sql = "SELECT * FROM memories WHERE dedup_hash = ?"
+            if not include_deleted:
+                sql += " AND is_deleted = 0;"
+            else:
+                sql += ";"
+            return conn.execute(sql, (dedup_hash,)).fetchone()
         finally:
             conn.close()
 
@@ -78,8 +80,8 @@ class MemoryRepository:
         verification_status: Optional[str] = None,
         confidence: Optional[float] = None,
     ) -> bool:
-        """Updates verification status, confidence, payload, and updated_at."""
-        clauses = ["updated_at = ?"]
+        """Updates verification status, confidence, payload, and updated_at (reactivates if tombstoned)."""
+        clauses = ["is_deleted = 0", "updated_at = ?"]
         params: List[Any] = [utc_now()]
 
         if encrypted_payload is not None:
@@ -93,7 +95,7 @@ class MemoryRepository:
             params.append(confidence)
 
         params.append(memory_id)
-        sql = f"UPDATE memories SET {', '.join(clauses)} WHERE id = ? AND is_deleted = 0;"
+        sql = f"UPDATE memories SET {', '.join(clauses)} WHERE id = ?;"
 
         with self.db.transaction() as conn:
             cursor = conn.execute(sql, params)

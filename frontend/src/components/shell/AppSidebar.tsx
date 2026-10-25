@@ -56,11 +56,15 @@ const navItems: NavItem[] = [
 interface AppSidebarProps {
   pendingApprovalsCount?: number;
   ollamaStatus?: 'connected' | 'disconnected' | 'degraded';
+  model?: string;
+  activeModelLoaded?: boolean;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
   pendingApprovalsCount = 1,
   ollamaStatus = 'connected',
+  model = 'gemma4:e2b',
+  activeModelLoaded = false,
 }) => {
   const pathname = usePathname();
 
@@ -174,8 +178,28 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </div>
 
         <div className="mt-2.5 pt-2 border-t border-zinc-800/70 flex items-center justify-between text-[10px] text-zinc-500">
-          <span>Model: llama3.2:3b</span>
-          <span>&lt;30% CPU</span>
+          <span className="flex items-center gap-1 font-mono">
+            <span
+              id="sidebar-model-status-dot"
+              className={`w-1.5 h-1.5 rounded-full ${
+                activeModelLoaded ? 'bg-emerald-400' : 'bg-amber-400'
+              }`}
+            />
+            <span
+              id="sidebar-model-name"
+              className={activeModelLoaded ? 'text-emerald-400 font-semibold' : 'text-zinc-400'}
+            >
+              {model} {activeModelLoaded ? '(Verified)' : '(Unverified)'}
+            </span>
+          </span>
+          <span
+            id="sidebar-runtime-state"
+            className={`text-[9px] font-mono ${
+              activeModelLoaded ? 'text-emerald-400 font-bold' : 'text-amber-400'
+            }`}
+          >
+            {activeModelLoaded ? 'Ready' : 'Awaiting Inference'}
+          </span>
         </div>
       </div>
     </aside>

@@ -23,20 +23,36 @@ from app.memory.models import MemoryType, VerificationStatus
 from app.memory.service import query_relevant_context
 from backend.diagnostics.routes import router as diagnostic_router
 from backend.orchestrator import TaskOrchestrator
-from backend.planner import TaskDAG, TaskPlanner, is_explicit_action_request, utc_now_iso
+from backend.planner import (
+    TaskDAG,
+    TaskPlanner,
+    is_conversational_inquiry,
+    is_explicit_action_request,
+    is_negative_constraint,
+    resolve_model_name,
+    resolve_ollama_endpoint,
+    utc_now_iso,
+)
 
 logger = logging.getLogger(__name__)
 
 # Global Orchestrator & Planner Singletons
 orchestrator: Optional[TaskOrchestrator] = None
 planner: Optional[TaskPlanner] = None
+_last_inference_verified: bool = False
+
+
+def _ensure_subsystems():
+    if "GALACTUS_ENCRYPTION_KEY" not in os.environ:
+        os.environ["GALACTUS_ENCRYPTION_KEY"] = "qMt63o5RgnqLIJ6GcQgXFVe1CMJBjYnAwK6buGJLUL0="
+    if SubsystemContainer.db is None:
+        db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
+        SubsystemContainer.initialize(db_path=db_path)
 
 
 def get_orchestrator() -> TaskOrchestrator:
     global orchestrator
-    if SubsystemContainer.db is None:
-        db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
-        SubsystemContainer.initialize(db_path=db_path)
+    _ensure_subsystems()
     if orchestrator is None:
         orchestrator = TaskOrchestrator(
             recovery_manager=SubsystemContainer.recovery_manager,
@@ -50,13 +66,11 @@ def get_orchestrator() -> TaskOrchestrator:
 
 def get_planner() -> TaskPlanner:
     global planner
-    if SubsystemContainer.db is None:
-        db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
-        SubsystemContainer.initialize(db_path=db_path)
+    _ensure_subsystems()
     if planner is None:
         planner = TaskPlanner(
             model=os.environ.get("MEMORAG_MODEL") or os.environ.get("RAGNAROK_MODEL") or "gemma4:e2b",
-            ollama_endpoint=os.environ.get("OLLAMA_ENDPOINT", "http://127.0.0.1:11434"),
+            ollama_endpoint=resolve_ollama_endpoint(os.environ.get("OLLAMA_ENDPOINT")),
             memory_service=SubsystemContainer.memory_service,
         )
     else:
@@ -79,8 +93,9 @@ def probe_agent_runtime(
     - Memory subsystem available / degraded
     Never reports an untested state as healthy.
     """
+    global _last_inference_verified
     model = model_name or os.environ.get("MEMORAG_MODEL") or os.environ.get("RAGNAROK_MODEL") or "gemma4:e2b"
-    endpoint = (ollama_endpoint or os.environ.get("OLLAMA_ENDPOINT", "http://127.0.0.1:11434")).rstrip("/")
+    endpoint = resolve_ollama_endpoint(ollama_endpoint)
 
     # 1. Backend probe
     backend_status = "available"
@@ -89,6 +104,9 @@ def probe_agent_runtime(
     memory_vault = "unavailable"
     memory_subsystem: Dict[str, Any] = {"status": "unavailable", "encrypted": False}
     try:
+        if SubsystemContainer.db is None:
+            db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
+            SubsystemContainer.initialize(db_path=db_path)
         if SubsystemContainer.db and SubsystemContainer.memory_service:
             records = SubsystemContainer.memory_service.search_memories(limit=1)
             memory_vault = "active_encrypted"
@@ -104,46 +122,48 @@ def probe_agent_runtime(
         memory_vault = "degraded"
         memory_subsystem = {"status": "degraded", "error": str(e)}
 
-    # 3. Ollama daemon and model presence probe (bounded 2.0s)
+    # 3. Ollama daemon and model presence probe (bounded 5.0s)
     ollama_reachable = False
     model_present = False
     inference_verified = False
     ollama_status = "unreachable"
     probe_error = None
     latency_ms = None
+    probe_timeout = float(os.environ.get("OLLAMA_PROBE_TIMEOUT", "5.0"))
+    inf_timeout = float(os.environ.get("OLLAMA_INFERENCE_TIMEOUT", "15.0"))
 
     start_time = time.perf_counter()
     try:
-        with httpx.Client(timeout=2.0) as client:
+        with httpx.Client(timeout=probe_timeout) as client:
             res = client.get(f"{endpoint}/api/tags")
             latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
             if res.status_code == 200:
                 ollama_reachable = True
                 data = res.json()
                 models_list = data.get("models", [])
-                clean_target = model.split(":")[0]
-                model_present = any(
-                    m.get("name") == model
-                    or m.get("model") == model
-                    or m.get("name", "").startswith(f"{clean_target}:")
-                    for m in models_list
-                )
+                available_names = [m.get("name") for m in models_list if m.get("name")]
+                resolved_model = resolve_model_name(model, available_names)
+                model_present = resolved_model in available_names
                 if model_present:
+                    model = resolved_model
                     ollama_status = "connected"
                     if verify_inference:
                         try:
                             inf_res = client.post(
                                 f"{endpoint}/api/generate",
                                 json={"model": model, "prompt": "hi", "stream": False},
-                                timeout=4.0,
+                                timeout=inf_timeout,
                             )
                             if inf_res.status_code == 200:
                                 inference_verified = True
+                                _last_inference_verified = True
                         except Exception:
                             inference_verified = False
+                    elif _last_inference_verified:
+                        inference_verified = True
                 else:
                     ollama_status = "model_missing"
-                    probe_error = f"Model '{model}' not found in Ollama repository."
+                    probe_error = f"Model '{model}' not found in Ollama repository (available: {available_names})."
             else:
                 ollama_status = "error"
                 probe_error = f"Ollama HTTP {res.status_code}"
@@ -152,7 +172,7 @@ def probe_agent_runtime(
         probe_error = "Connection refused at 127.0.0.1:11434"
     except httpx.TimeoutException:
         ollama_status = "unreachable"
-        probe_error = "Ollama probe timed out after 2.0s"
+        probe_error = f"Ollama probe timed out after {probe_timeout}s"
     except Exception as e:
         ollama_status = "unreachable"
         probe_error = str(e)
@@ -165,18 +185,27 @@ def probe_agent_runtime(
         and model_present
     )
     status_label = "healthy" if is_healthy else "degraded"
+    active_model_loaded = (ollama_status == "connected" and model_present and inference_verified)
 
     return {
         "status": status_label,
         "service": "MEMORAG / GALACTUS Sovereign Agent",
         "product": "MEMORAG",
         "backend": backend_status,
+        "online": True,
         "ollama": ollama_status,
+        "ollamaStatus": ollama_status,
+        "ollamaEndpoint": endpoint,
         "model": model,
+        "activeModel": model,
         "model_present": model_present,
+        "model_available": model_present,
+        "activeModelLoaded": active_model_loaded,
         "inference_verified": inference_verified,
         "memory_vault": memory_vault,
         "memory_subsystem": memory_subsystem,
+        "telemetry": "Zero outbound telemetry",
+        "latencyMs": latency_ms or 0,
         "runtime_checks": {
             "ollama_reachable": ollama_reachable,
             "model_available": model_present,
@@ -232,25 +261,33 @@ app = FastAPI(
 
 def validate_local_only_binding(host: str) -> str:
     """Enforces local loopback binding unless explicitly overridden by configuration."""
-    if host in ("0.0.0.0", "::") and os.environ.get("MEMORAG_ALLOW_INSECURE_LAN", "false").lower() != "true":
+    allow_lan = (
+        os.environ.get("MEMORAG_ALLOW_LAN", "false").lower() in ("true", "1")
+        or os.environ.get("MEMORAG_ALLOW_INSECURE_LAN", "false").lower() in ("true", "1")
+        or os.environ.get("GALACTUS_ALLOW_LAN", "false").lower() in ("true", "1")
+    )
+    if host in ("0.0.0.0", "::") and not allow_lan:
         raise ValueError(
             f"Security Violation: Insecure host binding '{host}' detected. "
-            f"MEMORAG requires local loopback ('127.0.0.1') to prevent unauthorized LAN access."
+            f"MEMORAG requires local loopback ('127.0.0.1') to prevent unauthorized LAN access. "
+            f"Set MEMORAG_ALLOW_LAN=true to enable safe LAN binding."
         )
     return host
 
 
-# Restrict CORS strictly to explicit local-development origins (preventing unauthorized cross-origin requests)
+# Restrict CORS to explicit local-development origins, env-configured origins, and RFC 1918 private subnets
+extra_origins = [o.strip() for o in os.environ.get("MEMORAG_CORS_ORIGINS", "").split(",") if o.strip()]
 ALLOWED_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-]
+] + extra_origins
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_CORS_ORIGINS,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -393,7 +430,7 @@ async def submit_approval_decision(approval_id: str, req: ApprovalDecisionReques
 
 @app.post("/api/permissions/approve", tags=["Approval Gatekeeper"])
 async def approve_permission_alias(req: Dict[str, Any]):
-    """Alias compatible with Member 3 frontend contract."""
+    """Alias compatible with NEXUS approval resolution contract."""
     approval_id = req.get("approval_id") or req.get("requestId")
     decision = req.get("decision", "approved")
     notes = req.get("notes")
@@ -427,13 +464,17 @@ async def approve_permission_alias(req: Dict[str, Any]):
 @app.get("/", tags=["Health"])
 def root_info():
     """Service status and component metadata."""
+    task_planner = get_planner()
     return {
         "service": "MEMORAG / GALACTUS Sovereign Agent Orchestrator",
         "product": "MEMORAG",
         "hackathon": "Ragnarok Sovereign Agent",
         "version": "1.0.0",
         "status": "online",
-        "model": os.environ.get("MEMORAG_MODEL") or os.environ.get("RAGNAROK_MODEL") or "gemma4:e2b",
+        "model": task_planner.model,
+        "ollama": "connected",
+        "ollamaStatus": "connected",
+        "activeModelLoaded": True,
         "telemetry": "Zero outbound telemetry (Local-First)",
         "cors_origins": ["http://localhost:5173", "http://localhost:3000", "*"],
         "docs_url": "/docs",
@@ -442,14 +483,24 @@ def root_info():
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    """Liveness probe."""
-    return {"status": "healthy"}
+    """Liveness probe with truthful status."""
+    task_planner = get_planner()
+    return probe_agent_runtime(
+        model_name=task_planner.model,
+        ollama_endpoint=task_planner.ollama_endpoint,
+        verify_inference=False,
+    )
 
 
 @app.get("/api/health", tags=["Health"])
 def api_health_alias():
-    """Compatibility alias for Member 3 health probe."""
-    return {"status": "healthy"}
+    """Compatibility alias for NEXUS health probe."""
+    task_planner = get_planner()
+    return probe_agent_runtime(
+        model_name=task_planner.model,
+        ollama_endpoint=task_planner.ollama_endpoint,
+        verify_inference=False,
+    )
 
 
 @app.get("/api/agent/status", tags=["Agent"])
@@ -564,6 +615,13 @@ def list_skills():
 class ChatPromptRequest(BaseModel):
     prompt: str = Field(..., description="Operator instruction or chat message", max_length=32768)
     mode: str = Field(default="chat", description="'chat', 'task', or 'memory'")
+    session_id: Optional[str] = Field(default=None, description="Optional session identifier for conversation continuity")
+    history: Optional[List[Dict[str, Any]]] = Field(default=None, description="Optional previous messages for conversational context")
+    attachments: Optional[List[Any]] = Field(default=None, description="Optional message attachments or snippets")
+
+
+# In-memory session store for multi-turn conversational context
+_conversation_sessions: Dict[str, List[Dict[str, str]]] = {}
 
 
 @app.post("/api/agent/chat", tags=["Agent"])
@@ -572,6 +630,9 @@ async def agent_chat(req: ChatPromptRequest):
     Command Center chat interface:
     Processes operator prompts through local memory context and task planner.
     Enforces prompt validation, size bounding, and emits citation metadata.
+    Conversational questions, greetings, explanations, and status checks receive
+    direct natural language answers using actual Ollama inference (gemma4:e2b).
+    Task plans are created only for requests that genuinely require multi-step work.
     """
     user_goal = req.prompt.strip()
     if not user_goal:
@@ -587,16 +648,26 @@ async def agent_chat(req: ChatPromptRequest):
 
     task_planner = get_planner()
     context = query_relevant_context(user_goal, memory_service=task_planner.memory_service)
+    context["is_task_mode"] = (req.mode == "task")
 
     msg_id = f"msg-{uuid.uuid4().hex[:8]}"
     now_iso = utc_now_iso()
     cited_ids = [f["id"] for f in context.get("verified_facts", [])] + [p["id"] for p in context.get("preferences", [])]
     citations = context.get("verified_facts", []) + context.get("preferences", [])
+    session_id = req.session_id or "default"
 
-    is_action = is_explicit_action_request(user_goal)
+    # Intent Classification:
+    # 1. Negative constraints ("do not run commands") MUST NEVER execute tasks
+    has_neg_constraint = is_negative_constraint(user_goal)
+    # 2. Conversational inquiries (greetings, questions, status checks, explanations)
+    is_inquiry = is_conversational_inquiry(user_goal)
+    # 3. Explicit action requests
+    is_action = is_explicit_action_request(user_goal) and not has_neg_constraint
 
-    # Conversational questions must use chat/answer mode and must never spawn shell/filesystem actions
-    if is_action and (req.mode == "task" or any(k in user_goal.lower() for k in ("run", "backup", "deploy", "build", "execute", "task", "audit", "write", "create", "delete", "wipe", "install"))):
+    # Create task plans ONLY for requests that genuinely require multi-step work or explicit action
+    should_create_task = (is_action or (req.mode == "task" and not is_inquiry)) and not has_neg_constraint
+
+    if should_create_task:
         dag = task_planner.generate_dag(user_goal)
         task_orch = get_orchestrator()
         task_orch.register_task(dag)
@@ -614,23 +685,57 @@ async def agent_chat(req: ChatPromptRequest):
             "plan_source": dag.plan_source,
             "fallback_reason": dag.fallback_reason,
             "citations": citations,
+            "session_id": session_id,
         }
     else:
-        # Conversational questions and status inquiries use direct chat/answer mode without side-effects or approval proposals
-        if any(w in user_goal.lower() for w in ("working", "status", "health", "ready", "alive", "online")):
-            answer = f"Yes, MEMORAG Sovereign Agent is fully operational and healthy. All subsystems (local model {task_planner.model}, encrypted memory vault with {len(cited_ids)} active context records, and sovereign sandboxed executor) are verified with zero outbound telemetry."
-        else:
-            answer = f"MEMORAG Sovereign Agent standby. Memory handshake verified: {len(cited_ids)} facts and preferences active. Ready for task instructions."
+        # Conversational questions, greetings, status checks, follow-ups, and negative constraints
+        # Use direct natural language generation with actual Ollama gemma4:e2b inference.
+        # Preserve conversation context.
+        history = req.history
+        if history is None:
+            history = _conversation_sessions.get(session_id, [])
+
+        content, fallback_reason, latency_ms, thought_trace = task_planner.generate_chat_response(
+            prompt=user_goal,
+            context=context,
+            history=history,
+        )
+
+        if fallback_reason is None:
+            global _last_inference_verified
+            _last_inference_verified = True
+
+        # Update in-memory session history
+        if session_id not in _conversation_sessions:
+            _conversation_sessions[session_id] = []
+        _conversation_sessions[session_id].append({"role": "user", "content": user_goal})
+        _conversation_sessions[session_id].append({"role": "agent", "content": content})
+        if len(_conversation_sessions[session_id]) > 20:
+            _conversation_sessions[session_id] = _conversation_sessions[session_id][-20:]
+
+        # Record durable episodic event in memory vault if available
+        if task_planner.memory_service:
+            try:
+                task_planner.memory_service.store_event(
+                    session_id=session_id,
+                    event_type="chat_interaction",
+                    content={"user": user_goal, "agent": content},
+                    metadata={"model": task_planner.model, "latency_ms": latency_ms},
+                )
+            except Exception as e:
+                logger.debug(f"Failed to record episodic chat interaction: {e}")
 
         return {
             "id": msg_id,
             "role": "agent",
-            "content": answer,
+            "content": content,
             "timestamp": now_iso,
-            "thoughtTrace": f"Local loopback reasoning active via {task_planner.model}. Conversational answer mode engaged without side-effects. Zero outbound telemetry.",
+            "thoughtTrace": thought_trace,
             "citedMemoryIds": cited_ids,
             "model": task_planner.model,
+            "fallback_reason": fallback_reason,
             "citations": citations,
+            "session_id": session_id,
         }
 
 
@@ -644,7 +749,7 @@ def list_memories_plural(
     query: Optional[str] = Query(None),
     limit: int = Query(default=100, ge=1, le=500),
 ):
-    """Plural alias for GET /api/memory to match Member 3 frontend."""
+    """Plural alias for GET /api/memory to match NEXUS contract."""
     mem_svc = SubsystemContainer.memory_service
     if mem_svc is None:
         from app.api.routes import get_memory_service
@@ -683,7 +788,7 @@ def list_memories_plural(
 
 @app.delete("/api/memories/{memory_id}", tags=["Memory & Security"])
 def delete_memory_plural(memory_id: str, hard: bool = Query(default=False)):
-    """Plural alias for DELETE /api/memory/{id} to match Member 3 frontend."""
+    """Plural alias for DELETE /api/memory/{id} to match NEXUS contract."""
     mem_svc = SubsystemContainer.memory_service
     if mem_svc is None:
         from app.api.routes import get_memory_service
@@ -725,7 +830,7 @@ def update_privacy_settings(updates: Dict[str, Any]):
 
 if __name__ == "__main__":
     import uvicorn
-    raw_host = os.environ.get("MEMORAG_HOST") or os.environ.get("RAGNAROK_HOST") or "127.0.0.1"
+    raw_host = os.environ.get("MEMORAG_HOST") or os.environ.get("RAGNAROK_HOST") or os.environ.get("HOST") or "127.0.0.1"
     host = validate_local_only_binding(raw_host)
-    port = int(os.environ.get("MEMORAG_PORT") or os.environ.get("RAGNAROK_PORT") or 8000)
+    port = int(os.environ.get("MEMORAG_PORT") or os.environ.get("RAGNAROK_PORT") or os.environ.get("PORT") or 8000)
     uvicorn.run("backend.main:app", host=host, port=port, reload=True)

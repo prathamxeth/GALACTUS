@@ -1,6 +1,6 @@
 """
 FastAPI route handlers for GALACTUS / Ragnarok Memory & Security Subsystem.
-Provides RESTful endpoints for Member 3 (Frontend Lead) and Member 1 (Agent Architect).
+Provides RESTful endpoints for NEXUS Frontend and Sovereign Backend.
 All payloads are processed locally; plaintext is never transmitted externally.
 """
 

@@ -65,6 +65,8 @@ export interface AgentRuntimeStatus {
   };
   activeSentinelsCount: number;
   pendingApprovalsCount: number;
+  activeModelLoaded?: boolean;
+  inference_verified?: boolean;
 }
 
 // --- Chat & Command Center ---

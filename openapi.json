@@ -1169,7 +1169,7 @@
           "Approval Gatekeeper"
         ],
         "summary": "Approve Permission Alias",
-        "description": "Alias compatible with Member 3 frontend contract.",
+        "description": "Alias compatible with NEXUS approval resolution contract.",
         "operationId": "approve_permission_alias_api_permissions_approve_post",
         "requestBody": {
           "content": {
@@ -1231,7 +1231,7 @@
           "Health"
         ],
         "summary": "Health Check",
-        "description": "Liveness probe.",
+        "description": "Liveness probe with truthful status.",
         "operationId": "health_check_health_get",
         "responses": {
           "200": {
@@ -1251,7 +1251,7 @@
           "Health"
         ],
         "summary": "Api Health Alias",
-        "description": "Compatibility alias for Member 3 health probe.",
+        "description": "Compatibility alias for NEXUS health probe.",
         "operationId": "api_health_alias_api_health_get",
         "responses": {
           "200": {
@@ -1335,7 +1335,7 @@
           "Agent"
         ],
         "summary": "Agent Chat",
-        "description": "Command Center chat interface:\nProcesses operator prompts through local memory context and task planner.\nEnforces prompt validation, size bounding, and emits citation metadata.",
+        "description": "Command Center chat interface:\nProcesses operator prompts through local memory context and task planner.\nEnforces prompt validation, size bounding, and emits citation metadata.\nConversational questions, greetings, explanations, and status checks receive\ndirect natural language answers using actual Ollama inference (gemma4:e2b).\nTask plans are created only for requests that genuinely require multi-step work.",
         "operationId": "agent_chat_api_agent_chat_post",
         "requestBody": {
           "content": {
@@ -1375,7 +1375,7 @@
           "Memory & Security"
         ],
         "summary": "List Memories Plural",
-        "description": "Plural alias for GET /api/memory to match Member 3 frontend.",
+        "description": "Plural alias for GET /api/memory to match NEXUS contract.",
         "operationId": "list_memories_plural_api_memories_get",
         "parameters": [
           {
@@ -1453,7 +1453,7 @@
           "Memory & Security"
         ],
         "summary": "Delete Memory Plural",
-        "description": "Plural alias for DELETE /api/memory/{id} to match Member 3 frontend.",
+        "description": "Plural alias for DELETE /api/memory/{id} to match NEXUS contract.",
         "operationId": "delete_memory_plural_api_memories__memory_id__delete",
         "parameters": [
           {
@@ -1637,6 +1637,47 @@
             "title": "Mode",
             "description": "'chat', 'task', or 'memory'",
             "default": "chat"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Optional session identifier for conversation continuity"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "History",
+            "description": "Optional previous messages for conversational context"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachments",
+            "description": "Optional message attachments or snippets"
           }
         },
         "type": "object",

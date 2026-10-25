@@ -1,5 +1,5 @@
 """
-Tests for FastAPI REST endpoints for Member 3 (Frontend Lead) and Member 1 (Agent Architect).
+Tests for FastAPI REST endpoints serving NEXUS Frontend and Sovereign Backend.
 Validates memory CRUD, search, export, task checkpoints, and security permissions over HTTP.
 """
 
@@ -33,7 +33,7 @@ def test_root_and_health(client: TestClient):
 
     health = client.get("/health")
     assert health.status_code == 200
-    assert health.json() == {"status": "healthy"}
+    assert health.json()["status"] == "healthy"
 
 
 def test_episodic_and_semantic_api_flow(client: TestClient):
