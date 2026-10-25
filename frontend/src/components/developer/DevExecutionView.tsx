@@ -67,11 +67,11 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold text-main flex items-center gap-2">
-              <Activity className="w-5 h-5 text-sky-500" />
+              <Activity className="w-5 h-5 text-[#ea2804]" />
               Live Execution &amp; Task Graph (FR3)
             </h2>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-mono bg-[#ea2804]/10 text-[#ea2804] border border-[#ea2804]/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ea2804] animate-pulse" />
               POLL /api/tasks/incomplete (3s)
             </span>
           </div>
@@ -81,19 +81,20 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Status Filter */}
-          <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-subtle text-xs font-mono">
+          {/* Status Filter (Replicate Pill Group) */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono">
             {(['all', 'running', 'awaiting_approval', 'completed', 'failed'] as const).map(
               (f) => {
                 const count = f === 'all' ? tasks.length : tasks.filter((t) => t.status === f).length;
+                const isActive = filter === f;
                 return (
                   <button
                     key={f}
                     type="button"
                     onClick={() => setFilter(f)}
-                    className={`px-2.5 py-1 rounded cursor-pointer capitalize transition-all ${
-                      filter === f
-                        ? 'bg-elevated text-main font-semibold border border-subtle'
+                    className={`px-3 py-1 rounded-full cursor-pointer capitalize transition-all ${
+                      isActive
+                        ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                         : 'text-dim hover:text-main'
                     }`}
                   >

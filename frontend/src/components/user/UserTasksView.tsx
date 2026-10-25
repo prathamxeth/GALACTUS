@@ -167,12 +167,12 @@ export const UserTasksView: React.FC = () => {
         </div>
       )}
 
-      {/* Bencho Step Player Component (https://bencho.dev/blocks/step-player) */}
+      {/* Workflow Step Progression */}
       {tasks.length > 0 && tasks[0].steps && tasks[0].steps.length > 0 && (
         <FadeContent blur duration={300} trigger="mount">
           <div className="space-y-1.5">
             <span className="text-[10px] font-mono text-dim uppercase tracking-wider">
-              Autonomous Timeline Playback (Bencho.dev/blocks/step-player)
+              Autonomous Workflow Execution Trace
             </span>
             <StepPlayer
               steps={tasks[0].steps.map((s) => ({

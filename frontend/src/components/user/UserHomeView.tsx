@@ -55,15 +55,15 @@ export const UserHomeView: React.FC = () => {
   ];
 
   return (
-    <div className="claude-chat-container max-w-4xl w-full mx-auto p-4 sm:p-8 space-y-7 transition-colors">
-      {/* 1. Claude Editorial Welcome Header */}
+    <div className="memorag-chat-container max-w-4xl w-full mx-auto p-4 sm:p-8 space-y-7 transition-colors">
+      {/* 1. MEMORAG Editorial Welcome Header */}
       <div className="text-center pt-2 pb-1 space-y-3">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#cc785c]/10 dark:bg-[#cc785c]/15 text-[#cc785c] dark:text-[#e08f75] text-xs font-medium border border-[#cc785c]/25 mb-1">
           <Laptop className="w-3.5 h-3.5 text-[#cc785c]" />
           <span>Sovereign Assistant • 100% On-Device &amp; Air-Gapped</span>
         </div>
 
-        <h2 className="text-3xl sm:text-4xl text-[#141413] dark:text-[#faf9f5] tracking-tight font-normal font-serif [font-family:var(--claude-serif)]">
+        <h2 className="text-3xl sm:text-4xl text-[#141413] dark:text-[#faf9f5] tracking-tight font-normal font-serif [font-family:var(--memorag-serif)]">
           How can I help you today?
         </h2>
 
@@ -72,7 +72,7 @@ export const UserHomeView: React.FC = () => {
         </p>
       </div>
 
-      {/* 2. Floating Claude Input Box */}
+      {/* 2. Floating Input Box */}
       <FadeContent blur duration={400} delay={60} trigger="mount">
         <div className="rounded-2xl sm:rounded-3xl bg-surface dark:bg-[#1f1e1b] border border-[#e6dfd8] dark:border-[#33312c] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] focus-within:border-[#cc785c] focus-within:ring-2 focus-within:ring-[#cc785c]/20 transition-all p-2 sm:p-2.5">
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -86,7 +86,7 @@ export const UserHomeView: React.FC = () => {
             <button
               type="submit"
               disabled={!input.trim() || isSending}
-              className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-xs text-white bg-[#cc785c] hover:bg-[#a9583e] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+              className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-medium text-xs text-white bg-[#cc785c] hover:bg-[#a9583e] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
             >
               {isSending ? (
                 <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -99,7 +99,7 @@ export const UserHomeView: React.FC = () => {
         </div>
       </FadeContent>
 
-      {/* 3. Claude Suggestion Chips */}
+      {/* 3. MEMORAG Prompt Chips */}
       <div className="flex flex-wrap items-center justify-center gap-2">
         {suggestions.map((suggestion, idx) => (
           <button
@@ -114,7 +114,7 @@ export const UserHomeView: React.FC = () => {
         ))}
       </div>
 
-      {/* 4. Claude Reasoning / Thinking Trace Block */}
+      {/* 4. MEMORAG Decision & Verification Trace Block */}
       <FadeContent blur duration={350} trigger="mount">
         <div className="rounded-xl border border-[#e6dfd8] dark:border-[#33312c] bg-[#faf9f5] dark:bg-[#1c1b18] overflow-hidden text-xs">
           <button
@@ -124,7 +124,7 @@ export const UserHomeView: React.FC = () => {
           >
             <span className="flex items-center gap-2 font-medium">
               <span className="w-2 h-2 rounded-full bg-[#cc785c] animate-pulse" />
-              <span>Claude Reasoning Architecture &amp; Sovereign Verification</span>
+              <span>MEMORAG Sovereign Decision Engine &amp; Verification</span>
               {isSending && <span className="text-[11px] font-mono text-[#cc785c]">(thinking...)</span>}
             </span>
             {showThinking ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -149,7 +149,7 @@ export const UserHomeView: React.FC = () => {
         </div>
       </FadeContent>
 
-      {/* 5. Claude Attention / Approval Card */}
+      {/* 5. MEMORAG Attention / Approval Card */}
       {pendingApproval && (
         <FadeContent blur duration={300} trigger="mount">
           <div className="rounded-2xl border border-[#cc785c]/40 bg-[#fbf6f3] dark:bg-[#25201d] p-5 space-y-3.5 shadow-sm">
@@ -159,10 +159,10 @@ export const UserHomeView: React.FC = () => {
               </div>
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2.5">
-                  <h3 className="text-sm font-semibold text-[#141413] dark:text-[#faf9f5] [font-family:var(--claude-serif)] text-base">
+                  <h3 className="text-sm font-semibold text-[#141413] dark:text-[#faf9f5] [font-family:var(--memorag-serif)] text-base">
                     Can I go ahead with this step?
                   </h3>
-                  <Badge variant="claude">Permission Required</Badge>
+                  <Badge variant="memorag">Permission Required</Badge>
                 </div>
                 <p className="text-xs text-[#6c6a64] dark:text-[#a09d96] leading-relaxed">
                   I am preparing to{' '}
@@ -185,7 +185,7 @@ export const UserHomeView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => resolveApproval(pendingApproval.id, 'approved')}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-xl text-white bg-[#cc785c] hover:bg-[#a9583e] cursor-pointer shadow-xs active:scale-95 transition-all"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-full text-white bg-[#cc785c] hover:bg-[#a9583e] cursor-pointer shadow-xs active:scale-95 transition-all"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Allow Action</span>
@@ -195,14 +195,14 @@ export const UserHomeView: React.FC = () => {
         </FadeContent>
       )}
 
-      {/* 6. Recent Conversation Stream in Claude Editorial Bubbles */}
+      {/* 6. Recent Conversation Stream in Editorial Bubbles */}
       {messages.length > 1 && (
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6c6a64] dark:text-[#8e8b82] font-mono">
               Conversation History
             </h3>
-            <span className="text-[11px] text-[#cc785c] font-mono">Claude Chat View</span>
+            <span className="text-[11px] text-[#cc785c] font-mono">MEMORAG Conversational Ledger</span>
           </div>
 
           <div className="space-y-3.5">
@@ -222,7 +222,7 @@ export const UserHomeView: React.FC = () => {
                     }`}
                   >
                     {!isUser && (
-                      <div className="flex items-center gap-1.5 mb-1.5 text-[#cc785c] text-xs font-serif [font-family:var(--claude-serif)]">
+                      <div className="flex items-center gap-1.5 mb-1.5 text-[#cc785c] text-xs font-serif [font-family:var(--memorag-serif)]">
                         <span>✻</span>
                         <span className="font-medium">MEMORAG Assistant</span>
                       </div>
@@ -271,7 +271,7 @@ export const UserHomeView: React.FC = () => {
                         </span>
                         <Badge
                           variant={
-                            isDone ? 'emerald' : isWaiting ? 'amber' : 'claude'
+                            isDone ? 'emerald' : isWaiting ? 'amber' : 'memorag'
                           }
                         >
                           {isDone

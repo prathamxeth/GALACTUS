@@ -12,10 +12,10 @@
     --color-replicate-primary-deep: #c01f00;
     --color-replicate-on-primary: #ffffff;
 
-    --bg-canvas: #0d0d0f;
-    --bg-surface: #141418;
-    --bg-elevated: #1c1c22;
-    --bg-subtle: #26262e;
+    --bg-canvas: rgba(13, 13, 15, 0.72);
+    --bg-surface: rgba(20, 20, 24, 0.82);
+    --bg-elevated: rgba(28, 28, 34, 0.88);
+    --bg-subtle: rgba(38, 38, 46, 0.90);
 
     --border-subtle: rgba(255, 255, 255, 0.10);
     --border-medium: rgba(255, 255, 255, 0.18);
@@ -38,21 +38,21 @@
     --scrollbar-thumb-hover: #373743;
 
     /* ========================================================================
-       CLAUDE DESIGN SYSTEM (AI Chat Screen Theme)
-       Ref: https://getdesign.md/claude/design-md
+       MEMORAG CONVERSATIONAL THEME (Warm Editorial System)
        ======================================================================== */
-    --claude-primary: #cc785c;
-    --claude-primary-active: #a9583e;
-    --claude-primary-soft: rgba(204, 120, 92, 0.18);
-    --claude-canvas: #181715;
-    --claude-surface-soft: #1f1e1b;
-    --claude-surface-card: #252320;
-    --claude-surface-elevated: #2d2b27;
-    --claude-hairline: #33312c;
-    --claude-hairline-soft: #2a2824;
-    --claude-text-body: #eceae5;
-    --claude-text-muted: #a09d96;
-    --claude-serif: "Newsreader", "Georgia", "Copernicus", serif;
+    --memorag-primary: #cc785c;
+    --memorag-primary-active: #a9583e;
+    --memorag-primary-soft: rgba(204, 120, 92, 0.18);
+    --memorag-canvas: #181715;
+    --memorag-surface-soft: #1f1e1b;
+    --memorag-surface-card: #252320;
+    --memorag-surface-elevated: #2d2b27;
+    --memorag-hairline: #33312c;
+    --memorag-hairline-soft: #2a2824;
+    --memorag-text-body: #eceae5;
+    --memorag-text-muted: #a09d96;
+    --memorag-serif: "Newsreader", "Georgia", "Copernicus", serif;
+
   }
 
   /* 2. REPLICATE LIGHT PRESET — Warm Cream Developer Canvas */
@@ -61,9 +61,9 @@
     --color-replicate-primary-deep: #c01f00;
     --color-replicate-on-primary: #ffffff;
 
-    --bg-canvas: #f9f7f3;        /* Replicate Signature Warm Cream Canvas */
-    --bg-surface: #ffffff;       /* Surface Card */
-    --bg-elevated: #f3f0e8;      /* Surface Bone */
+    --bg-canvas: rgba(249, 247, 243, 0.90);        /* Replicate Signature Warm Cream Canvas */
+    --bg-surface: rgba(255, 255, 255, 0.94);       /* Surface Card */
+    --bg-elevated: rgba(243, 240, 232, 0.94);      /* Surface Bone */
     --bg-subtle: #eae5d9;
 
     --border-subtle: rgba(32, 32, 32, 0.10);
@@ -86,19 +86,20 @@
     --scrollbar-thumb: #d9d4c7;
     --scrollbar-thumb-hover: #bebaae;
 
-    /* Claude Light Mode Tokens */
-    --claude-primary: #cc785c;
-    --claude-primary-active: #a9583e;
-    --claude-primary-soft: rgba(204, 120, 92, 0.12);
-    --claude-canvas: #faf9f5;
-    --claude-surface-soft: #f5f0e8;
-    --claude-surface-card: #efe9de;
-    --claude-surface-elevated: #e8e0d2;
-    --claude-hairline: #e6dfd8;
-    --claude-hairline-soft: #ebe6df;
-    --claude-text-body: #3d3d3a;
-    --claude-text-muted: #6c6a64;
-    --claude-serif: "Newsreader", "Georgia", "Copernicus", serif;
+    /* MEMORAG Light Mode Tokens */
+    --memorag-primary: #cc785c;
+    --memorag-primary-active: #a9583e;
+    --memorag-primary-soft: rgba(204, 120, 92, 0.12);
+    --memorag-canvas: #faf9f5;
+    --memorag-surface-soft: #f5f0e8;
+    --memorag-surface-card: #efe9de;
+    --memorag-surface-elevated: #e8e0d2;
+    --memorag-hairline: #e6dfd8;
+    --memorag-hairline-soft: #ebe6df;
+    --memorag-text-body: #3d3d3a;
+    --memorag-text-muted: #6c6a64;
+    --memorag-serif: "Newsreader", "Georgia", "Copernicus", serif;
+
   }
 
   body {
@@ -163,14 +164,16 @@
 .text-replicate-primary { color: var(--color-replicate-primary); }
 .border-replicate-primary { border-color: var(--color-replicate-primary); }
 
-/* Claude Specific Classes */
-.bg-claude-primary { background-color: var(--claude-primary); }
-.text-claude-primary { color: var(--claude-primary); }
-.border-claude-primary { border-color: var(--claude-primary); }
-.font-claude-serif { font-family: var(--claude-serif); }
-.bg-claude-canvas { background-color: var(--claude-canvas); }
-.bg-claude-soft { background-color: var(--claude-surface-soft); }
-.bg-claude-card { background-color: var(--claude-surface-card); }
-.border-claude-hairline { border-color: var(--claude-hairline); }
-.text-claude-body { color: var(--claude-text-body); }
-.text-claude-muted { color: var(--claude-text-muted); }
+/* MEMORAG Conversational Theme Classes */
+.bg-memorag-primary { background-color: var(--memorag-primary); }
+.text-memorag-primary { color: var(--memorag-primary); }
+.border-memorag-primary { border-color: var(--memorag-primary); }
+.font-memorag-serif { font-family: var(--memorag-serif); }
+.bg-memorag-canvas { background-color: var(--memorag-canvas); }
+.bg-memorag-soft { background-color: var(--memorag-surface-soft); }
+.bg-memorag-card { background-color: var(--memorag-surface-card); }
+.border-memorag-hairline { border-color: var(--memorag-hairline); }
+.text-memorag-body { color: var(--memorag-text-body); }
+.text-memorag-muted { color: var(--memorag-text-muted); }
+
+

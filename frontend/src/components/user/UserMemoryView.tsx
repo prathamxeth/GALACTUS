@@ -179,9 +179,9 @@ export const UserMemoryView: React.FC = () => {
               setCreateError(null);
               setIsCreateOpen(true);
             }}
-            color="#10b981"
-            trailColor="rgba(16, 185, 129, 0.3)"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:scale-98 transition-transform"
+            color="#ea2804"
+            trailColor="rgba(234, 40, 4, 0.3)"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full text-white bg-[#ea2804] hover:bg-[#c01f00] cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Teach me something</span>
@@ -191,7 +191,7 @@ export const UserMemoryView: React.FC = () => {
 
       {/* Backend Status / Offline Notice */}
       {!isBackendOnline && (
-        <div className="p-3.5 rounded-lg bg-surface border border-subtle flex items-center justify-between text-xs">
+        <div className="p-3.5 rounded-xl bg-surface border border-subtle flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-dim">
             <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
             <span>
@@ -211,7 +211,7 @@ export const UserMemoryView: React.FC = () => {
 
       {/* Error Banner with Retry */}
       {memoryError && (
-        <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200">
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
             <span>{memoryError}</span>
@@ -227,17 +227,17 @@ export const UserMemoryView: React.FC = () => {
         </div>
       )}
 
-      {/* Main Filter & Search Bar with CountUp */}
+      {/* Main Filter & Search Bar with Replicate Pill Groups */}
       <div className="space-y-3">
         {/* Memory Type Switcher */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-subtle text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono">
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded cursor-pointer transition-all ${
+              className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
                 activeTab === 'all'
-                  ? 'bg-elevated text-main font-semibold border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -246,9 +246,9 @@ export const UserMemoryView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('semantic')}
-              className={`px-3 py-1.5 rounded cursor-pointer transition-all ${
+              className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
                 activeTab === 'semantic'
-                  ? 'bg-elevated text-main font-semibold border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -257,9 +257,9 @@ export const UserMemoryView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('episodic')}
-              className={`px-3 py-1.5 rounded cursor-pointer transition-all ${
+              className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
                 activeTab === 'episodic'
-                  ? 'bg-elevated text-main font-semibold border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -267,21 +267,21 @@ export const UserMemoryView: React.FC = () => {
             </button>
           </div>
 
-          {/* Search Input with Clear Button */}
+          {/* Search Input with Clear Button (Replicate Pill) */}
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 text-faint absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-faint absolute left-3.5 top-2.5" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search what I remember..."
-              className="w-full text-xs bg-surface border border-subtle rounded-lg pl-9 pr-8 py-2 text-main placeholder-faint focus:outline-none focus:border-emerald-500"
+              className="w-full text-xs font-mono bg-surface/90 border border-subtle rounded-full pl-9 pr-8 py-2 text-main placeholder-faint focus:outline-none focus:border-[#ea2804] transition-colors"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-2.5 text-faint hover:text-main cursor-pointer"
+                className="absolute right-3 top-2.5 text-faint hover:text-main cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -290,10 +290,10 @@ export const UserMemoryView: React.FC = () => {
           </div>
         </div>
 
-        {/* Human Categories Sub-tabs */}
+        {/* Human Categories Sub-tabs (Replicate Pill Tags) */}
         {activeTab !== 'episodic' && (
-          <div className="flex items-center gap-1.5 text-xs text-dim">
-            <span className="text-[11px] text-faint mr-1">Category:</span>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-dim">
+            <span className="text-[11px] font-mono text-faint mr-1">Category:</span>
             {(
               [
                 { id: 'all', label: 'All' },
@@ -306,10 +306,10 @@ export const UserMemoryView: React.FC = () => {
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1 rounded cursor-pointer text-xs transition-colors ${
+                className={`px-3 py-1 rounded-full cursor-pointer text-xs font-mono transition-colors ${
                   selectedCategory === cat.id
-                    ? 'bg-elevated text-main font-medium border border-subtle'
-                    : 'hover:text-main'
+                    ? 'bg-elevated text-main font-semibold border border-medium shadow-xs'
+                    : 'text-dim hover:text-main'
                 }`}
               >
                 {cat.label}

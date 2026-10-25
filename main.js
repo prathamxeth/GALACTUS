@@ -71,10 +71,10 @@ function initStatsCountUp() {
   if (!statElements.length) return;
 
   const statsData = [
-    { target: 120, decimals: 0, suffix: 'ms' },
-    { target: 99.99, decimals: 2, suffix: '%' },
+    { target: 100, decimals: 0, suffix: '%' },
+    { target: 0, decimals: 0, suffix: ' Bytes' },
     { target: 24, decimals: 0, suffix: '/7' },
-    { target: 2.4, decimals: 1, suffix: 'M' },
+    { target: 1428, decimals: 0, suffix: ' Runes' },
   ];
 
   function easeOutCubic(t) {

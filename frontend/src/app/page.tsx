@@ -43,10 +43,10 @@ export default function UnifiedDynamicPage() {
 
   // Live Stats adapted to real application metrics
   const [stats, setStats] = useState([
-    { icon: '<', value: '0ms', label: 'Inference Latency', target: 15, decimals: 0, suffix: 'ms' },
-    { icon: '%', value: '0 B', label: 'Outbound Egress', target: 0, decimals: 0, suffix: ' B' },
-    { icon: '*', value: '0/7', label: 'Local Runtime', target: 24, decimals: 0, suffix: '/7' },
-    { icon: '#', value: '0 Nodes', label: 'Memory Matrix', target: Math.max(memories.length, 42), decimals: 0, suffix: ' Nodes' },
+    { icon: 'ᛗ', value: '100%', label: 'Local Ollama Engine', target: 100, decimals: 0, suffix: '%' },
+    { icon: '∅', value: '0 Bytes', label: 'Outbound Network Telemetry', target: 0, decimals: 0, suffix: ' B' },
+    { icon: '◈', value: '24/7', label: 'Autonomous Sentinel Watch', target: 24, decimals: 0, suffix: '/7' },
+    { icon: 'ᛊ', value: `${Math.max(memories.length, 18)} Runes`, label: 'Encrypted Memory Matrix', target: Math.max(memories.length, 18), decimals: 0, suffix: ' Runes' },
   ]);
 
   const statsRef = useRef<HTMLDivElement>(null);
@@ -221,25 +221,11 @@ export default function UnifiedDynamicPage() {
 
           {/* Region 2: Hero Main Content */}
           <main className="w-full max-w-4xl flex-1 flex flex-col justify-center items-center text-center my-6 sm:my-10 z-10">
-            {/* Trust Row (“Trusted Sovereign Architecture • Zero Outbound Telemetry”) */}
+            {/* Sovereign Trust Seal */}
             <div className="inline-flex items-center mb-4 sm:mb-6 select-none">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#28282a] border border-white/40 p-1.5 grid place-items-center shrink-0 z-10 hover:-translate-y-1 transition-transform">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                  <i className="fa-brands fa-microsoft text-[#111] text-xs"></i>
-                </div>
-              </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#28282a] border border-white/40 p-1.5 grid place-items-center shrink-0 -ml-4 z-20 hover:-translate-y-1 transition-transform">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                  <i className="fa-brands fa-amazon text-[#111] text-xs"></i>
-                </div>
-              </div>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#28282a] border border-white/40 p-1.5 grid place-items-center shrink-0 -ml-4 z-30 hover:-translate-y-1 transition-transform">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                  <i className="fa-brands fa-google text-[#111] text-xs"></i>
-                </div>
-              </div>
-              <div className="h-9 sm:h-10 bg-[#28282a] border border-white/40 rounded-full -ml-4 pl-6 pr-4 flex items-center text-[#c4c2c3] text-xs sm:text-[13px] font-medium whitespace-nowrap">
-                Trusted Sovereign Architecture • 0 Bytes Outbound Egress
+              <div className="h-9 sm:h-10 bg-[#1c1c20]/90 backdrop-blur-md border border-white/20 rounded-full px-4.5 flex items-center gap-2.5 text-[#e0deda] text-xs sm:text-[13px] font-mono shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-[#ea2804] animate-pulse" />
+                <span>SOVEREIGN PERSONAL AI • 0 BYTES EGRESS • AES-256 VAULT</span>
               </div>
             </div>
 
@@ -268,7 +254,7 @@ export default function UnifiedDynamicPage() {
                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 rounded-full font-semibold text-xs sm:text-sm text-white bg-[#ea2804] hover:bg-[#c01f00] shadow-[0_0_25px_rgba(234,40,4,0.45)] hover:scale-102 active:scale-98 transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Talk to MEMORAG (Claude Chat)</span>
+                <span>Talk to MEMORAG</span>
               </button>
 
               <button
@@ -320,7 +306,7 @@ export default function UnifiedDynamicPage() {
 
       {/* ====================================================================
           2. DYNAMIC WORKSPACE SECTION
-             - Claude Design System for AI Chat (User Mode)
+             - MEMORAG Conversational System (User Mode)
              - Replicate Design System for Technical Command Center (Dev Mode)
           ==================================================================== */}
       <section id="workspace-section" className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
@@ -342,8 +328,8 @@ export default function UnifiedDynamicPage() {
                 <span className="font-semibold text-sm tracking-tight text-main">
                   MEMORAG Dynamic Runtime
                 </span>
-                <Badge variant={isDev ? 'replicate' : 'claude'}>
-                  {isDev ? 'REPLICATE DEV SUITE' : 'CLAUDE AI CHAT'}
+                <Badge variant={isDev ? 'replicate' : 'memorag'}>
+                  {isDev ? 'REPLICATE DEV SUITE' : 'MEMORAG CONVERSATIONAL'}
                 </Badge>
               </div>
               <p className="text-xs text-dim">
@@ -365,7 +351,7 @@ export default function UnifiedDynamicPage() {
                   : 'text-dim hover:text-main'
               }`}
             >
-              Everyday User (Claude)
+              Everyday User
             </button>
             <button
               type="button"
@@ -387,7 +373,7 @@ export default function UnifiedDynamicPage() {
             /* Developer Mode: Replicate Code-Forward Architecture */
             <DevOverviewView onOpenApproval={(id) => setActiveApprovalId(id)} />
           ) : (
-            /* Everyday User Mode: Claude Warm Editorial Chat Screen */
+            /* Everyday User Mode: MEMORAG Editorial Chat Screen */
             <UserHomeView />
           )}
         </div>

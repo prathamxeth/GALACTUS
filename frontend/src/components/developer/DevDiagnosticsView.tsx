@@ -73,13 +73,13 @@ export const DevDiagnosticsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-subtle text-xs font-mono">
+          <div className="flex items-center gap-1 bg-surface p-1 rounded-full border border-subtle text-xs font-mono">
             <button
               type="button"
               onClick={() => setActiveTab('events')}
-              className={`px-3 py-1.5 rounded cursor-pointer transition-all ${
+              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-all ${
                 activeTab === 'events'
-                  ? 'bg-elevated text-main font-semibold border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -88,9 +88,9 @@ export const DevDiagnosticsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('performance')}
-              className={`px-3 py-1.5 rounded cursor-pointer transition-all ${
+              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-all ${
                 activeTab === 'performance'
-                  ? 'bg-elevated text-main font-semibold border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -99,9 +99,9 @@ export const DevDiagnosticsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('runtime')}
-              className={`px-3 py-1.5 rounded cursor-pointer transition-all ${
+              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-all ${
                 activeTab === 'runtime'
-                  ? 'bg-elevated text-main font-semibold border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -115,15 +115,15 @@ export const DevDiagnosticsView: React.FC = () => {
           <div className="space-y-4">
             {/* Filter Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-subtle">
+              <div className="flex items-center gap-1 bg-surface p-1 rounded-full border border-subtle">
                 {(['ALL', 'INFO', 'WARN', 'ERROR'] as const).map((sev) => (
                   <button
                     key={sev}
                     type="button"
                     onClick={() => setSeverityFilter(sev)}
-                    className={`px-2.5 py-1 rounded cursor-pointer transition-colors ${
+                    className={`px-3 py-1 rounded-full cursor-pointer transition-colors ${
                       severityFilter === sev
-                        ? 'bg-elevated text-main font-semibold border border-subtle'
+                        ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
                         : 'text-dim hover:text-main'
                     }`}
                   >
@@ -139,7 +139,7 @@ export const DevDiagnosticsView: React.FC = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search event messages, eventType, or task ID..."
-                  className="w-full text-xs font-mono bg-surface border border-subtle rounded-lg pl-8.5 pr-3 py-1.5 text-main placeholder-faint focus:outline-none focus:border-emerald-500"
+                  className="w-full text-xs font-mono bg-surface border border-subtle rounded-full pl-8.5 pr-3 py-1.5 text-main placeholder-faint focus:outline-none focus:border-[#ea2804]"
                 />
               </div>
             </div>
@@ -326,7 +326,7 @@ export const DevDiagnosticsView: React.FC = () => {
                         type="button"
                         onClick={() => toggleSentinel(s.id)}
                         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-in-out focus:outline-none active:scale-95 ${
-                          s.isActive ? 'bg-emerald-600' : 'bg-subtle'
+                          s.isActive ? 'bg-[#ea2804]' : 'bg-subtle'
                         }`}
                       >
                         <span

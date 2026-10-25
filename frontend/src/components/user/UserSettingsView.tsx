@@ -87,16 +87,16 @@ export const UserSettingsView: React.FC = () => {
                 <div
                   key={opt.id}
                   onClick={() => setPreset(opt.id)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all duration-150 active:scale-98 flex items-start gap-3.5 select-none ${
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all duration-150 active:scale-98 flex items-start gap-3.5 select-none ${
                     isSelected
-                      ? 'bg-surface border-emerald-500 ring-1 ring-emerald-500/30 shadow-xs'
-                      : 'bg-surface hover:bg-elevated border-subtle'
+                      ? 'bg-surface/90 border-[#ea2804] ring-1 ring-[#ea2804]/30 shadow-xs'
+                      : 'bg-surface/90 hover:bg-elevated border-subtle'
                   }`}
                 >
                   <div
-                    className={`p-2 rounded-lg shrink-0 transition-colors ${
+                    className={`p-2.5 rounded-full shrink-0 transition-colors ${
                       isSelected
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                        ? 'bg-[#ea2804]/15 text-[#ea2804]'
                         : 'bg-elevated text-dim'
                     }`}
                   >
@@ -109,7 +109,7 @@ export const UserSettingsView: React.FC = () => {
                         {opt.title}
                       </span>
                       {isSelected && (
-                        <Badge variant="emerald" className="text-[10px] py-0 px-1.5">
+                        <Badge variant="replicate" className="text-[10px] py-0 px-2 font-mono">
                           Active
                         </Badge>
                       )}

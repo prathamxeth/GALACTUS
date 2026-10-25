@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'claude';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'memorag';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,8 +21,8 @@ const variantStyles: Record<ButtonVariant, string> = {
     'bg-transparent hover:bg-elevated text-dim hover:text-main border border-transparent font-medium rounded-full',
   danger:
     'bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 active:translate-y-px rounded-full font-medium',
-  claude:
-    'bg-[#cc785c] hover:bg-[#a9583e] text-white font-medium shadow-xs active:translate-y-px border border-transparent rounded-xl',
+  memorag:
+    'bg-[#cc785c] hover:bg-[#a9583e] text-white font-medium shadow-xs active:translate-y-px border border-transparent rounded-full sm:rounded-xl',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

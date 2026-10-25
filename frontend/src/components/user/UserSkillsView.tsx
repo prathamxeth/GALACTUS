@@ -62,12 +62,12 @@ export const UserSkillsView: React.FC = () => {
             const Icon = cap.icon;
             return (
               <FadeContent key={i} blur duration={250} delay={i * 60} trigger="mount">
-                <Card className="p-5 space-y-3 hover:border-medium transition-colors h-full">
+                <Card className="p-5 space-y-3 rounded-2xl bg-surface/90 border border-subtle hover:border-[#ea2804]/40 transition-colors h-full">
                   <div className="flex items-center justify-between">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <div className="p-2.5 rounded-full bg-[#ea2804]/10 text-[#ea2804]">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <Badge variant="emerald">{cap.badge}</Badge>
+                    <Badge variant="replicate">{cap.badge}</Badge>
                   </div>
 
                   <div className="space-y-1">
@@ -85,7 +85,7 @@ export const UserSkillsView: React.FC = () => {
       <div className="space-y-4 pt-2">
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold text-main flex items-center gap-2">
-            <Radio className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <Radio className="w-5 h-5 text-[#ea2804]" />
             Things I watch for
           </h2>
           <p className="text-xs text-dim mt-0.5">
@@ -96,7 +96,7 @@ export const UserSkillsView: React.FC = () => {
         <div className="space-y-3">
           {sentinels.map((sentinel) => (
             <FadeContent key={sentinel.id} blur duration={250} trigger="mount">
-              <Card className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:border-medium transition-colors">
+              <Card className="p-4 sm:p-5 flex items-center justify-between gap-4 rounded-2xl bg-surface/90 border border-subtle hover:border-[#ea2804]/40 transition-colors">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-semibold text-main">
@@ -123,7 +123,7 @@ export const UserSkillsView: React.FC = () => {
                   type="button"
                   onClick={() => toggleSentinel(sentinel.id)}
                   className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-in-out focus:outline-none active:scale-95 ${
-                    sentinel.isActive ? 'bg-emerald-600' : 'bg-subtle'
+                    sentinel.isActive ? 'bg-[#ea2804]' : 'bg-subtle'
                   }`}
                   aria-label="Toggle background watch"
                 >

@@ -6,10 +6,10 @@ import Link from 'next/link';
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [stats, setStats] = useState([
-    { icon: '<', value: '0ms', label: 'Inference Time', target: 120, decimals: 0, suffix: 'ms' },
-    { icon: '%', value: '0.00%', label: 'Platform Uptime', target: 99.99, decimals: 2, suffix: '%' },
-    { icon: '*', value: '0/7', label: 'Autonomous Runtime', target: 24, decimals: 0, suffix: '/7' },
-    { icon: '#', value: '0.0M', label: 'Context Windows', target: 2.4, decimals: 1, suffix: 'M' },
+    { icon: 'ᛗ', value: '100%', label: 'Local Ollama Engine', target: 100, decimals: 0, suffix: '%' },
+    { icon: '∅', value: '0 Bytes', label: 'Outbound Egress', target: 0, decimals: 0, suffix: ' B' },
+    { icon: '◈', value: '24/7', label: 'Autonomous Sentinel Watch', target: 24, decimals: 0, suffix: '/7' },
+    { icon: 'ᛊ', value: '42 Runes', label: 'Encrypted Memory Matrix', target: 42, decimals: 0, suffix: ' Runes' },
   ]);
 
   const statsRef = useRef<HTMLDivElement>(null);
@@ -828,7 +828,7 @@ export default function LandingPage() {
           <div className="landing-header-row">
             {/* Logo */}
             <Link href="/" className="landing-logo-btn" aria-label="Home">
-              <img src="/assets/logo.webp" alt="" width="52" height="52" />
+              <img src="/assets/logo.webp" alt="MEMORAG Logo" width="52" height="52" />
             </Link>
 
             {/* Desktop Nav Pill (White) */}
@@ -836,20 +836,23 @@ export default function LandingPage() {
               <Link href="/landing" className="landing-nav-link active">
                 Home
               </Link>
-              <Link href="/#product" className="landing-nav-link">
-                Product
+              <Link href="/dashboard" className="landing-nav-link">
+                Assistant
               </Link>
-              <Link href="/#case-studies" className="landing-nav-link">
-                Case Studies
+              <Link href="/tasks" className="landing-nav-link">
+                Tasks &amp; DAG
               </Link>
-              <Link href="/#contact" className="landing-nav-link">
-                Contact
+              <Link href="/memory" className="landing-nav-link">
+                Memory Runes
+              </Link>
+              <Link href="/skills" className="landing-nav-link">
+                Skills
               </Link>
             </nav>
 
             {/* Desktop Sign In (Dark Pill) -> Navigates to Dashboard */}
             <Link href="/dashboard" className="landing-signin-btn">
-              Sign in
+              Launch App
             </Link>
 
             {/* Mobile Burger Button */}
@@ -868,24 +871,14 @@ export default function LandingPage() {
 
         {/* 2) Hero */}
         <main className="landing-hero">
-          {/* Trust row (“Trusted by 2000+ Enterprises”) */}
+          {/* Sovereign Trust Seal */}
           <div className="landing-trust-row landing-anim" style={{ '--d': '0.05s' } as React.CSSProperties}>
             <div className="landing-trust-avatar a1">
               <div className="landing-avatar-inner">
-                <i className="fa-brands fa-microsoft"></i>
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#111', fontFamily: 'monospace' }}>ᛗ</span>
               </div>
             </div>
-            <div className="landing-trust-avatar a2">
-              <div className="landing-avatar-inner">
-                <i className="fa-brands fa-amazon"></i>
-              </div>
-            </div>
-            <div className="landing-trust-avatar a3">
-              <div className="landing-avatar-inner">
-                <i className="fa-brands fa-google"></i>
-              </div>
-            </div>
-            <div className="landing-trust-pill">Trusted by 2000+ Enterprises</div>
+            <div className="landing-trust-pill">Sovereign Personal AI • 0 Bytes Egress • AES-256 Vault</div>
           </div>
 
           {/* Headline */}
@@ -896,7 +889,7 @@ export default function LandingPage() {
 
           {/* Subhead */}
           <p className="landing-subhead landing-anim" style={{ '--d': '0.28s' } as React.CSSProperties}>
-            Build applications that reason, adapt and collaborate using a modular AI platform designed for production.
+            A sovereign personal AI agent running quietly on this device with persistent memory, multi-step workflows, and complete user control.
           </p>
 
           {/* CTA Button -> Launches Dashboard */}
@@ -934,16 +927,19 @@ export default function LandingPage() {
               Home
             </Link>
             <Link href="/dashboard" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
-              Product
+              Assistant
             </Link>
             <Link href="/tasks" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
-              Case Studies
+              Tasks &amp; DAG
+            </Link>
+            <Link href="/memory" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
+              Memory Runes
             </Link>
             <Link href="/settings" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
-              Contact
+              Settings
             </Link>
             <Link href="/dashboard" className="landing-mobile-signin-btn" onClick={() => setMenuOpen(false)}>
-              Sign in
+              Launch App
             </Link>
           </div>
         </>

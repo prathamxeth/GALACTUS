@@ -152,7 +152,7 @@ export const DevMemoryInspector: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-main flex items-center gap-2">
-            <Database className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <Database className="w-5 h-5 text-[#ea2804]" />
             Memory Inspector (Mimir &amp; Muninn FR1)
           </h2>
           <p className="text-xs text-dim mt-0.5 font-mono">
@@ -167,7 +167,7 @@ export const DevMemoryInspector: React.FC = () => {
             onClick={handleExport}
             loading={isExporting}
             icon={<Download className="w-3.5 h-3.5" />}
-            className="font-mono text-xs"
+            className="font-mono text-xs rounded-full"
           >
             Export Memory Vault
           </Button>
@@ -178,9 +178,9 @@ export const DevMemoryInspector: React.FC = () => {
               setCreateError(null);
               setIsCreateOpen(true);
             }}
-            color="#10b981"
-            trailColor="rgba(16, 185, 129, 0.3)"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
+            color="#ea2804"
+            trailColor="rgba(234, 40, 4, 0.3)"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full text-white bg-[#ea2804] hover:bg-[#c01f00] cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Inscribe Semantic Fact</span>
@@ -190,7 +190,7 @@ export const DevMemoryInspector: React.FC = () => {
 
       {/* Backend Status / Offline Notice */}
       {!isBackendOnline && (
-        <div className="p-3.5 rounded-lg bg-surface border border-subtle flex items-center justify-between text-xs font-mono">
+        <div className="p-3.5 rounded-xl bg-surface border border-subtle flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-2 text-dim">
             <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
             <span>FastAPI backend offline at port 8000. Inspecting cached local vector runes.</span>
@@ -208,7 +208,7 @@ export const DevMemoryInspector: React.FC = () => {
 
       {/* Error Banner with Retry */}
       {memoryError && (
-        <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs font-mono text-rose-800 dark:text-rose-200">
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs font-mono text-rose-800 dark:text-rose-200">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
             <span>{memoryError}</span>
@@ -224,15 +224,15 @@ export const DevMemoryInspector: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Toolbar with CountUp */}
+      {/* Filter Toolbar with Replicate Pill Groups & CountUp */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-subtle text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-1.5 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-3 py-1 rounded cursor-pointer transition-all ${
+            className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
               activeTab === 'all'
-                ? 'bg-elevated text-main font-semibold border border-subtle'
+                ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                 : 'text-dim hover:text-main'
             }`}
           >
@@ -241,9 +241,9 @@ export const DevMemoryInspector: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('episodic')}
-            className={`px-3 py-1 rounded cursor-pointer transition-all ${
+            className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
               activeTab === 'episodic'
-                ? 'bg-elevated text-main font-semibold border border-subtle'
+                ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                 : 'text-dim hover:text-main'
             }`}
           >
@@ -252,9 +252,9 @@ export const DevMemoryInspector: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('semantic')}
-            className={`px-3 py-1 rounded cursor-pointer transition-all ${
+            className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
               activeTab === 'semantic'
-                ? 'bg-elevated text-main font-semibold border border-subtle'
+                ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                 : 'text-dim hover:text-main'
             }`}
           >
@@ -263,15 +263,15 @@ export const DevMemoryInspector: React.FC = () => {
         </div>
 
         {activeTab !== 'episodic' && (
-          <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-subtle text-xs font-mono">
+          <div className="flex flex-wrap items-center gap-1 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono">
             {(['all', 'fact', 'preference', 'rule', 'entity'] as const).map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-2 py-0.5 rounded cursor-pointer capitalize text-[11px] transition-colors ${
+                className={`px-2.5 py-0.5 rounded-full cursor-pointer capitalize text-[11px] transition-colors ${
                   categoryFilter === cat
-                    ? 'bg-elevated text-emerald-600 dark:text-emerald-400 font-semibold'
+                    ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                     : 'text-dim hover:text-main'
                 }`}
               >
@@ -282,13 +282,13 @@ export const DevMemoryInspector: React.FC = () => {
         )}
 
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="w-3.5 h-3.5 text-faint absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-faint absolute left-3.5 top-2.5" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search runes, tags, or subject keys..."
-            className="w-full text-xs font-mono bg-surface border border-subtle rounded-lg pl-8.5 pr-8 py-1.5 text-main placeholder-faint focus:outline-none focus:border-emerald-500"
+            className="w-full pl-9 pr-8 py-1.5 rounded-full bg-surface/90 border border-subtle text-xs font-mono text-main placeholder-faint focus:border-[#ea2804] focus:outline-none transition-colors"
           />
           {search && (
             <button

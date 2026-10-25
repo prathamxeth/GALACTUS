@@ -111,12 +111,12 @@ export const AppSidebar: React.FC = () => {
   const currentNavItems = isDev ? devNavItems : userNavItems;
 
   return (
-    <aside className="w-64 shrink-0 bg-surface border-r border-subtle flex flex-col justify-between h-screen sticky top-0 z-40 select-none transition-colors">
+    <aside className="w-64 shrink-0 bg-surface/85 backdrop-blur-md border-r border-[#e2dfd8] dark:border-[#222226] flex flex-col justify-between h-screen sticky top-0 z-40 select-none transition-colors">
       {/* Top Header & Brand */}
       <div>
-        <div className="px-5 py-4 border-b border-subtle">
+        <div className="px-5 py-4 border-b border-[#e2dfd8] dark:border-[#222226]">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-[#ea2804]/10 border border-[#ea2804]/30 flex items-center justify-center text-[#ea2804] group-hover:border-[#ea2804]/60 transition-colors">
+            <div className="w-9 h-9 rounded-full bg-[#ea2804] text-white flex items-center justify-center shadow-[0_0_15px_rgba(234,40,4,0.35)] group-hover:scale-105 transition-transform">
               <span className="font-mono font-bold text-sm">ᛗ</span>
             </div>
             <div>
@@ -124,7 +124,7 @@ export const AppSidebar: React.FC = () => {
                 <span className="font-semibold text-sm tracking-tight text-main">
                   MEMORAG
                 </span>
-                <span className="text-[10px] font-mono uppercase bg-elevated text-dim px-1 py-0.2 rounded border border-subtle">
+                <span className="text-[10px] font-mono uppercase bg-elevated text-dim px-1.5 py-0.5 rounded-full border border-subtle">
                   {isDev ? 'CORE' : 'PERSONAL'}
                 </span>
               </div>
@@ -135,15 +135,15 @@ export const AppSidebar: React.FC = () => {
           </Link>
         </div>
 
-        {/* Persistent User / Developer Mode Switcher */}
+        {/* Persistent User / Developer Mode Switcher (Replicate Pill Style) */}
         <div className="px-3 pt-3">
-          <div className="p-1 rounded-lg bg-elevated border border-subtle grid grid-cols-2 gap-1 text-xs font-medium">
+          <div className="p-1 rounded-full bg-elevated/90 border border-subtle grid grid-cols-2 gap-1 text-xs font-medium">
             <button
               type="button"
               onClick={() => setMode('user')}
-              className={`py-1.5 px-2 rounded-md transition-all duration-150 cursor-pointer text-center active:scale-95 ${
+              className={`py-1.5 px-2 rounded-full transition-all duration-150 cursor-pointer text-center active:scale-95 ${
                 !isDev
-                  ? 'bg-surface text-main font-semibold shadow-xs border border-subtle'
+                  ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -152,9 +152,9 @@ export const AppSidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setMode('developer')}
-              className={`py-1.5 px-2 rounded-md transition-all duration-150 cursor-pointer text-center active:scale-95 ${
+              className={`py-1.5 px-2 rounded-full transition-all duration-150 cursor-pointer text-center active:scale-95 ${
                 isDev
-                  ? 'bg-surface text-main font-semibold shadow-xs border border-subtle'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -163,9 +163,9 @@ export const AppSidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation Links */}
+        {/* Navigation Links (Replicate Pill Tabs) */}
         <nav className="p-3 space-y-1">
-          <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-faint">
+          <div className="px-3.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-faint">
             {isDev ? 'Technical Architecture' : 'Navigation'}
           </div>
           {currentNavItems.map((item) => {
@@ -181,7 +181,7 @@ export const AppSidebar: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                className={`flex items-center justify-between px-3.5 py-2 rounded-full text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-elevated text-main shadow-xs border border-medium font-semibold'
                     : 'text-dim hover:text-main hover:bg-elevated/50 border border-transparent'
@@ -189,7 +189,7 @@ export const AppSidebar: React.FC = () => {
               >
                 <div className="flex items-center gap-2.5">
                   <Icon
-                    className={`w-4 h-4 shrink-0 ${
+                    className={`w-4 h-4 shrink-0 transition-colors ${
                       isActive ? 'text-[#ea2804]' : 'text-dim'
                     }`}
                   />
@@ -198,7 +198,7 @@ export const AppSidebar: React.FC = () => {
                 {item.badge && (
                   <Badge
                     variant={item.badgeVariant || 'zinc'}
-                    className="text-[10px] py-0 px-1.5 font-normal"
+                    className="text-[10px] py-0 px-2 font-mono"
                   >
                     {item.badge}
                   </Badge>

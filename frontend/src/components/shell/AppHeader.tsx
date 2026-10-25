@@ -57,7 +57,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
   }, []);
 
   return (
-    <header className="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30 transition-colors">
+    <header className="h-16 border-b border-[#e2dfd8] dark:border-[#222226] bg-surface/85 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30 transition-colors">
       <div>
         <h1 className="text-base font-semibold text-main flex items-center gap-2">
           {title || (isDev ? 'Technical Control Center' : 'Personal Assistant')}
@@ -66,18 +66,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Landing Page Showcase Link */}
+        {/* Landing Page Showcase Link (Replicate Pill) */}
         <Link
           href="/"
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-elevated border border-subtle text-xs cursor-pointer hover:border-medium transition-all duration-150 active:scale-95 text-dim hover:text-main"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-elevated border border-subtle text-xs cursor-pointer hover:border-medium transition-all duration-150 active:scale-95 text-dim hover:text-main"
           title="View Intelligence Designed To Evolve Landing Page"
         >
-          <Compass className="w-3.5 h-3.5 text-indigo-400" />
+          <Compass className="w-3.5 h-3.5 text-[#ea2804]" />
           <span className="text-[11px] font-medium hidden sm:inline">Landing</span>
         </Link>
 
-        {/* Appearance Preset Selector */}
-        <div className="flex items-center gap-1.5 p-1 bg-elevated border border-subtle rounded-lg text-xs">
+        {/* Appearance Preset Selector (Replicate Pill Group) */}
+        <div className="flex items-center gap-1 p-1 bg-elevated border border-subtle rounded-full text-xs">
           {(['light', 'dark'] as AppearancePreset[]).map(
             (p) => {
               const config = presetLabels[p];
@@ -89,7 +89,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
                   key={p}
                   type="button"
                   onClick={() => setPreset(p)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150 flex items-center gap-1 cursor-pointer active:scale-95 ${
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150 flex items-center gap-1 cursor-pointer active:scale-95 ${
                     isSelected
                       ? 'bg-surface text-main font-semibold shadow-xs border border-subtle'
                       : 'text-dim hover:text-main'
@@ -104,8 +104,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
           )}
         </div>
 
-        {/* Local Clock */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-elevated border border-subtle text-xs font-mono text-dim">
+        {/* Local Clock (Replicate Pill) */}
+        <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-elevated border border-subtle text-xs font-mono text-dim">
           <Clock className="w-3.5 h-3.5 text-faint" />
           <span>{timeStr || '--:--:--'}</span>
         </div>
@@ -114,19 +114,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
         <button
           type="button"
           onClick={() => setMode(isDev ? 'user' : 'developer')}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-elevated border border-subtle text-xs cursor-pointer hover:border-medium transition-all duration-150 active:scale-95"
+          className="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-elevated border border-subtle text-xs cursor-pointer hover:border-medium transition-all duration-150 active:scale-95"
           title={`Currently in ${isDev ? 'Developer' : 'User'} Mode. Click to switch.`}
         >
           {isDev ? (
             <>
-              <Code2 className="w-3.5 h-3.5 text-sky-500" />
+              <Code2 className="w-3.5 h-3.5 text-[#ea2804]" />
               <span className="font-mono text-[11px] text-main font-medium hidden sm:inline">
                 Dev Mode
               </span>
             </>
           ) : (
             <>
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-[#cc785c]" />
               <span className="text-[11px] text-main font-medium hidden sm:inline">
                 User Mode
               </span>
