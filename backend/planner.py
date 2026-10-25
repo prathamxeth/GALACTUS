@@ -251,26 +251,41 @@ CRITICAL PLANNING RULES:
             )
         )
 
-        # Differentiate protected side-effects from harmless informational queries
-        harmless_keywords = ["hello", "hi", "status", "who are you", "help", "architecture", "what can you do", "ping", "test connection"]
-        is_harmless = any(user_goal.strip().lower().startswith(kw) or user_goal.strip().lower() == kw for kw in harmless_keywords)
+        # Conversational intent routing & negative-constraint detection
+        goal_lower = user_goal.strip().lower()
 
-        if not is_harmless:
-            # Step 3: Execution Action (High-risk gate requiring explicit user authorization)
-            step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
-            steps.append(
-                DAGStep(
-                    step_id=step_3_id,
-                    step_number=3,
-                    title=f"Execute Side-Effect: {user_goal[:30]}",
-                    skill_name="filesystem.write_file" if "file" in user_goal.lower() else "shell.execute",
-                    parameters={"command": f"execute --goal '{user_goal}'", "goal": user_goal, "user_preferences": pref_params},
-                    dependencies=[step_2_id],
-                    risk_level=RiskLevel.HIGH,
-                    requires_approval=True,
-                )
-            )
-        else:
+        # Check negative constraints (explicitly forbidding execution / file modification)
+        negative_constraints = [
+            "do not run", "don't run", "no commands", "no command",
+            "do not modify", "don't modify", "do not write", "don't write",
+            "do not edit", "don't edit", "do not change", "don't change",
+            "without running", "without modifying", "read only", "readonly",
+            "no side-effect", "no side effect",
+        ]
+        has_negative = any(neg in goal_lower for neg in negative_constraints)
+
+        # Informational question/inquiry indicators
+        informational_indicators = [
+            "explain", "whether", "is ", "are ", "status", "who are you",
+            "hello", "hi", "help", "architecture", "what can you do", "ping",
+            "test connection", "describe", "tell me", "check", "verify",
+            "what is", "what are", "how does", "summarize", "inspect", "report",
+        ]
+        is_info_query = any(goal_lower.startswith(ind) or ind in goal_lower for ind in informational_indicators)
+
+        # Explicit action keywords indicating actual requested mutation
+        action_keywords = [
+            "create file", "write file", "save to file", "modify file",
+            "delete file", "remove file", "execute shell", "run command",
+            "execute command", "format file", "clean cache", "run script",
+            "terminal.run", "deploy",
+        ]
+        has_explicit_action = any(act in goal_lower for act in action_keywords)
+
+        # Protected action requires affirmative action intent AND no negative prohibitions
+        is_protected_action = has_explicit_action and not has_negative
+
+        if not is_protected_action or (is_info_query and not has_explicit_action):
             # Step 3: Harmless response synthesis (Low risk, no approval gate)
             step_3_id = f"step-info-{uuid.uuid4().hex[:6]}"
             steps.append(
@@ -283,6 +298,22 @@ CRITICAL PLANNING RULES:
                     dependencies=[step_2_id],
                     risk_level=RiskLevel.LOW,
                     requires_approval=False,
+                )
+            )
+        else:
+            # Step 3: Protected Execution Action (High-risk gate requiring explicit user authorization)
+            step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
+            is_file_op = any(kw in goal_lower for kw in ["file", "write", "create"]) and "shell" not in goal_lower and "command" not in goal_lower
+            steps.append(
+                DAGStep(
+                    step_id=step_3_id,
+                    step_number=3,
+                    title=f"Execute Side-Effect: {user_goal[:30]}",
+                    skill_name="filesystem.write_file" if is_file_op else "shell.execute",
+                    parameters={"command": f"execute --goal '{user_goal}'", "goal": user_goal, "user_preferences": pref_params},
+                    dependencies=[step_2_id],
+                    risk_level=RiskLevel.HIGH,
+                    requires_approval=True,
                 )
             )
 

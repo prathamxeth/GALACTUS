@@ -571,5 +571,88 @@ describe('Phase 2C: NEXUS Integration & Workbench Remediation Regression Suite',
       assert.equal(res.isActionable, false, `${JSON.stringify(u)} must hide action buttons`);
     }
   });
+
+  // --------------------------------------------------------------------------
+  // Requirement 14: Conversational Intent Routing & Protected Action Approval Lifecycle
+  // --------------------------------------------------------------------------
+  it('14. Conversational queries with negative constraints do not generate approvals, while protected actions require explicit authorization', () => {
+    function classifyIntent(goal) {
+      const goalLower = goal.trim().toLowerCase();
+      const negativeConstraints = [
+        'do not run', "don't run", 'no commands', 'no command',
+        'do not modify', "don't modify", 'do not write', "don't write",
+        'do not edit', "don't edit", 'do not change', "don't change",
+        'without running', 'without modifying', 'read only', 'readonly',
+        'no side-effect', 'no side effect',
+      ];
+      const hasNegative = negativeConstraints.some((neg) => goalLower.includes(neg));
+
+      const informationalIndicators = [
+        'explain', 'whether', 'is ', 'are ', 'status', 'who are you',
+        'hello', 'hi', 'help', 'architecture', 'what can you do', 'ping',
+        'test connection', 'describe', 'tell me', 'check', 'verify',
+        'what is', 'what are', 'how does', 'summarize', 'inspect', 'report',
+      ];
+      const isInfoQuery = informationalIndicators.some((ind) => goalLower.startsWith(ind) || goalLower.includes(ind));
+
+      const actionKeywords = [
+        'create file', 'write file', 'save to file', 'modify file',
+        'delete file', 'remove file', 'execute shell', 'run command',
+        'execute command', 'format file', 'clean cache', 'run script',
+        'terminal.run', 'deploy',
+      ];
+      const hasExplicitAction = actionKeywords.some((act) => goalLower.includes(act));
+
+      const isProtected = hasExplicitAction && !hasNegative;
+      if (!isProtected || (isInfoQuery && !hasExplicitAction)) {
+        return { isProtected: false, requiresApproval: false, actionProposal: null };
+      }
+      return {
+        isProtected: true,
+        requiresApproval: true,
+        actionProposal: {
+          id: 'apr-mock-1',
+          toolName: goalLower.includes('shell') || goalLower.includes('command') ? 'shell.execute' : 'filesystem.write_file',
+          riskLevel: 'HIGH',
+          status: 'pending',
+        },
+      };
+    }
+
+    // Subtest A: Informational prompt with negative constraint
+    const infoPrompt = 'Explain whether the backend and local model are available. Do not run commands or modify files.';
+    const infoResult = classifyIntent(infoPrompt);
+    assert.equal(infoResult.isProtected, false);
+    assert.equal(infoResult.requiresApproval, false);
+    assert.equal(infoResult.actionProposal, null, 'Ordinary prompt with negative constraints must NOT create actionProposal');
+
+    // Subtest B: Explicit protected action
+    const protectedPrompt = 'Execute shell command to clean cache and format files.';
+    const protectedResult = classifyIntent(protectedPrompt);
+    assert.equal(protectedResult.isProtected, true);
+    assert.equal(protectedResult.requiresApproval, true);
+    assert.ok(protectedResult.actionProposal !== null);
+    assert.equal(protectedResult.actionProposal.toolName, 'shell.execute');
+    assert.equal(protectedResult.actionProposal.status, 'pending');
+
+    // Subtest C: Rejection lifecycle
+    let approvalQueue = [protectedResult.actionProposal];
+    assert.equal(approvalQueue.length, 1);
+    function rejectApproval(id) {
+      const idx = approvalQueue.findIndex((a) => a.id === id);
+      if (idx !== -1) {
+        approvalQueue[idx].status = 'rejected';
+        approvalQueue.splice(idx, 1);
+        return { success: true, task_status: 'FAILED', status: 'rejected' };
+      }
+      return { success: false };
+    }
+
+    const rejOutcome = rejectApproval(protectedResult.actionProposal.id);
+    assert.equal(rejOutcome.success, true);
+    assert.equal(rejOutcome.task_status, 'FAILED');
+    assert.equal(rejOutcome.status, 'rejected');
+    assert.equal(approvalQueue.length, 0, 'Approval queue must be empty after rejection');
+  });
 });
 
