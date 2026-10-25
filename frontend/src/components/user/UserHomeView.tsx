@@ -161,6 +161,9 @@ export const UserHomeView: React.FC = () => {
                   <h3 className="text-base font-semibold text-main font-editorial-serif">
                     Permission required for action
                   </h3>
+                  <Badge variant="amber" dot>
+                    Awaiting approval
+                  </Badge>
                   <Badge variant="replicate">
                     Risk: {pendingApproval.riskLevel.toUpperCase()}
                   </Badge>

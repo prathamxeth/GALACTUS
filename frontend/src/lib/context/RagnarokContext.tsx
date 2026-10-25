@@ -350,13 +350,22 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     runtimeStatus?.activeModelLoaded,
   ]);
 
-  // --- Derive Truthful Model Status ('ready' | 'connecting' | 'unavailable' | 'offline' | 'error') ---
+  // --- Derive Truthful Model Status ('ready' | 'connecting' | 'degraded' | 'unavailable' | 'offline' | 'error') ---
   const modelStatus: TruthfulModelStatus = useMemo(() => {
     if (isCheckingBackend && !hasProbedOnce) return 'connecting';
     if (!isBackendOnline) return 'offline';
     if (backendError) return 'error';
+    // AI Model Ready: requires verified active model loaded in Ollama
     if (runtimeStatus?.ollamaStatus === 'connected' && runtimeStatus?.activeModelLoaded) {
       return 'ready';
+    }
+    // Explicitly unavailable if Ollama daemon is disconnected
+    if (runtimeStatus?.ollamaStatus === 'disconnected') {
+      return 'unavailable';
+    }
+    // Useful degraded state: backend healthy, but Ollama model weights not loaded (deterministic mode)
+    if (runtimeStatus?.ollamaStatus === 'degraded' || (!runtimeStatus?.activeModelLoaded && isBackendOnline)) {
+      return 'degraded';
     }
     return 'unavailable';
   }, [isCheckingBackend, hasProbedOnce, isBackendOnline, backendError, runtimeStatus]);
@@ -737,7 +746,13 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     setEventLogs((prev) => [newLog, ...prev]);
 
     try {
-      const response = await api.sendPrompt(prompt, sendMode, controller.signal, attachments);
+      const history = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        id: m.id,
+        timestamp: m.timestamp,
+      }));
+      const response = await api.sendPrompt(prompt, sendMode, controller.signal, attachments, history);
       setMessages((prev) => [...prev, response.data]);
 
       // If backend created an active task, sync tasks and attach SSE

@@ -132,9 +132,14 @@ export const ForgeStatusBar: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             <span>Agent: Connecting...</span>
           </span>
-        ) : modelStatus === 'unavailable' ? (
+        ) : modelStatus === 'degraded' ? (
           <span className="text-amber-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>{isDev ? 'Agent: Degraded (Deterministic Mode)' : 'Deterministic Mode'}</span>
+          </span>
+        ) : modelStatus === 'unavailable' ? (
+          <span className="text-amber-500 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             <span>Agent: Model Unavailable</span>
           </span>
         ) : (

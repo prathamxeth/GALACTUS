@@ -179,19 +179,34 @@ export class RagnarokApiClient {
           }
         }
 
-        // Truthful determination: Ollama inference is only ready if explicitly verified
-        const isOllamaConnected =
-          ollamaStr === 'connected' ||
-          ollamaObj.status === 'connected' ||
-          body.ollamaStatus === 'connected';
-        const activeModelLoaded = isOllamaConnected && Boolean(activeModel);
+        // Truthful determination: parse canonical status from backend probe
+        const rawOllamaStatus =
+          (typeof body.ollama_status === 'string' ? body.ollama_status : undefined) ||
+          ollamaStr ||
+          (typeof ollamaObj.status === 'string' ? ollamaObj.status : undefined) ||
+          (typeof body.ollamaStatus === 'string' ? body.ollamaStatus : undefined);
+
+        const isOllamaConnected = rawOllamaStatus === 'connected';
+        const isOllamaDisconnected = rawOllamaStatus === 'disconnected';
+
+        // Do not display "AI Model Ready" solely because the model name is configured
+        const activeModelLoaded =
+          Boolean(body.active_model_loaded ?? body.activeModelLoaded ?? ollamaObj.active_model_loaded) &&
+          !isOllamaDisconnected;
+
+        const ollamaStatus: 'connected' | 'disconnected' | 'degraded' =
+          isOllamaConnected && activeModelLoaded
+            ? 'connected'
+            : isOllamaDisconnected
+            ? 'disconnected'
+            : 'degraded';
 
         return {
           online: true,
           url: this.baseUrl,
           latencyMs,
           version: typeof body.version === 'string' ? body.version : '1.0.0',
-          ollamaStatus: isOllamaConnected ? 'connected' : 'degraded',
+          ollamaStatus,
           activeModel: activeModel || 'gemma4:e2b',
           activeModelLoaded,
           serviceName: serviceName || 'MEMORAG Sovereign Agent',
@@ -1133,7 +1148,8 @@ export class RagnarokApiClient {
     prompt: string,
     mode: 'chat' | 'task' | 'memory' = 'chat',
     signal?: AbortSignal,
-    attachments?: MessageAttachment[]
+    attachments?: MessageAttachment[],
+    history?: Array<{ role: string; content: string; id?: string; timestamp?: string }>
   ): Promise<ApiResponse<ChatMessage>> {
     try {
       if (signal?.aborted) {
@@ -1153,7 +1169,7 @@ export class RagnarokApiClient {
       const chatRes = await fetch(`${this.baseUrl}/api/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptWithAttachments, mode, attachments }),
+        body: JSON.stringify({ prompt: promptWithAttachments, mode, attachments, history }),
         signal,
       });
 

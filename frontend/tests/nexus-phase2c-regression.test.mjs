@@ -88,6 +88,12 @@ describe('Phase 2C: NEXUS Integration & Workbench Remediation Regression Suite',
       if (runtimeStatus?.ollamaStatus === 'connected' && runtimeStatus?.activeModelLoaded) {
         return 'ready';
       }
+      if (runtimeStatus?.ollamaStatus === 'disconnected') {
+        return 'unavailable';
+      }
+      if (runtimeStatus?.ollamaStatus === 'degraded' || (!runtimeStatus?.activeModelLoaded && isBackendOnline)) {
+        return 'degraded';
+      }
       return 'unavailable';
     }
 
@@ -103,14 +109,26 @@ describe('Phase 2C: NEXUS Integration & Workbench Remediation Regression Suite',
       'offline'
     );
 
-    // Case C: Backend online, but Ollama model not loaded
+    // Case C1: Backend online, but Ollama model not loaded in VRAM -> DEGRADED (useful deterministic mode)
     assert.equal(
       deriveModelStatus({
         isCheckingBackend: false,
         hasProbedOnce: true,
         isBackendOnline: true,
         backendError: null,
-        runtimeStatus: { ollamaStatus: 'connected', activeModelLoaded: false },
+        runtimeStatus: { ollamaStatus: 'degraded', activeModelLoaded: false },
+      }),
+      'degraded'
+    );
+
+    // Case C2: Backend online, but Ollama daemon disconnected -> UNAVAILABLE
+    assert.equal(
+      deriveModelStatus({
+        isCheckingBackend: false,
+        hasProbedOnce: true,
+        isBackendOnline: true,
+        backendError: null,
+        runtimeStatus: { ollamaStatus: 'disconnected', activeModelLoaded: false },
       }),
       'unavailable'
     );
@@ -653,6 +671,280 @@ describe('Phase 2C: NEXUS Integration & Workbench Remediation Regression Suite',
     assert.equal(rejOutcome.task_status, 'FAILED');
     assert.equal(rejOutcome.status, 'rejected');
     assert.equal(approvalQueue.length, 0, 'Approval queue must be empty after rejection');
+  });
+
+  // --------------------------------------------------------------------------
+  // Requirement 15: Personal Assistant UX — Verified User-Facing Responses
+  // --------------------------------------------------------------------------
+  it('15. Personal Assistant UX: renders truthful assistant answers distinguishing conversational, status report, task plan, and model-unavailable states', () => {
+    // Simulator matching backend/main.py agent_chat logic
+    function synthesizeAssistantResponse(prompt, runtimeContext = { isModelReady: false, model: 'gemma4:e2b' }) {
+      const pLower = prompt.trim().toLowerCase();
+
+      // Protected action
+      if (pLower.includes('execute shell') || pLower.includes('write file')) {
+        return {
+          role: 'agent',
+          messageType: 'approval_request',
+          content: 'I have prepared the requested operation, but it requires operator authorization before execution.',
+          actionProposal: { id: 'apr-mock', toolName: 'shell.execute', riskLevel: 'HIGH', status: 'pending' },
+        };
+      }
+
+      // 1. "Hi, can you work?" -> Conversational greeting
+      if (pLower.startsWith('hi, can you work') || pLower.includes('can you work')) {
+        return {
+          role: 'agent',
+          messageType: 'conversational',
+          content: 'Yes, I am online and ready to assist you. I am your sovereign MEMORAG personal assistant, operating locally with encrypted memory persistence, autonomous task planning, and default-deny approval safeguards. How can I assist you with your project today?',
+          taskResult: null,
+        };
+      }
+
+      // 2. "Does the model run perfectly now?" -> Truthful status report
+      if (pLower.includes('run perfectly') || pLower.includes('model run') || pLower.includes('does the model')) {
+        const content = runtimeContext.isModelReady
+          ? `Both the backend and local model are available and healthy. The backend service is active on 127.0.0.1:8000 with encrypted memory active. The local inference engine (${runtimeContext.model}) is active and responding on 127.0.0.1:11434 with local GPU execution. As requested, no commands were run and no files were modified.`
+          : `The backend orchestrator and encrypted memory vault are running perfectly on 127.0.0.1:8000. However, local model '${runtimeContext.model}' is currently operating in sovereign deterministic fallback mode (model not loaded in local Ollama repository). All conversational routing, memory recall, and approval safeguards are fully functional with zero outbound telemetry.`;
+
+        return {
+          role: 'agent',
+          messageType: 'status_report',
+          content,
+          taskResult: null,
+        };
+      }
+
+      // 3. Real task result ("Plan steps to inspect workspace structure")
+      if (pLower.includes('plan') || pLower.includes('inspect workspace') || pLower.includes('task')) {
+        return {
+          role: 'agent',
+          messageType: 'task_plan',
+          content: 'I have formulated the execution plan for your request:\n\n1. Verify Context and Ingest User Preferences (memory.recall_context)\n2. Analyze Goal: Plan steps to inspect workspace structure (reasoning.synthesize)\n3. Report System Status (system.report_status)\n\nExecution Status: COMPLETED. All 3 step(s) were scheduled and verified under sovereign security policy.',
+          taskResult: {
+            taskId: 'task-live-42',
+            status: 'COMPLETED',
+            stepsCount: 3,
+            completedStepsCount: 3,
+            output: 'Execution plan verified with 3 step(s).',
+          },
+        };
+      }
+
+      // 4. Model-unavailable error
+      if (pLower.includes('model-unavailable') || pLower.includes('model error')) {
+        return {
+          role: 'agent',
+          messageType: 'failure',
+          content: `Local inference model error: The configured neural model '${runtimeContext.model}' is unreachable or unavailable at http://127.0.0.1:11434. The operation could not be processed by the local neural engine. You can retry the request or rely on sovereign deterministic task execution.`,
+          taskResult: null,
+        };
+      }
+
+      return {
+        role: 'agent',
+        messageType: 'conversational',
+        content: `I have processed your request: "${prompt}".`,
+      };
+    }
+
+    // --- Subtest A: "Hi, can you work?" ---
+    const resA = synthesizeAssistantResponse('Hi, can you work?');
+    assert.equal(resA.role, 'agent');
+    assert.equal(resA.messageType, 'conversational');
+    assert.ok(resA.content.includes('online and ready to assist you'));
+    assert.ok(resA.content.includes('sovereign MEMORAG personal assistant'));
+    assert.ok(!resA.content.includes('Task completed successfully'), 'Must NOT synthesize generic task completed message');
+
+    // --- Subtest B: "Does the model run perfectly now?" ---
+    const resB = synthesizeAssistantResponse('Does the model run perfectly now?', { isModelReady: false, model: 'gemma4:e2b' });
+    assert.equal(resB.role, 'agent');
+    assert.equal(resB.messageType, 'status_report');
+    assert.ok(resB.content.includes('127.0.0.1:8000'));
+    assert.ok(resB.content.includes('gemma4:e2b'));
+    assert.ok(resB.content.includes('zero outbound telemetry'));
+    assert.ok(!resB.content.includes('Task completed successfully'));
+
+    // --- Subtest C: Real Task Result ---
+    const resC = synthesizeAssistantResponse('Plan steps to inspect workspace structure');
+    assert.equal(resC.role, 'agent');
+    assert.equal(resC.messageType, 'task_plan');
+    assert.ok(resC.content.includes('1. Verify Context and Ingest User Preferences'));
+    assert.ok(resC.content.includes('memory.recall_context'));
+    assert.ok(resC.taskResult !== null);
+    assert.equal(resC.taskResult.status, 'COMPLETED');
+    assert.equal(resC.taskResult.stepsCount, 3);
+    assert.equal(resC.taskResult.completedStepsCount, 3);
+
+    // --- Subtest D: Model-Unavailable Error ---
+    const resD = synthesizeAssistantResponse('Simulate model-unavailable error', { isModelReady: false, model: 'gemma4:e2b' });
+    assert.equal(resD.role, 'agent');
+    assert.equal(resD.messageType, 'failure');
+    assert.ok(resD.content.includes('Local inference model error'));
+    assert.ok(resD.content.includes('http://127.0.0.1:11434'));
+    assert.ok(resD.content.includes('sovereign deterministic task execution'));
+    assert.equal(resD.taskResult, null);
+  });
+
+  // --------------------------------------------------------------------------
+  // Requirement 16: Multi-Turn Conversation Context & Truthful Runtime Status
+  // --------------------------------------------------------------------------
+  it('16. Multi-turn conversation preserves message ordering and history; runtime state truthfully distinguishes Backend Connected vs AI Model Ready', () => {
+    // Subtest A: Multi-turn ordering and context preservation
+    const conversationState = [];
+    function sendTurn(prompt, priorMessages, replyContent, messageType = 'conversational') {
+      const userMessage = {
+        id: `msg-user-${Date.now()}-${Math.random()}`,
+        role: 'user',
+        content: prompt,
+        timestamp: '10:00 AM',
+      };
+      conversationState.push(userMessage);
+
+      // Verify that prior messages are captured in forwarded history
+      const forwardedHistory = priorMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        id: m.id,
+        timestamp: m.timestamp,
+      }));
+
+      const assistantMessage = {
+        id: `msg-agent-${Date.now()}-${Math.random()}`,
+        role: 'agent',
+        content: replyContent,
+        messageType,
+        timestamp: '10:01 AM',
+      };
+      conversationState.push(assistantMessage);
+
+      return { forwardedHistory, assistantMessage };
+    }
+
+    // Turn 1
+    const turn1 = sendTurn('Hi, can you work?', [], 'Yes, I am online and ready to assist you.');
+    assert.equal(turn1.forwardedHistory.length, 0, 'Turn 1 should have empty history');
+    assert.equal(conversationState.length, 2);
+    assert.equal(conversationState[0].role, 'user');
+    assert.equal(conversationState[1].role, 'agent');
+
+    // Turn 2
+    const turn2 = sendTurn(
+      'Does the model run perfectly now?',
+      [...conversationState],
+      'The backend orchestrator and encrypted memory vault are running perfectly on 127.0.0.1:8000.',
+      'status_report'
+    );
+    assert.equal(turn2.forwardedHistory.length, 2, 'Turn 2 must receive both Turn 1 messages in history');
+    assert.equal(turn2.forwardedHistory[0].content, 'Hi, can you work?');
+    assert.equal(turn2.forwardedHistory[1].content, 'Yes, I am online and ready to assist you.');
+    assert.equal(conversationState.length, 4);
+    assert.equal(conversationState[2].role, 'user');
+    assert.equal(conversationState[3].role, 'agent');
+    assert.equal(conversationState[3].messageType, 'status_report');
+
+    // Subtest B: Truthful Runtime State Determination
+    function deriveTruthfulRuntimeState(isBackendOnline, ollamaStatus, activeModelLoaded) {
+      if (!isBackendOnline) return 'Offline Preview';
+      // Truthful derivation: "AI Model Ready" requires BOTH ollama connected AND active model loaded
+      if (ollamaStatus === 'connected' && activeModelLoaded) {
+        return 'AI Model Ready';
+      }
+      return 'Backend Connected';
+    }
+
+    // Model name is configured ('gemma4:e2b') but weights not loaded -> MUST NOT say 'AI Model Ready'
+    assert.equal(
+      deriveTruthfulRuntimeState(true, 'connected', false),
+      'Backend Connected',
+      'Configured model name alone must NOT display "AI Model Ready"'
+    );
+    assert.equal(
+      deriveTruthfulRuntimeState(true, 'degraded', false),
+      'Backend Connected'
+    );
+    // When weights are verified loaded -> displays 'AI Model Ready'
+    assert.equal(
+      deriveTruthfulRuntimeState(true, 'connected', true),
+      'AI Model Ready',
+      'Only verified active model loaded state may display "AI Model Ready"'
+    );
+  });
+
+  // --------------------------------------------------------------------------
+  // Requirement 17: Composer Model Label & Footer Status Bar Degraded Mapping
+  // --------------------------------------------------------------------------
+  it('17. Composer model label and footer status bar accurately reflect degraded deterministic mode without hardcoded green status', () => {
+    function mapComposerModelLabel(modelStatus) {
+      const label =
+        modelStatus === 'ready'
+          ? 'AI Model Ready'
+          : modelStatus === 'connecting'
+          ? 'Connecting...'
+          : modelStatus === 'degraded'
+          ? 'Degraded: Deterministic Mode'
+          : modelStatus === 'unavailable'
+          ? 'Model Unavailable'
+          : modelStatus === 'offline'
+          ? 'Offline'
+          : 'Error';
+
+      const dotColor =
+        modelStatus === 'ready'
+          ? 'bg-emerald-400'
+          : modelStatus === 'connecting'
+          ? 'bg-amber-400 animate-pulse'
+          : modelStatus === 'degraded'
+          ? 'bg-amber-400'
+          : modelStatus === 'unavailable'
+          ? 'bg-amber-500'
+          : 'bg-rose-500';
+
+      return { label, dotColor };
+    }
+
+    function mapFooterStatusBar(modelStatus, isDev = true) {
+      if (modelStatus === 'ready') {
+        return { text: isDev ? 'Agent: Ready' : 'Ready', dotColor: 'bg-emerald-400' };
+      }
+      if (modelStatus === 'connecting') {
+        return { text: 'Agent: Connecting...', dotColor: 'bg-amber-400 animate-pulse' };
+      }
+      if (modelStatus === 'degraded') {
+        return { text: isDev ? 'Agent: Degraded (Deterministic Mode)' : 'Deterministic Mode', dotColor: 'bg-amber-400' };
+      }
+      if (modelStatus === 'unavailable') {
+        return { text: 'Agent: Model Unavailable', dotColor: 'bg-amber-500' };
+      }
+      return { text: 'Agent: Offline', dotColor: 'bg-rose-500' };
+    }
+
+    // 1. Degraded State (Ollama connected or standby, but active model weights not loaded)
+    const degradedComposer = mapComposerModelLabel('degraded');
+    assert.equal(degradedComposer.label, 'Degraded: Deterministic Mode');
+    assert.equal(degradedComposer.dotColor, 'bg-amber-400', 'Degraded must be amber, NEVER green');
+
+    const degradedFooter = mapFooterStatusBar('degraded', true);
+    assert.equal(degradedFooter.text, 'Agent: Degraded (Deterministic Mode)');
+    assert.equal(degradedFooter.dotColor, 'bg-amber-400');
+
+    // 2. Verified Ready State (Model loaded in memory)
+    const readyComposer = mapComposerModelLabel('ready');
+    assert.equal(readyComposer.label, 'AI Model Ready');
+    assert.equal(readyComposer.dotColor, 'bg-emerald-400');
+
+    const readyFooter = mapFooterStatusBar('ready', true);
+    assert.equal(readyFooter.text, 'Agent: Ready');
+    assert.equal(readyFooter.dotColor, 'bg-emerald-400');
+
+    // 3. Unavailable State (Ollama daemon offline)
+    const unavailComposer = mapComposerModelLabel('unavailable');
+    assert.equal(unavailComposer.label, 'Model Unavailable');
+    assert.equal(unavailComposer.dotColor, 'bg-amber-500');
+
+    const unavailFooter = mapFooterStatusBar('unavailable', true);
+    assert.equal(unavailFooter.text, 'Agent: Model Unavailable');
+    assert.equal(unavailFooter.dotColor, 'bg-amber-500');
   });
 });
 

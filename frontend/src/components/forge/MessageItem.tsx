@@ -12,6 +12,11 @@ import {
   User,
   Bot,
   FileText,
+  Activity,
+  ListOrdered,
+  Terminal,
+  ShieldAlert,
+  AlertOctagon,
 } from 'lucide-react';
 import { ChatMessage } from '@/lib/api/types';
 import { InlineApprovalCard } from './InlineApprovalCard';
@@ -185,10 +190,70 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           </div>
         )}
 
+        {/* Message Type Indicator */}
+        {message.messageType && isAssistant && (
+          <div className="flex items-center gap-1.5 pb-1">
+            {message.messageType === 'status_report' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/10 text-sky-400 border border-sky-500/30 uppercase tracking-wider font-semibold">
+                <Activity className="w-3 h-3 text-sky-400" />
+                Live Status Report
+              </span>
+            )}
+            {message.messageType === 'task_plan' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/30 uppercase tracking-wider font-semibold">
+                <ListOrdered className="w-3 h-3 text-purple-400" />
+                Autonomous Task Plan
+              </span>
+            )}
+            {message.messageType === 'tool_result' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider font-semibold">
+                <Terminal className="w-3 h-3 text-emerald-400" />
+                Tool Execution Result
+              </span>
+            )}
+            {message.messageType === 'approval_request' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase tracking-wider font-semibold">
+                <ShieldAlert className="w-3 h-3 text-amber-400" />
+                Security Approval Gate
+              </span>
+            )}
+            {message.messageType === 'failure' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/10 text-rose-400 border border-rose-500/30 uppercase tracking-wider font-semibold">
+                <AlertOctagon className="w-3 h-3 text-rose-400" />
+                Model / Execution Error
+              </span>
+            )}
+            {message.messageType === 'conversational' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-forge-elevated text-forge-secondary border border-forge uppercase tracking-wider font-medium">
+                <Bot className="w-3 h-3 text-forge-accent" />
+                Personal Assistant
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Main Text Content */}
         <div className="text-xs sm:text-[13px] leading-relaxed font-sans">
           {renderFormattedContent(message.content)}
         </div>
+
+        {/* Structured Task Result Card */}
+        {message.taskResult && (
+          <div className="p-2.5 rounded-lg bg-forge-canvas border border-forge font-mono text-[11px] space-y-1 mt-2">
+            <div className="flex items-center justify-between text-forge-secondary font-semibold">
+              <span>Task #{message.taskResult.taskId}</span>
+              <span className="text-emerald-400 font-bold">{message.taskResult.status}</span>
+            </div>
+            <div className="text-forge-muted text-[10px]">
+              Execution Steps: {message.taskResult.completedStepsCount} of {message.taskResult.stepsCount} completed
+            </div>
+            {message.taskResult.output && (
+              <div className="text-forge-primary text-[11px] pt-1 border-t border-forge">
+                {message.taskResult.output}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Cited Memory Runes */}
         {message.citedMemoryIds && message.citedMemoryIds.length > 0 && (

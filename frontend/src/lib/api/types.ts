@@ -97,7 +97,7 @@ export interface ActionProposal {
   status: 'pending' | 'approved' | 'rejected' | 'executed';
 }
 
-export type TruthfulModelStatus = 'ready' | 'connecting' | 'unavailable' | 'offline' | 'error';
+export type TruthfulModelStatus = 'ready' | 'connecting' | 'degraded' | 'unavailable' | 'offline' | 'error';
 
 export interface MessageAttachment {
   name: string;
@@ -107,16 +107,34 @@ export interface MessageAttachment {
   type?: string;
 }
 
+export type ChatMessageType =
+  | 'conversational'
+  | 'status_report'
+  | 'task_plan'
+  | 'tool_result'
+  | 'approval_request'
+  | 'failure';
+
+export interface TaskResultSummary {
+  taskId: string;
+  status: string;
+  stepsCount: number;
+  completedStepsCount: number;
+  output?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'agent' | 'system';
   content: string;
   timestamp: string;
-  thoughtTrace?: string; // Seer's telling / chain of thought (NFR4.1)
+  thoughtTrace?: string | string[]; // Seer's telling / chain of thought (NFR4.1)
   citedMemoryIds?: string[]; // Referenced memories from Mimir's well
   actionProposal?: ActionProposal; // Embedded approval gate
   relatedTaskId?: string;
   attachments?: MessageAttachment[];
+  messageType?: ChatMessageType;
+  taskResult?: TaskResultSummary;
 }
 
 // --- Autonomous Workflow & Task Execution ---

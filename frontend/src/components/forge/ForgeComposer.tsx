@@ -150,6 +150,8 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
       ? 'AI Model Ready'
       : modelStatus === 'connecting'
       ? 'Connecting...'
+      : modelStatus === 'degraded'
+      ? 'Degraded: Deterministic Mode'
       : modelStatus === 'unavailable'
       ? 'Model Unavailable'
       : modelStatus === 'offline'
@@ -161,8 +163,10 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
       ? 'bg-emerald-400'
       : modelStatus === 'connecting'
       ? 'bg-amber-400 animate-pulse'
-      : modelStatus === 'unavailable'
+      : modelStatus === 'degraded'
       ? 'bg-amber-400'
+      : modelStatus === 'unavailable'
+      ? 'bg-amber-500'
       : 'bg-rose-500';
 
   return (
@@ -344,7 +348,12 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                     </div>
 
                     <div className="p-2 rounded bg-forge-panel/70 border border-forge text-[11px] leading-relaxed text-forge-muted">
-                      <span className="font-medium text-forge-secondary">Runtime note:</span> Engine is locked to the sovereign loopback Ollama model. Model switching is constrained to verified on-device weights to prevent unverified inference.
+                      <span className="font-medium text-forge-secondary">Runtime status: </span>
+                      {modelStatus === 'ready'
+                        ? 'Active neural model verified loaded in local VRAM with zero outbound telemetry.'
+                        : modelStatus === 'degraded'
+                        ? 'Sovereign deterministic fallback active. Memory handshake, task planning, and approval gates are fully operational.'
+                        : 'Neural engine unavailable. Local Ollama daemon not responding on http://127.0.0.1:11434.'}
                     </div>
                   </div>
                 )}
