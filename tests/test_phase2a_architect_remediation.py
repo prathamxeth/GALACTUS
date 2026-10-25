@@ -520,3 +520,74 @@ def test_live_ollama_status_probe_evaluation(remediation_environment):
     assert data["ollama"] in ("connected", "unreachable", "model_missing")
     assert isinstance(data["model_present"], bool)
     assert isinstance(data["inference_verified"], bool)
+
+
+# ============================================================================
+# 12. Intent-Routing Regression: Conversational vs Protected Action
+# ============================================================================
+def test_conversational_question_does_not_spawn_shell_approval_proposal(remediation_environment):
+    """
+    Regression: The ordinary prompt 'is it perfectly working' must use chat/answer mode
+    and must never become shell or filesystem actions merely because a task DAG has 3 steps.
+    """
+    client, _, _, _ = remediation_environment
+
+    # 1. Chat mode: ordinary question
+    r_chat = client.post("/api/agent/chat", json={"prompt": "is it perfectly working", "mode": "chat"})
+    assert r_chat.status_code == 200
+    data = r_chat.json()
+    assert data["role"] == "agent"
+    assert "relatedTaskId" not in data or data.get("relatedTaskId") is None
+    assert "working" in data["content"].lower() or "operational" in data["content"].lower() or "standby" in data["content"].lower()
+
+    # 2. Even if sent in task mode, an inquiry question must not create side-effect approval proposals
+    r_task_mode = client.post("/api/agent/chat", json={"prompt": "is it perfectly working", "mode": "task"})
+    assert r_task_mode.status_code == 200
+    data_task = r_task_mode.json()
+    assert "relatedTaskId" not in data_task or data_task.get("relatedTaskId") is None
+
+    # Verify no approval proposals were registered in the gatekeeper
+    r_approvals = client.get("/api/approvals")
+    assert r_approvals.status_code == 200
+    assert len(r_approvals.json()) == 0
+
+    # 3. Direct planner invocation on inquiry question: zero side-effect steps
+    planner = TaskPlanner()
+    dag_steps = planner._generate_deterministic_dag("is it perfectly working", {})
+    assert len(dag_steps) == 2  # Only memory recall and synthesis
+    for step in dag_steps:
+        assert step.requires_approval is False
+        assert step.skill_name not in ("terminal.sandboxed_exec", "shell.execute", "filesystem.write_file")
+
+
+@pytest.mark.asyncio
+async def test_explicit_protected_action_prompt_enforces_approval_gate(remediation_environment):
+    """
+    Regression: An explicit protected-action prompt must generate a task DAG,
+    enforce risk checks, and halt at the approval gate on the backend.
+    """
+    client, _, _, _ = remediation_environment
+
+    with patch.object(TaskPlanner, "_call_ollama", return_value=(None, "Deterministic fallback", 1.0)):
+        prompt = "Deploy updated smart contracts to production cluster"
+        r_chat = client.post("/api/agent/chat", json={"prompt": prompt, "mode": "task"})
+        assert r_chat.status_code == 200
+        data = r_chat.json()
+        assert data.get("relatedTaskId") is not None
+        task_id = data["relatedTaskId"]
+
+        # Wait for orchestrator to advance steps 1-2 and pause at step 3
+        await asyncio.sleep(0.1)
+
+        # Confirm task is paused for human authorization
+        r_task = client.get(f"/api/tasks/{task_id}")
+        assert r_task.status_code == 200
+        task_data = r_task.json()
+        assert task_data["status"] == "PAUSED_APPROVAL"
+
+        # Confirm pending approval was created for the protected deployment action
+        r_approvals = client.get("/api/approvals")
+        pending = [a for a in r_approvals.json() if a.get("taskId") == task_id or a.get("task_id") == task_id]
+        assert len(pending) == 1
+        assert pending[0].get("toolName") in ("developer.deploy", "terminal.sandboxed_exec") or pending[0].get("action") in ("developer.deploy", "terminal.sandboxed_exec")
+

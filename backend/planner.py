@@ -31,6 +31,39 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def is_explicit_action_request(text: str) -> bool:
+    """
+    Classifies user intent: determines whether a prompt explicitly requests
+    an execution/side-effect action vs a conversational question/inquiry.
+    Conversational questions must not generate shell or filesystem mutations.
+    """
+    clean = text.strip().lower()
+    if not clean:
+        return False
+
+    # Conversational / informational prefixes and inquiry markers
+    conversational_prefixes = (
+        "is ", "is it", "are ", "can ", "could ", "what ", "where ", "who ",
+        "why ", "how ", "explain ", "describe ", "tell me ", "status", "health",
+        "hello", "hi ", "hey", "check if", "do you", "test"
+    )
+    is_question = clean.endswith("?") or any(clean.startswith(p) for p in conversational_prefixes)
+
+    # Explicit action verbs that genuinely request mutating or executing operations
+    action_keywords = (
+        "run", "execute", "deploy", "build", "create", "write", "install",
+        "delete", "remove", "wipe", "backup", "restart", "reboot", "patch",
+        "modify", "apply", "kill", "terminate", "compile", "launch"
+    )
+    words = set(clean.replace("?", " ").replace(".", " ").replace(",", " ").replace("!", " ").split())
+    has_action_verb = any(verb in words for verb in action_keywords)
+
+    if is_question and not has_action_verb:
+        return False
+
+    return has_action_verb
+
+
 # ============================================================================
 # DAG Models
 # ============================================================================
@@ -345,34 +378,44 @@ CRITICAL PLANNING & SECURITY RULES:
         )
 
         # Step 3: Execution Action (High-risk gate requiring explicit user authorization)
-        step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
-        if "file" in user_goal.lower():
-            skill_name = "filesystem.write_file"
-            parameters = {
-                "path": "output.txt",
-                "content": f"Verified execution output for goal: {user_goal}\nTimestamp: {utc_now_iso()}\n",
-                "goal": user_goal,
-                "user_preferences": pref_params,
-            }
-        else:
-            skill_name = "terminal.sandboxed_exec"
-            parameters = {
-                "command": ["python", "-c", "import sys; print('Executed side-effect for: ' + sys.argv[1])", user_goal[:30]],
-                "goal": user_goal,
-                "user_preferences": pref_params,
-            }
+        # ONLY propose side effects when the user's intent explicitly requests an action.
+        # Conversational questions and informational queries must never become shell/filesystem actions.
+        if is_explicit_action_request(user_goal):
+            step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
+            if "file" in user_goal.lower() or "write" in user_goal.lower():
+                skill_name = "filesystem.write_file"
+                parameters = {
+                    "path": "output.txt",
+                    "content": f"Verified execution output for goal: {user_goal}\nTimestamp: {utc_now_iso()}\n",
+                    "goal": user_goal,
+                    "user_preferences": pref_params,
+                }
+            elif "deploy" in user_goal.lower():
+                skill_name = "developer.deploy"
+                parameters = {
+                    "network": "local",
+                    "goal": user_goal,
+                    "user_preferences": pref_params,
+                }
+            else:
+                skill_name = "terminal.sandboxed_exec"
+                parameters = {
+                    "command": ["python", "-c", "import sys; print('Executed side-effect for: ' + sys.argv[1])", user_goal[:30]],
+                    "goal": user_goal,
+                    "user_preferences": pref_params,
+                }
 
-        steps.append(
-            DAGStep(
-                step_id=step_3_id,
-                step_number=3,
-                title=f"Execute Side-Effect for Goal: {user_goal[:30]}",
-                skill_name=skill_name,
-                parameters=parameters,
-                dependencies=[step_2_id],
-                risk_level=RiskLevel.HIGH,
-                requires_approval=True,
+            steps.append(
+                DAGStep(
+                    step_id=step_3_id,
+                    step_number=3,
+                    title=f"Execute Side-Effect for Goal: {user_goal[:30]}",
+                    skill_name=skill_name,
+                    parameters=parameters,
+                    dependencies=[step_2_id],
+                    risk_level=RiskLevel.HIGH,
+                    requires_approval=True,
+                )
             )
-        )
 
         return steps

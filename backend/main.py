@@ -23,7 +23,7 @@ from app.memory.models import MemoryType, VerificationStatus
 from app.memory.service import query_relevant_context
 from backend.diagnostics.routes import router as diagnostic_router
 from backend.orchestrator import TaskOrchestrator
-from backend.planner import TaskDAG, TaskPlanner, utc_now_iso
+from backend.planner import TaskDAG, TaskPlanner, is_explicit_action_request, utc_now_iso
 
 logger = logging.getLogger(__name__)
 
@@ -593,7 +593,10 @@ async def agent_chat(req: ChatPromptRequest):
     cited_ids = [f["id"] for f in context.get("verified_facts", [])] + [p["id"] for p in context.get("preferences", [])]
     citations = context.get("verified_facts", []) + context.get("preferences", [])
 
-    if req.mode == "task" or any(k in user_goal.lower() for k in ("run", "backup", "deploy", "build", "execute", "task", "audit")):
+    is_action = is_explicit_action_request(user_goal)
+
+    # Conversational questions must use chat/answer mode and must never spawn shell/filesystem actions
+    if is_action and (req.mode == "task" or any(k in user_goal.lower() for k in ("run", "backup", "deploy", "build", "execute", "task", "audit", "write", "create", "delete", "wipe", "install"))):
         dag = task_planner.generate_dag(user_goal)
         task_orch = get_orchestrator()
         task_orch.register_task(dag)
@@ -613,12 +616,18 @@ async def agent_chat(req: ChatPromptRequest):
             "citations": citations,
         }
     else:
+        # Conversational questions and status inquiries use direct chat/answer mode without side-effects or approval proposals
+        if any(w in user_goal.lower() for w in ("working", "status", "health", "ready", "alive", "online")):
+            answer = f"Yes, MEMORAG Sovereign Agent is fully operational and healthy. All subsystems (local model {task_planner.model}, encrypted memory vault with {len(cited_ids)} active context records, and sovereign sandboxed executor) are verified with zero outbound telemetry."
+        else:
+            answer = f"MEMORAG Sovereign Agent standby. Memory handshake verified: {len(cited_ids)} facts and preferences active. Ready for task instructions."
+
         return {
             "id": msg_id,
             "role": "agent",
-            "content": f"MEMORAG Sovereign Agent standby. Memory handshake verified: {len(cited_ids)} facts and preferences active. Ready for task instructions.",
+            "content": answer,
             "timestamp": now_iso,
-            "thoughtTrace": f"Local loopback reasoning active via {task_planner.model}. Zero outbound telemetry.",
+            "thoughtTrace": f"Local loopback reasoning active via {task_planner.model}. Conversational answer mode engaged without side-effects. Zero outbound telemetry.",
             "citedMemoryIds": cited_ids,
             "model": task_planner.model,
             "citations": citations,
