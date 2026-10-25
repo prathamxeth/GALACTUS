@@ -12,9 +12,11 @@ from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger(__name__)
 
-KEYRING_SERVICE_NAME = "galactus_ragnarok"
+KEYRING_SERVICE_NAME = "memorag_ragnarok"
 KEYRING_USERNAME = "agent_master_key"
-ENV_KEY_VAR = "GALACTUS_ENCRYPTION_KEY"
+ENV_KEY_VAR = "MEMORAG_ENCRYPTION_KEY"
+FALLBACK_ENV_KEY_VAR = "GALACTUS_ENCRYPTION_KEY"
+FALLBACK_KEYRING_SERVICE_NAME = "galactus_ragnarok"
 
 
 # ============================================================================
@@ -58,16 +60,25 @@ class KeyringKeyProvider(KeyProvider):
     """
     Retrieves key from the host operating system credential vault via `keyring`
     (Windows Credential Manager, macOS Keychain, Linux SecretService).
+    Checks MEMORAG service first, falling back to legacy GALACTUS service name.
     """
 
-    def __init__(self, service_name: str = KEYRING_SERVICE_NAME, username: str = KEYRING_USERNAME):
+    def __init__(
+        self,
+        service_name: str = KEYRING_SERVICE_NAME,
+        username: str = KEYRING_USERNAME,
+        fallback_service: str = FALLBACK_KEYRING_SERVICE_NAME,
+    ):
         self.service_name = service_name
         self.username = username
+        self.fallback_service = fallback_service
 
     def get_key(self) -> bytes:
         try:
             import keyring
             stored = keyring.get_password(self.service_name, self.username)
+            if not stored and self.fallback_service:
+                stored = keyring.get_password(self.fallback_service, self.username)
             if not stored:
                 raise MissingKeyError(
                     f"No key found in OS keyring for service='{self.service_name}', user='{self.username}'."
@@ -87,15 +98,18 @@ class KeyringKeyProvider(KeyProvider):
 
 
 class EnvKeyProvider(KeyProvider):
-    """Retrieves key from an environment variable (GALACTUS_ENCRYPTION_KEY)."""
+    """Retrieves key from environment variable (MEMORAG_ENCRYPTION_KEY with GALACTUS_ENCRYPTION_KEY fallback)."""
 
-    def __init__(self, env_var: str = ENV_KEY_VAR):
+    def __init__(self, env_var: str = ENV_KEY_VAR, fallback_var: str = FALLBACK_ENV_KEY_VAR):
         self.env_var = env_var
+        self.fallback_var = fallback_var
 
     def get_key(self) -> bytes:
-        val = os.environ.get(self.env_var)
+        val = os.environ.get(self.env_var) or (os.environ.get(self.fallback_var) if self.fallback_var else None)
         if not val or not val.strip():
-            raise MissingKeyError(f"Environment variable '{self.env_var}' is not set.")
+            raise MissingKeyError(
+                f"Environment variable '{self.env_var}' is not set."
+            )
         return val.strip().encode("utf-8")
 
     def set_key(self, key: bytes) -> None:
@@ -155,7 +169,7 @@ class CompositeKeyProvider(KeyProvider):
         raise MissingKeyError(
             "Master encryption key not found. Checked OS Keyring and "
             f"environment variable '{self.env.env_var}'. "
-            "Please initialize a key or set GALACTUS_ENCRYPTION_KEY."
+            "Please initialize a key or set MEMORAG_ENCRYPTION_KEY."
         )
 
     def set_key(self, key: bytes) -> None:

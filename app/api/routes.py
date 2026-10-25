@@ -1,5 +1,5 @@
 """
-FastAPI route handlers for GALACTUS / Ragnarok Memory & Security Subsystem.
+FastAPI route handlers for MEMORAG / Ragnarok Memory & Security Subsystem.
 Provides RESTful endpoints for Member 3 (Frontend Lead) and Member 1 (Agent Architect).
 All payloads are processed locally; plaintext is never transmitted externally.
 """
@@ -209,6 +209,114 @@ def delete_memory(
         "id": memory_id,
         "deletion_type": "hard" if hard else "soft",
     }
+
+
+# ============================================================================
+# Frontend Command Center Endpoints (CONTRACT.md Section 2.5)
+# ============================================================================
+
+def _format_for_frontend(record: MemoryRecord) -> Dict[str, Any]:
+    """Adapts a MemoryRecord to include frontend-compatible fields while preserving backend structure."""
+    base = record.model_dump()
+    payload = record.payload or {}
+    mem_type = record.memory_type.value if hasattr(record.memory_type, "value") else str(record.memory_type)
+    base["type"] = mem_type
+
+    if mem_type == "semantic":
+        subject = payload.get("subject", "")
+        predicate = payload.get("predicate", "")
+        object_val = payload.get("object_value", "")
+        statement = f"{subject} {predicate}: {object_val}" if subject else str(object_val)
+        base["subject"] = subject
+        base["statement"] = statement
+        base["updatedAt"] = record.updated_at
+        base["accessCount"] = payload.get("access_count", 1)
+        base["decayFactor"] = 0.0
+    else:
+        # episodic
+        content = payload.get("content", {})
+        if isinstance(content, dict):
+            text_content = content.get("message") or content.get("text") or str(content)
+        else:
+            text_content = str(content)
+        base["title"] = payload.get("event_type") or record.category or "Episodic Event"
+        base["content"] = text_content
+        base["timestamp"] = record.created_at
+        base["sourceEvent"] = record.source_ref or payload.get("session_id", "session")
+        base["importanceScore"] = record.confidence
+        base["tags"] = [record.category] if record.category else ["episodic"]
+        base["pinned"] = False
+    return base
+
+
+@router.get("/memories")
+def list_memories_frontend(
+    type: Optional[str] = Query(None, description="episodic or semantic"),
+    query: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    service: MemoryService = Depends(get_memory_service),
+) -> List[Dict[str, Any]]:
+    """Frontend-compatible alias returning list of memories formatted for UI command center."""
+    mem_type = None
+    if type:
+        try:
+            mem_type = MemoryType(type.lower())
+        except ValueError:
+            pass
+    records = service.search_memories(
+        query=query,
+        memory_type=mem_type,
+        category=category,
+        limit=limit,
+        offset=offset,
+        include_expired=False,
+    )
+    return [_format_for_frontend(r) for r in records]
+
+
+@router.delete("/memories/{memory_id}")
+def delete_memory_frontend(
+    memory_id: str,
+    hard: bool = Query(default=False),
+    service: MemoryService = Depends(get_memory_service),
+) -> Dict[str, Any]:
+    """Frontend-compatible deletion endpoint (FR1.3 / NFR4.2)."""
+    success = service.delete_memory(memory_id, hard_delete=hard)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Memory record '{memory_id}' not found or already deleted.",
+        )
+    return {"deleted": True, "success": True, "id": memory_id}
+
+
+class MemoryPatchRequest(BaseModel):
+    statement: Optional[str] = None
+    content: Optional[str] = None
+    confidence: Optional[float] = None
+    verification_status: Optional[VerificationStatus] = None
+
+
+@router.patch("/memories/{memory_id}")
+def patch_memory_frontend(
+    memory_id: str,
+    patch: MemoryPatchRequest,
+    service: MemoryService = Depends(get_memory_service),
+) -> Dict[str, Any]:
+    """Frontend-compatible patch endpoint for editing memories (NFR4.2)."""
+    update = MemoryUpdate(
+        object_value=patch.statement,
+        content={"message": patch.content} if patch.content else None,
+        confidence=patch.confidence,
+        verification_status=patch.verification_status,
+    )
+    try:
+        rec = service.update_memory(memory_id, update)
+        return _format_for_frontend(rec)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Memory '{memory_id}' not found.")
 
 
 @router.get("/memory/export/all", response_model=MemoryExport)

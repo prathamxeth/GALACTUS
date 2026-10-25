@@ -1,5 +1,5 @@
 """
-Pydantic data models and schemas for GALACTUS / Ragnarok Memory & Security Subsystem.
+Pydantic data models and schemas for MEMORAG / Ragnarok Memory & Security Subsystem.
 Strictly local-first, zero-leak design.
 """
 

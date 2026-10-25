@@ -25,7 +25,7 @@ def utc_now() -> str:
 # ============================================================================
 
 def _apply_migration_v1(conn: sqlite3.Connection) -> None:
-    """Initial schema for Galactus / Ragnarok Memory & Security Subsystem."""
+    """Initial schema for MEMORAG / Ragnarok Memory & Security Subsystem."""
     cursor = conn.cursor()
 
     # 1. Memories Table (Episodic & Semantic)
@@ -131,7 +131,10 @@ class DatabaseManager:
     """
 
     def __init__(self, db_path: str = "galactus_memory.db"):
-        self.db_path = os.path.abspath(db_path)
+        resolved_path = db_path
+        if db_path == "galactus_memory.db":
+            resolved_path = os.environ.get("MEMORAG_DB_PATH") or os.environ.get("GALACTUS_DB_PATH", db_path)
+        self.db_path = os.path.abspath(resolved_path)
         # Ensure parent directory exists
         parent_dir = os.path.dirname(self.db_path)
         if parent_dir and not os.path.exists(parent_dir):

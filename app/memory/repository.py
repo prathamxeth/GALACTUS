@@ -1,5 +1,5 @@
 """
-Repository layer for GALACTUS Memory & Security Subsystem.
+Repository layer for MEMORAG Memory & Security Subsystem.
 Handles low-level parameterized SQL operations for memories, task checkpoints, and security policies.
 """
 
