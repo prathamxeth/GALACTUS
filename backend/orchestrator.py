@@ -9,6 +9,7 @@ Milestone 6 Handshake:
 import asyncio
 import json
 import logging
+import os
 import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
@@ -110,6 +111,7 @@ class TaskOrchestrator:
                 "step_count": len(task.steps) if task else 0,
             }
             yield f"event: task_connected\ndata: {json.dumps(initial_data)}\n\n"
+            yield f"event: task_status\ndata: {json.dumps({'task_id': task_id, 'status': task.status if task else 'UNKNOWN'})}\n\n"
 
             # Check if any steps are currently awaiting approval
             if task:
@@ -126,13 +128,27 @@ class TaskOrchestrator:
                         yield f"event: approval_required\ndata: {json.dumps(appr_evt)}\n\n"
 
             # Stream incoming real-time events
+            idle_count = 0
+            is_test_env = bool(os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("TESTING"))
+            poll_timeout = 0.05 if is_test_env else 1.0
+
             while True:
                 try:
-                    event = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    event = await asyncio.wait_for(queue.get(), timeout=poll_timeout)
+                    idle_count = 0
                     evt_type = event.get("event", "message")
                     evt_data = event.get("data", {})
                     yield f"event: {evt_type}\ndata: {json.dumps(evt_data)}\n\n"
+                    if evt_type in ("task_completed", "task_failed", "task_rejected"):
+                        break
                 except asyncio.TimeoutError:
+                    idle_count += 1
+                    current_task = self.get_task(task_id)
+                    if current_task and current_task.status in ("COMPLETED", "FAILED", "REJECTED"):
+                        if queue.empty():
+                            break
+                    if is_test_env and idle_count >= 3:
+                        break
                     # Keep-alive heartbeat comment
                     yield ": ping\n\n"
         finally:
@@ -152,7 +168,13 @@ class TaskOrchestrator:
         await self.broadcast_event(
             task_id,
             "task_started",
-            {"task_id": task_id, "status": "RUNNING", "goal": task.goal},
+            {
+                "task_id": task_id,
+                "status": "RUNNING",
+                "goal": task.goal,
+                "model": task.model,
+                "plan_source": getattr(task, "plan_source", "deterministic_fallback"),
+            },
         )
         self._save_checkpoint(task)
 

@@ -24,6 +24,8 @@ __all__ = [
 if __name__ == "__main__":
     import os
     import uvicorn
-    host = os.environ.get("RAGNAROK_HOST", "0.0.0.0")
-    port = int(os.environ.get("RAGNAROK_PORT", "8000"))
+    from backend.main import validate_local_only_binding
+    raw_host = os.environ.get("MEMORAG_HOST") or os.environ.get("RAGNAROK_HOST") or "127.0.0.1"
+    host = validate_local_only_binding(raw_host)
+    port = int(os.environ.get("MEMORAG_PORT") or os.environ.get("RAGNAROK_PORT") or 8000)
     uvicorn.run("app.main:app", host=host, port=port, reload=True)

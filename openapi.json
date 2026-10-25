@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Project Ragnarok Sovereign Agent & Orchestrator API",
-    "description": "Local-first Sovereign AI Agent Orchestrator with memory handshake (gemma4:e2b), real-time SSE execution telemetry, and human-in-the-loop approval gates.",
+    "title": "MEMORAG Sovereign Agent & Orchestrator API",
+    "description": "MEMORAG: Local-first Sovereign AI Agent Orchestrator for the Ragnarok Hackathon. Integrates encrypted memory handshake (gemma4:e2b), real-time SSE execution telemetry, and zero-trust human approval gates.",
     "version": "1.0.0"
   },
   "paths": {
@@ -622,6 +622,273 @@
         }
       }
     },
+    "/api/diagnostics/analyze": {
+      "post": {
+        "tags": [
+          "MEMORAG Forge Diagnostics"
+        ],
+        "summary": "Analyze Project",
+        "description": "Initiates local project diagnosis.\nInspects environment, git state, toolchain, and build/test failures.\nProduces evidence-backed observed facts, hypotheses, and an approval-gated repair proposal.",
+        "operationId": "analyze_project_api_diagnostics_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/{task_id}": {
+      "get": {
+        "tags": [
+          "MEMORAG Forge Diagnostics"
+        ],
+        "summary": "Get Diagnostic Report",
+        "description": "Retrieves full diagnostic report, evidence findings, and repair state.",
+        "operationId": "get_diagnostic_report_api_diagnostics__task_id__get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/{task_id}/repair": {
+      "post": {
+        "tags": [
+          "MEMORAG Forge Diagnostics"
+        ],
+        "summary": "Apply Approved Repair",
+        "description": "Executes approved repair inside sandbox and reruns post-action verification checks.\nRejects stale or mismatched approval IDs.",
+        "operationId": "apply_approved_repair_api_diagnostics__task_id__repair_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRepairRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/{task_id}/recover": {
+      "post": {
+        "tags": [
+          "MEMORAG Forge Diagnostics"
+        ],
+        "summary": "Recover Project",
+        "description": "Triggers safe rollback recovery if repair failed and pre-repair backup exists.",
+        "operationId": "recover_project_api_diagnostics__task_id__recover_post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/{task_id}/events": {
+      "get": {
+        "tags": [
+          "MEMORAG Forge Diagnostics"
+        ],
+        "summary": "List Flight Recorder Events",
+        "description": "Lists durable flight recorder events emitted for this diagnostic task.",
+        "operationId": "list_flight_recorder_events_api_diagnostics__task_id__events_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlightRecorderEvent"
+                  },
+                  "title": "Response List Flight Recorder Events Api Diagnostics  Task Id  Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/{task_id}/events/stream": {
+      "get": {
+        "tags": [
+          "MEMORAG Forge Diagnostics"
+        ],
+        "summary": "Stream Flight Recorder Events",
+        "description": "SSE stream emitting real-time Project Flight Recorder diagnostic events.",
+        "operationId": "stream_flight_recorder_events_api_diagnostics__task_id__events_stream_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tasks": {
       "get": {
         "tags": [
@@ -919,10 +1186,319 @@
           }
         }
       }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Api Health Alias",
+        "description": "Compatibility alias for Member 3 health probe.",
+        "operationId": "api_health_alias_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/status": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Get Agent Status",
+        "description": "Canonical agent runtime status endpoint.",
+        "operationId": "get_agent_status_api_agent_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills": {
+      "get": {
+        "tags": [
+          "Skills & Tools"
+        ],
+        "summary": "List Skills",
+        "description": "Returns canonical registered skills available for sovereign DAG decomposition.",
+        "operationId": "list_skills_api_skills_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/chat": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Agent Chat",
+        "description": "Command Center chat interface:\nProcesses operator prompts through local memory context and task planner.",
+        "operationId": "agent_chat_api_agent_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatPromptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/memories": {
+      "get": {
+        "tags": [
+          "Memory & Security"
+        ],
+        "summary": "List Memories Plural",
+        "description": "Plural alias for GET /api/memory to match Member 3 frontend.",
+        "operationId": "list_memories_plural_api_memories_get",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "'episodic' or 'semantic'",
+              "title": "Type"
+            },
+            "description": "'episodic' or 'semantic'"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/memories/{memory_id}": {
+      "delete": {
+        "tags": [
+          "Memory & Security"
+        ],
+        "summary": "Delete Memory Plural",
+        "description": "Plural alias for DELETE /api/memory/{id} to match Member 3 frontend.",
+        "operationId": "delete_memory_plural_api_memories__memory_id__delete",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          },
+          {
+            "name": "hard",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Hard"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/privacy": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get Privacy Settings",
+        "description": "Returns local privacy and inference configuration.",
+        "operationId": "get_privacy_settings_api_settings_privacy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update Privacy Settings",
+        "description": "Updates local privacy parameters.",
+        "operationId": "update_privacy_settings_api_settings_privacy_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Updates"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AnalyzeProjectRequest": {
+        "properties": {
+          "project_root": {
+            "type": "string",
+            "title": "Project Root",
+            "description": "Target project root directory to inspect"
+          },
+          "user_request": {
+            "type": "string",
+            "title": "User Request",
+            "description": "Operator request or failure description",
+            "default": "Find why build/test fails"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_root"
+        ],
+        "title": "AnalyzeProjectRequest"
+      },
       "ApprovalDecisionRequest": {
         "properties": {
           "decision": {
@@ -946,6 +1522,26 @@
         },
         "type": "object",
         "title": "ApprovalDecisionRequest"
+      },
+      "ChatPromptRequest": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "Operator instruction or chat message"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "'chat', 'task', or 'memory'",
+            "default": "chat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "ChatPromptRequest"
       },
       "CreateTaskRequest": {
         "properties": {
@@ -1043,6 +1639,110 @@
         ],
         "title": "DAGStep",
         "description": "Represents a single step within a Task execution DAG."
+      },
+      "DiagnosticReport": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "project_root": {
+            "type": "string",
+            "title": "Project Root"
+          },
+          "user_request": {
+            "type": "string",
+            "title": "User Request"
+          },
+          "observed_facts": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceFinding"
+            },
+            "type": "array",
+            "title": "Observed Facts",
+            "description": "Strictly observed outputs, real exit codes, and verifiable diffs"
+          },
+          "relevant_memory": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Relevant Memory",
+            "description": "Retrieved preferences and facts from Sentinel vault with verification status"
+          },
+          "hypotheses": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceFinding"
+            },
+            "type": "array",
+            "title": "Hypotheses",
+            "description": "Plausible root cause hypotheses (never claimed as ground-truth facts)"
+          },
+          "proposed_repair": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepairProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "approval_requirements": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Approval Requirements"
+          },
+          "verification_results": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerificationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recovery_options": {
+            "items": {
+              "$ref": "#/components/schemas/RecoveryOption"
+            },
+            "type": "array",
+            "title": "Recovery Options"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "'INSPECTING', 'DIAGNOSED', 'AWAITING_APPROVAL', 'REPAIRING', 'VERIFIED', 'FAILED', 'RECOVERED'",
+            "default": "DIAGNOSED"
+          },
+          "diagnosed_at": {
+            "type": "string",
+            "title": "Diagnosed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "project_root",
+          "user_request"
+        ],
+        "title": "DiagnosticReport",
+        "description": "Structured diagnostic report separating observed facts from hypotheses."
+      },
+      "DiagnosticSourceType": {
+        "type": "string",
+        "enum": [
+          "command_output",
+          "git_diff",
+          "environment_inspection",
+          "static_check",
+          "memory_vault",
+          "toolchain_check",
+          "llm_hypothesis"
+        ],
+        "title": "DiagnosticSourceType"
       },
       "EpisodicEvent": {
         "properties": {
@@ -1162,6 +1862,141 @@
         ],
         "title": "EventCreate",
         "description": "Input contract for storing an episodic event."
+      },
+      "EvidenceFinding": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/FindingCategory"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Refs",
+            "description": "References to actual command execution IDs, exit codes, diff lines, or tool outputs"
+          },
+          "source_type": {
+            "$ref": "#/components/schemas/DiagnosticSourceType"
+          },
+          "observed_at": {
+            "type": "string",
+            "title": "Observed At"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "status": {
+            "$ref": "#/components/schemas/FindingStatus",
+            "default": "verified"
+          },
+          "limitations": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limitations",
+            "description": "Known gaps or ambiguities in evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "category",
+          "summary",
+          "source_type"
+        ],
+        "title": "EvidenceFinding",
+        "description": "Evidence-backed diagnostic finding carrying full provenance.\nNever equates an LLM assertion with verified evidence."
+      },
+      "FindingCategory": {
+        "type": "string",
+        "enum": [
+          "syntax_error",
+          "dependency_mismatch",
+          "missing_toolchain",
+          "test_failure",
+          "build_failure",
+          "config_error",
+          "permission_violation",
+          "insufficient_evidence",
+          "environment_inspection",
+          "unknown"
+        ],
+        "title": "FindingCategory"
+      },
+      "FindingStatus": {
+        "type": "string",
+        "enum": [
+          "verified",
+          "hypothesis",
+          "disproved"
+        ],
+        "title": "FindingStatus"
+      },
+      "FlightRecorderEvent": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Refs"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "MEMORAG_FORGE_DIAGNOSTICS"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "event_type"
+        ],
+        "title": "FlightRecorderEvent",
+        "description": "Durable Project Flight Recorder event compatible with Sentinel."
       },
       "GrantApprovalRequest": {
         "properties": {
@@ -1480,6 +2315,287 @@
         "title": "PermissionDecision",
         "description": "Decision returned by the authorization gateway."
       },
+      "ProposedAction": {
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "title": "Action Id"
+          },
+          "action_type": {
+            "type": "string",
+            "title": "Action Type",
+            "description": "'file_patch', 'file_write', 'install_package', 'command'"
+          },
+          "target_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Path"
+          },
+          "diff_patch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diff Patch"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Command"
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "default": "MEDIUM"
+          },
+          "requires_approval": {
+            "type": "boolean",
+            "title": "Requires Approval",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "action_type"
+        ],
+        "title": "ProposedAction",
+        "description": "Specific single modification action within a repair proposal."
+      },
+      "RecoveryOption": {
+        "properties": {
+          "recovery_id": {
+            "type": "string",
+            "title": "Recovery Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Id"
+          },
+          "backup_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Path"
+          },
+          "is_available": {
+            "type": "boolean",
+            "title": "Is Available",
+            "default": true
+          },
+          "recovery_command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Command"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "description"
+        ],
+        "title": "RecoveryOption",
+        "description": "Safe recovery / rollback option if repair fails."
+      },
+      "RepairProposal": {
+        "properties": {
+          "proposal_id": {
+            "type": "string",
+            "title": "Proposal Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "supporting_evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supporting Evidence Ids"
+          },
+          "files_to_modify": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Files To Modify"
+          },
+          "exact_patch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Patch",
+            "description": "Unified diff patch of proposed changes"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ProposedAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "default": "MEDIUM"
+          },
+          "requires_approval": {
+            "type": "boolean",
+            "title": "Requires Approval",
+            "default": true
+          },
+          "expected_verification_commands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Verification Commands"
+          },
+          "limitations": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limitations"
+          },
+          "recovery_checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery Checkpoint Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'EXECUTED', 'FAILED'",
+            "default": "PENDING_APPROVAL"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "summary",
+          "explanation"
+        ],
+        "title": "RepairProposal",
+        "description": "Minimal, evidence-backed repair proposal.\nRequires explicit human approval before any file writes or mutations."
+      },
+      "ResolveRepairRequest": {
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "title": "Approval Id",
+            "description": "Unique human approval token"
+          },
+          "decision": {
+            "type": "string",
+            "title": "Decision",
+            "description": "'approved' or 'rejected'",
+            "default": "approved"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Operator authorization rationale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_id"
+        ],
+        "title": "ResolveRepairRequest"
+      },
       "RiskLevel": {
         "type": "string",
         "enum": [
@@ -1738,6 +2854,12 @@
             "description": "Target Ollama model",
             "default": "gemma4:e2b"
           },
+          "plan_source": {
+            "type": "string",
+            "title": "Plan Source",
+            "description": "'model_generated' or 'deterministic_fallback'",
+            "default": "deterministic_fallback"
+          },
           "injected_context": {
             "additionalProperties": true,
             "type": "object",
@@ -1830,6 +2952,70 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VerificationResult": {
+        "properties": {
+          "verification_id": {
+            "type": "string",
+            "title": "Verification Id"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "proposal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposal Id"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "commands_executed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Commands Executed"
+          },
+          "exit_codes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Exit Codes"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Outputs"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "executed_at": {
+            "type": "string",
+            "title": "Executed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "passed",
+          "summary"
+        ],
+        "title": "VerificationResult",
+        "description": "Post-action verification execution result."
       },
       "VerificationStatus": {
         "type": "string",
