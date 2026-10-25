@@ -94,7 +94,7 @@ export const UserHomeView: React.FC = () => {
               icon={<Send className="w-4 h-4" />}
               className="shrink-0 sm:self-center transition-transform active:scale-95"
             >
-              Ask Ragnarok
+              Ask MEMORAG
             </Button>
           </form>
         </Card>

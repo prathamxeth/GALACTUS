@@ -588,7 +588,7 @@ export const DevMemoryInspector: React.FC = () => {
                   Rune Reference Key
                 </span>
                 <CopyField
-                  text={`ragnarok:rune:${inspectingItem.type}:${inspectingItem.id}`}
+                  text={`memorag:rune:${inspectingItem.type}:${inspectingItem.id}`}
                   label="RUNE-REF"
                   truncate={false}
                 />

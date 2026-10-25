@@ -1,7 +1,7 @@
-# Ragnarok: Frontend & Backend Integration Contract
+# MEMORAG: Frontend & Backend Integration Contract
 **Author:** Engineer 3 (Frontend & Integration Lead)  
 **Target:** Python + FastAPI Backend Engineers (Engineers 1 & 2)  
-**Project:** Ragnarok: Sovereign Always-On Personal AI Agent  
+**Project:** MEMORAG: Sovereign Always-On Personal AI Agent  
 **Base URL:** `http://127.0.0.1:8000` (Localhost loopback only)
 
 ---

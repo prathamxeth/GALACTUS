@@ -1,5 +1,5 @@
 """
-Backend package for Project Ragnarok.
+Backend package for Project MEMORAG.
 Exposes TaskPlanner, TaskOrchestrator, and FastAPI application.
 """
 

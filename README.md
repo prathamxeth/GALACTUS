@@ -1,4 +1,4 @@
-# ⚡ RAGNAROK
+# ⚡ MEMORAG
 ### Sovereign, Always-On Personal AI Agent
 *Architecting Privacy-Preserving Autonomous Workflows with Persistent Memory on a Fully Local, Ollama-Based Stack.*
 
@@ -10,7 +10,7 @@ Built for **Galactus Hackathon 2026** (Problem Statement 1).
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                      RAGNAROK COMMAND CENTER                           │
+│                      MEMORAG COMMAND CENTER                            │
 │     Next.js 16 (App Router) • TypeScript • Restrained Dark Theme       │
 ├────────────────────────────────────────────────────────────────────────┤
 │  [ Command Center ]  [ Task Timeline ]  [ Memory Vault ]  [ Skills ]   │

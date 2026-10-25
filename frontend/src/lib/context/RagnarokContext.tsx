@@ -126,12 +126,12 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        const savedMode = localStorage.getItem('ragnarok_mode') as AudienceMode | null;
+        const savedMode = (localStorage.getItem('memorag_mode') || localStorage.getItem('ragnarok_mode')) as AudienceMode | null;
         if (savedMode === 'user' || savedMode === 'developer') {
           setModeState(savedMode);
         }
 
-        const savedTheme = localStorage.getItem('ragnarok_theme') as AppearancePreset | null;
+        const savedTheme = (localStorage.getItem('memorag_theme') || localStorage.getItem('ragnarok_theme')) as AppearancePreset | null;
         if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
           setPresetState(savedTheme);
           document.documentElement.setAttribute('data-theme', savedTheme);
@@ -151,6 +151,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   const setMode = (newMode: AudienceMode) => {
     setModeState(newMode);
     try {
+      localStorage.setItem('memorag_mode', newMode);
       localStorage.setItem('ragnarok_mode', newMode);
     } catch {
       // ignore
@@ -161,6 +162,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     setPresetState(newPreset);
     document.documentElement.setAttribute('data-theme', newPreset);
     try {
+      localStorage.setItem('memorag_theme', newPreset);
       localStorage.setItem('ragnarok_theme', newPreset);
     } catch {
       // ignore
@@ -353,7 +355,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     // Local JSON export fallback if backend export is offline
     const localContent = JSON.stringify(memories, null, 2);
-    const filename = `ragnarok_memory_export_${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `memorag_memory_export_${new Date().toISOString().slice(0, 10)}.json`;
     const blob = new Blob([localContent], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -609,3 +611,9 @@ export const useRagnarok = (): RagnarokContextValue => {
   }
   return context;
 };
+
+// Aliases for project & agent rename to MEMORAG
+export const useMemoRag = useRagnarok;
+export const MemoRagProvider = RagnarokProvider;
+export const MemoRagContext = RagnarokContext;
+export type MemoRagContextValue = RagnarokContextValue;

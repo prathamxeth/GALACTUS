@@ -382,7 +382,7 @@ export class RagnarokApiClient {
         return {
           data: {
             content,
-            filename: `ragnarok_memory_export_${dateStr}.json`,
+            filename: `memorag_memory_export_${dateStr}.json`,
             mimeType: 'application/json',
           },
           isLive: true,
@@ -799,4 +799,5 @@ export class RagnarokApiClient {
 }
 
 export const api = new RagnarokApiClient();
+export const MemoRagApiClient = RagnarokApiClient;
 export { DEMO_CHAT_MESSAGES };

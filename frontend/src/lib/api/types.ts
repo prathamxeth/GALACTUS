@@ -1,6 +1,6 @@
 /**
- * Ragnarok Sovereign AI Agent - Type Definitions
- * Aligned with Ragnarok Research Proposal (FR1-FR4, NFR1-NFR4)
+ * MEMORAG Sovereign AI Agent - Type Definitions
+ * Aligned with MEMORAG Research Proposal (FR1-FR4, NFR1-NFR4)
  */
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';

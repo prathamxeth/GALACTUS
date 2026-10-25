@@ -1,5 +1,5 @@
 """
-Task Planner for Project Ragnarok.
+Task Planner for Project MEMORAG.
 Responsible for Milestone 5 (Memory Handshake with Member 2):
 - Imports and invokes query_relevant_context(user_goal) from the persistence/memory module before generating the DAG.
 - Injects verified facts and user preferences into the system prompt passed to Ollama (gemma4:e2b) so the planner respects user constraints.
@@ -85,7 +85,7 @@ class TaskPlanner:
         verified_facts = context.get("verified_facts", [])
         constraints = context.get("constraints", [])
 
-        prompt = f"""You are Ragnarok's Sovereign Autonomous Task Planner.
+        prompt = f"""You are MEMORAG's Sovereign Autonomous Task Planner.
 Target Local Inference Engine: Ollama
 Active Model: {self.model}
 Telemetry Policy: Zero outbound telemetry, local-first execution.

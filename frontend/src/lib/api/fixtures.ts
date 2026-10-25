@@ -50,7 +50,7 @@ export const DEMO_CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-01',
     role: 'system',
-    content: 'Ragnarok Sovereign Agent initialized. All reasoning routed to local Ollama instance (llama3.2:3b). Zero outbound telemetry active.',
+    content: 'MEMORAG Sovereign Agent initialized. All reasoning routed to local Ollama instance (llama3.2:3b). Zero outbound telemetry active.',
     timestamp: '10:15 AM',
   },
   {
@@ -204,7 +204,7 @@ export const DEMO_APPROVALS: ApprovalRequest[] = [
     riskLevel: 'medium',
     rationale: 'Modifies workspace files and queues execution of repository verification commands behind the sandboxed shell.',
     commandOrPayload: `cat << 'EOF' > /GALACTUS/SUBMISSION_CHECKLIST.md
-# Ragnarok Submission Checklist
+# MEMORAG Submission Checklist
 - [x] Persistent App Shell & Command Center
 - [x] Multi-step Task Timeline with Approval Gates
 - [x] Mimir's Memory Vault (Episodic + Semantic)
@@ -225,8 +225,8 @@ export const DEMO_MEMORIES: MemoryRecord[] = [
   {
     id: 'mem-epi-01',
     type: 'episodic',
-    title: 'Initial Hackathon Briefing & Ragnarok Mandate',
-    content: 'User established project Ragnarok as a Sovereign, Always-On Personal AI Agent running on macOS with Ollama local inference and zero cloud reliance.',
+    title: 'Initial Hackathon Briefing & MEMORAG Mandate',
+    content: 'User established project MEMORAG as a Sovereign, Always-On Personal AI Agent running on macOS with Ollama local inference and zero cloud reliance.',
     timestamp: new Date(FIXTURE_BASE_TIME - 1000 * 60 * 60 * 24 * 2).toISOString(),
     sourceEvent: 'CLI Session Init #01',
     importanceScore: 0.98,

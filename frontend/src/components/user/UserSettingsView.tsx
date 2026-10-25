@@ -63,7 +63,7 @@ export const UserSettingsView: React.FC = () => {
           </div>
 
           <p className="text-xs text-main leading-relaxed pt-1">
-            Ragnarok runs 100% on this device using local intelligence. There are no cloud accounts, no subscription keys, and zero telemetry being sent out.
+            MEMORAG runs 100% on this device using local intelligence. There are no cloud accounts, no subscription keys, and zero telemetry being sent out.
           </p>
         </div>
       </FadeContent>

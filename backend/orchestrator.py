@@ -1,5 +1,5 @@
 """
-Task Orchestrator & Execution Engine for Project Ragnarok.
+Task Orchestrator & Execution Engine for Project MEMORAG.
 Milestone 6 Handshake:
 - Manages DAG execution lifecycle and checkpoints.
 - Emits real-time task progress and approval events over SSE streams.

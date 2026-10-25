@@ -1,5 +1,5 @@
 """
-Main FastAPI server for Project Ragnarok Backend & Sovereign Agent.
+Main FastAPI server for Project MEMORAG Backend & Sovereign Agent.
 Milestone 6 Integration:
 - Configures CORSMiddleware to allow http://localhost:5173, http://localhost:3000, and *.
 - SSE event stream endpoint GET /api/tasks/{task_id}/events/stream with media_type="text/event-stream".
@@ -46,7 +46,7 @@ def get_planner() -> TaskPlanner:
         SubsystemContainer.initialize(db_path=db_path)
     if planner is None:
         planner = TaskPlanner(
-            model=os.environ.get("RAGNAROK_MODEL", "gemma4:e2b"),
+            model=os.environ.get("MEMORAG_MODEL", os.environ.get("RAGNAROK_MODEL", "gemma4:e2b")),
             ollama_endpoint=os.environ.get("OLLAMA_ENDPOINT", "http://127.0.0.1:11434"),
             memory_service=SubsystemContainer.memory_service,
         )
@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Project Ragnarok Sovereign Agent & Orchestrator API",
+    title="Project MEMORAG Sovereign Agent & Orchestrator API",
     description=(
         "Local-first Sovereign AI Agent Orchestrator with memory handshake (gemma4:e2b), "
         "real-time SSE execution telemetry, and human-in-the-loop approval gates."
@@ -238,10 +238,10 @@ async def approve_permission_alias(req: Dict[str, Any]):
 def root_info():
     """Service status and component metadata."""
     return {
-        "service": "GALACTUS / Ragnarok Sovereign Agent Orchestrator",
+        "service": "GALACTUS / MEMORAG Sovereign Agent Orchestrator",
         "version": "1.0.0",
         "status": "online",
-        "model": os.environ.get("RAGNAROK_MODEL", "gemma4:e2b"),
+        "model": os.environ.get("MEMORAG_MODEL", os.environ.get("RAGNAROK_MODEL", "gemma4:e2b")),
         "telemetry": "Zero outbound telemetry (Local-First)",
         "cors_origins": ["http://localhost:5173", "http://localhost:3000", "*"],
         "docs_url": "/docs",
@@ -256,6 +256,6 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    host = os.environ.get("RAGNAROK_HOST", "0.0.0.0")
-    port = int(os.environ.get("RAGNAROK_PORT", "8000"))
+    host = os.environ.get("MEMORAG_HOST", os.environ.get("RAGNAROK_HOST", "0.0.0.0"))
+    port = int(os.environ.get("MEMORAG_PORT", os.environ.get("RAGNAROK_PORT", "8000")))
     uvicorn.run("backend.main:app", host=host, port=port, reload=True)

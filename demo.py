@@ -1,5 +1,5 @@
 """
-Live Demonstration Script for GALACTUS / Ragnarok Memory & Security Subsystem.
+Live Demonstration Script for GALACTUS / MEMORAG Memory & Security Subsystem.
 Run with: python demo.py
 """
 
@@ -30,7 +30,7 @@ from app.memory.service import MemoryService
 
 def run_demo():
     print("=" * 70)
-    print("  GALACTUS / RAGNAROK MEMORY & SECURITY SUBSYSTEM - LIVE DEMO")
+    print("  GALACTUS / MEMORAG MEMORY & SECURITY SUBSYSTEM - LIVE DEMO")
     print("=" * 70)
 
     with tempfile.TemporaryDirectory() as tmpdir:

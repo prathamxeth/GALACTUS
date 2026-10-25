@@ -1,5 +1,5 @@
 """
-FastAPI route handlers for GALACTUS / Ragnarok Memory & Security Subsystem.
+FastAPI route handlers for GALACTUS / MEMORAG Memory & Security Subsystem.
 Provides RESTful endpoints for Member 3 (Frontend Lead) and Member 1 (Agent Architect).
 All payloads are processed locally; plaintext is never transmitted externally.
 """

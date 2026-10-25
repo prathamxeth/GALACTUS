@@ -25,7 +25,7 @@ def utc_now() -> str:
 # ============================================================================
 
 def _apply_migration_v1(conn: sqlite3.Connection) -> None:
-    """Initial schema for Galactus / Ragnarok Memory & Security Subsystem."""
+    """Initial schema for Galactus / MEMORAG Memory & Security Subsystem."""
     cursor = conn.cursor()
 
     # 1. Memories Table (Episodic & Semantic)

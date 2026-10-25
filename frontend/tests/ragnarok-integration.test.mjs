@@ -442,9 +442,13 @@ describe('Ragnarok Centralized API Client & Contract Integration', () => {
 
     // Mock storage test
     const mockStorage = {};
+    mockStorage['memorag_mode'] = 'developer';
+    mockStorage['memorag_theme'] = 'dark';
     mockStorage['ragnarok_mode'] = 'developer';
     mockStorage['ragnarok_theme'] = 'dark';
 
+    assert.equal(mockStorage['memorag_mode'], 'developer');
+    assert.equal(mockStorage['memorag_theme'], 'dark');
     assert.equal(mockStorage['ragnarok_mode'], 'developer');
     assert.equal(mockStorage['ragnarok_theme'], 'dark');
   });

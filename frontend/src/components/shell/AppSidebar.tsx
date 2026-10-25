@@ -106,12 +106,12 @@ export const AppSidebar: React.FC = () => {
         <div className="px-5 py-4 border-b border-subtle">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:border-emerald-500/60 transition-colors">
-              <span className="font-mono font-bold text-sm">ᚱ</span>
+              <span className="font-mono font-bold text-sm">ᛗ</span>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-sm tracking-tight text-main">
-                  RAGNAROK
+                  MEMORAG
                 </span>
                 <span className="text-[10px] font-mono uppercase bg-elevated text-dim px-1 py-0.2 rounded border border-subtle">
                   {isDev ? 'CORE' : 'PERSONAL'}
