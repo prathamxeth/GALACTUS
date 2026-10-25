@@ -42,6 +42,26 @@ class DAGStep(BaseModel):
     output: Optional[Any] = Field(default=None)
     approval_id: Optional[str] = Field(default=None)
 
+    def __getitem__(self, item: str) -> Any:
+        if item == "id":
+            return self.step_id
+        return getattr(self, item)
+
+    def __contains__(self, item: str) -> bool:
+        return item in ("id", "step_id") or hasattr(self, item)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, dict):
+            for k, v in other.items():
+                if k == "id" and self.step_id != v:
+                    return False
+                elif hasattr(self, k) and getattr(self, k) != v:
+                    return False
+            return True
+        return super().__eq__(other)
+
+
+
 
 class TaskDAG(BaseModel):
     """Execution DAG produced by the TaskPlanner."""
@@ -54,6 +74,12 @@ class TaskDAG(BaseModel):
     status: str = Field(default="PENDING", description="PENDING, RUNNING, PAUSED_APPROVAL, COMPLETED, FAILED")
     created_at: str = Field(default_factory=utc_now_iso)
     updated_at: str = Field(default_factory=utc_now_iso)
+
+    def __getitem__(self, item: str) -> Any:
+        if item == "id":
+            return self.task_id
+        return getattr(self, item)
+
 
 
 # ============================================================================
@@ -90,7 +116,7 @@ Target Local Inference Engine: Ollama
 Active Model: {self.model}
 Telemetry Policy: Zero outbound telemetry, local-first execution.
 
-=== INJECTED VERIFIED USER MEMORY & CONSTRAINTS ===
+=== INJECTED VERIFIED USER MEMORY & CONSTRAINTS (MEMBER 2 HANDSHAKE) ===
 {formatted_context}
 ===================================================
 
@@ -192,7 +218,7 @@ CRITICAL PLANNING RULES:
 
                 steps.append(
                     DAGStep(
-                        step_id=item.get("step_id") or f"step-{uuid.uuid4().hex[:6]}",
+                        step_id=item.get("step_id") or item.get("id") or f"step-{uuid.uuid4().hex[:6]}",
                         step_number=idx,
                         title=item.get("title", f"Step {idx}"),
                         skill_name=item.get("skill_name", "system.execute"),

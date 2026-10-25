@@ -5,9 +5,27 @@ Handles low-level parameterized SQL operations for memories, task checkpoints, a
 
 import os
 import sqlite3
-from typing import Any, Dict, List, Optional
+import uuid
+from typing import Any, Dict, List, Optional, Union
 from app.memory.database import DatabaseManager, utc_now
 from app.memory.models import MemoryRecord, TaskCheckpoint, TaskExecutionEvent
+
+
+def normalize_id(identifier: Any) -> str:
+    """
+    Normalizes any identifier (str, UUID instance, unhyphenated hex, uppercase, with whitespace)
+    to a trimmed lowercase canonical string.
+    """
+    if identifier is None:
+        return ""
+    if isinstance(identifier, uuid.UUID):
+        return str(identifier).lower()
+    raw = str(identifier).strip()
+    try:
+        parsed = uuid.UUID(raw)
+        return str(parsed).lower()
+    except (ValueError, AttributeError):
+        return raw.lower()
 
 
 class MemoryRepository:
@@ -49,14 +67,19 @@ class MemoryRepository:
                 ),
             )
 
-    def get_memory_row(self, memory_id: str, include_deleted: bool = False) -> Optional[sqlite3.Row]:
-        """Fetches a single raw database row by ID."""
-        sql = "SELECT * FROM memories WHERE id = ?"
+    def get_memory_row(self, memory_id: Union[str, uuid.UUID, Any], include_deleted: bool = False) -> Optional[sqlite3.Row]:
+        """Fetches a single raw database row by ID, supporting canonical UUIDs, whitespace stripping, and case normalization."""
+        if memory_id is None:
+            return None
+        raw_id = str(memory_id).strip()
+        canonical_id = normalize_id(memory_id)
+
+        sql = "SELECT * FROM memories WHERE (id = ? OR id = ? OR LOWER(id) = LOWER(?))"
         if not include_deleted:
             sql += " AND is_deleted = 0"
         conn = self.db.get_connection()
         try:
-            return conn.execute(sql, (memory_id,)).fetchone()
+            return conn.execute(sql, (raw_id, canonical_id, canonical_id)).fetchone()
         finally:
             conn.close()
 
@@ -73,12 +96,15 @@ class MemoryRepository:
 
     def update_memory_row(
         self,
-        memory_id: str,
+        memory_id: Union[str, uuid.UUID, Any],
         encrypted_payload: Optional[str] = None,
         verification_status: Optional[str] = None,
         confidence: Optional[float] = None,
     ) -> bool:
         """Updates verification status, confidence, payload, and updated_at."""
+        raw_id = str(memory_id).strip()
+        canonical_id = normalize_id(memory_id)
+
         clauses = ["updated_at = ?"]
         params: List[Any] = [utc_now()]
 
@@ -92,35 +118,42 @@ class MemoryRepository:
             clauses.append("confidence = ?")
             params.append(confidence)
 
-        params.append(memory_id)
-        sql = f"UPDATE memories SET {', '.join(clauses)} WHERE id = ? AND is_deleted = 0;"
+        params.extend([raw_id, canonical_id, canonical_id])
+        sql = f"UPDATE memories SET {', '.join(clauses)} WHERE (id = ? OR id = ? OR LOWER(id) = LOWER(?)) AND is_deleted = 0;"
 
         with self.db.transaction() as conn:
             cursor = conn.execute(sql, params)
             return cursor.rowcount > 0
 
-    def soft_delete_memory(self, memory_id: str) -> bool:
+    def soft_delete_memory(self, memory_id: Union[str, uuid.UUID, Any]) -> bool:
         """Marks a record as deleted (tombstone) without removing physical row."""
-        sql = "UPDATE memories SET is_deleted = 1, updated_at = ? WHERE id = ? AND is_deleted = 0;"
+        raw_id = str(memory_id).strip()
+        canonical_id = normalize_id(memory_id)
+        sql = "UPDATE memories SET is_deleted = 1, updated_at = ? WHERE (id = ? OR id = ? OR LOWER(id) = LOWER(?)) AND is_deleted = 0;"
         with self.db.transaction() as conn:
-            cursor = conn.execute(sql, (utc_now(), memory_id))
+            cursor = conn.execute(sql, (utc_now(), raw_id, canonical_id, canonical_id))
             return cursor.rowcount > 0
 
-    def hard_delete_memory(self, memory_id: str) -> bool:
+    def hard_delete_memory(self, memory_id: Union[str, uuid.UUID, Any]) -> bool:
         """
         Permanently destroys a memory record:
         1. Overwrites encrypted_payload with random cryptographic garbage.
         2. Deletes the row from SQLite.
         """
+        raw_id = str(memory_id).strip()
+        canonical_id = normalize_id(memory_id)
         garbage = os.urandom(64).hex()
         with self.db.transaction() as conn:
             # Overwrite first
             conn.execute(
-                "UPDATE memories SET encrypted_payload = ?, updated_at = ? WHERE id = ?;",
-                (garbage, utc_now(), memory_id),
+                "UPDATE memories SET encrypted_payload = ?, updated_at = ? WHERE (id = ? OR id = ? OR LOWER(id) = LOWER(?));",
+                (garbage, utc_now(), raw_id, canonical_id, canonical_id),
             )
             # Delete row
-            cursor = conn.execute("DELETE FROM memories WHERE id = ?;", (memory_id,))
+            cursor = conn.execute(
+                "DELETE FROM memories WHERE (id = ? OR id = ? OR LOWER(id) = LOWER(?));",
+                (raw_id, canonical_id, canonical_id),
+            )
             return cursor.rowcount > 0
 
     def list_active_memories(
@@ -243,12 +276,13 @@ class MemoryRepository:
             )
 
     def get_task_checkpoint_row(self, task_id: str) -> Optional[sqlite3.Row]:
-        """Fetches a task checkpoint by task ID."""
+        """Fetches a task checkpoint by task ID with trimmed whitespace support."""
+        raw_id = str(task_id).strip()
         conn = self.db.get_connection()
         try:
             return conn.execute(
-                "SELECT * FROM task_checkpoints WHERE task_id = ?;",
-                (task_id,),
+                "SELECT * FROM task_checkpoints WHERE (task_id = ? OR task_id = ?);",
+                (task_id, raw_id),
             ).fetchone()
         finally:
             conn.close()
@@ -290,14 +324,29 @@ class MemoryRepository:
                 ),
             )
 
-    def get_execution_event_by_hash(self, idempotency_hash: str) -> Optional[sqlite3.Row]:
-        """Checks if an action with identical input hash has already been recorded."""
+    def get_execution_event_by_hash(
+        self,
+        idempotency_hash: str,
+        task_id: Optional[str] = None,
+        step_id: Optional[str] = None,
+    ) -> Optional[sqlite3.Row]:
+        """
+        Checks if an action with identical input hash has already been recorded.
+        When task_id and/or step_id are provided, scopes lookup to avoid cross-task false positives.
+        """
+        clauses = ["idempotency_hash = ?"]
+        params: List[Any] = [idempotency_hash]
+        if task_id:
+            clauses.append("task_id = ?")
+            params.append(str(task_id).strip())
+        if step_id:
+            clauses.append("step_id = ?")
+            params.append(str(step_id).strip())
+
+        sql = f"SELECT * FROM execution_events WHERE {' AND '.join(clauses)} ORDER BY recorded_at DESC LIMIT 1;"
         conn = self.db.get_connection()
         try:
-            return conn.execute(
-                "SELECT * FROM execution_events WHERE idempotency_hash = ?;",
-                (idempotency_hash,),
-            ).fetchone()
+            return conn.execute(sql, params).fetchone()
         finally:
             conn.close()
 
@@ -308,6 +357,17 @@ class MemoryRepository:
             return conn.execute(
                 "SELECT * FROM execution_events WHERE task_id = ? ORDER BY recorded_at ASC;",
                 (task_id,),
+            ).fetchall()
+        finally:
+            conn.close()
+
+    def get_pending_events_for_task(self, task_id: str) -> List[sqlite3.Row]:
+        """Fetches execution events in 'PENDING' status for a task, indicating crash windows."""
+        conn = self.db.get_connection()
+        try:
+            return conn.execute(
+                "SELECT * FROM execution_events WHERE task_id = ? AND status = 'PENDING' ORDER BY recorded_at ASC;",
+                (task_id.strip(),),
             ).fetchall()
         finally:
             conn.close()

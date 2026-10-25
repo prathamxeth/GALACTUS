@@ -239,6 +239,12 @@ def trigger_consolidation(
 # Task Recovery Endpoints
 # ============================================================================
 
+class ReconcileTaskRequest(BaseModel):
+    decision: str = Field(..., description="'resume' to unblock and continue, 'abort' to fail safely")
+    notes: Optional[str] = Field(default="", description="Operator explanation or audit notes")
+    next_step: Optional[str] = Field(default=None, description="Optional step to jump to if resuming")
+
+
 @router.get("/tasks/incomplete", response_model=List[TaskCheckpoint])
 def list_incomplete_tasks(
     recovery_mgr: TaskRecoveryManager = Depends(get_recovery_manager),
@@ -255,6 +261,76 @@ def save_task_checkpoint(
     """Saves an encrypted workflow task checkpoint."""
     recovery_mgr.save_task_checkpoint(checkpoint)
     return {"status": "saved", "task_id": checkpoint.task_id}
+
+
+@router.get("/tasks/checkpoints/{task_id}", response_model=TaskCheckpoint)
+def inspect_task_checkpoint(
+    task_id: str,
+    recovery_mgr: TaskRecoveryManager = Depends(get_recovery_manager),
+) -> TaskCheckpoint:
+    """Fetches and decrypts an individual task checkpoint by task ID."""
+    try:
+        chk = recovery_mgr.get_task_checkpoint(task_id.strip())
+        if not chk:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Task checkpoint '{task_id}' not found.",
+            )
+        return chk
+    except (MissingKeyError, DecryptionError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Cryptographic recovery failure: {e}",
+        )
+
+
+@router.post("/tasks/checkpoints/{task_id}/recover", response_model=TaskCheckpoint)
+def recover_task_checkpoint(
+    task_id: str,
+    recovery_mgr: TaskRecoveryManager = Depends(get_recovery_manager),
+) -> TaskCheckpoint:
+    """
+    Restores an incomplete task checkpoint from disk after crash or restart.
+    Verifies step state and decrypts saved state variables.
+    """
+    try:
+        return recovery_mgr.recover_task(task_id.strip())
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task checkpoint '{task_id}' not found.",
+        )
+    except (MissingKeyError, DecryptionError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Cryptographic recovery failure: {e}",
+        )
+
+
+@router.post("/tasks/checkpoints/{task_id}/reconcile", response_model=TaskCheckpoint)
+def reconcile_task(
+    task_id: str,
+    req: ReconcileTaskRequest,
+    recovery_mgr: TaskRecoveryManager = Depends(get_recovery_manager),
+) -> TaskCheckpoint:
+    """Human-in-the-loop operator resolution for tasks flagged with REQUIRES_RECONCILIATION."""
+    try:
+        return recovery_mgr.resolve_reconciliation(
+            task_id=task_id.strip(),
+            resolution=req.decision,
+            notes=req.notes or "",
+            next_step=req.next_step,
+        )
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task checkpoint '{task_id}' not found.",
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 # ============================================================================

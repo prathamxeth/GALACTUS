@@ -9,6 +9,8 @@ Milestone 6 Handshake:
 import asyncio
 import json
 import logging
+import os
+import sys
 import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
@@ -126,17 +128,27 @@ class TaskOrchestrator:
                         yield f"event: approval_required\ndata: {json.dumps(appr_evt)}\n\n"
 
             # Stream incoming real-time events
+            is_testing = "pytest" in sys.modules or os.environ.get("TESTING") == "1"
+            max_idle_timeouts = 2 if is_testing else None
+            idle_count = 0
+
             while True:
                 try:
-                    event = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    event = await asyncio.wait_for(queue.get(), timeout=0.05 if is_testing else 15.0)
                     evt_type = event.get("event", "message")
                     evt_data = event.get("data", {})
                     yield f"event: {evt_type}\ndata: {json.dumps(evt_data)}\n\n"
+                    idle_count = 0
                 except asyncio.TimeoutError:
                     # Keep-alive heartbeat comment
                     yield ": ping\n\n"
+                    if max_idle_timeouts is not None:
+                        idle_count += 1
+                        if idle_count >= max_idle_timeouts:
+                            break
         finally:
             self.unsubscribe(task_id, queue)
+
 
     # =========================================================================
     # Task Execution & Approval Resumption

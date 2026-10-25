@@ -6,6 +6,7 @@ Milestone 6 Integration:
 - POST /api/approvals/{approval_id} resumes paused DAG branches when approved.
 """
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
@@ -17,6 +18,8 @@ from pydantic import BaseModel, Field
 from app.api.routes import SubsystemContainer, router as memory_router
 from backend.orchestrator import TaskOrchestrator
 from backend.planner import TaskDAG, TaskPlanner
+
+logger = logging.getLogger(__name__)
 
 # Global Orchestrator & Planner Singletons
 orchestrator: Optional[TaskOrchestrator] = None
@@ -61,13 +64,28 @@ async def lifespan(app: FastAPI):
     if SubsystemContainer.db is None:
         db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
         SubsystemContainer.initialize(db_path=db_path)
+
+    # Crash Recovery Audit on startup (Member 2 requirement)
+    if SubsystemContainer.recovery_manager:
+        try:
+            incomplete = SubsystemContainer.recovery_manager.load_incomplete_tasks(raise_on_error=False)
+            if incomplete:
+                task_ids = [t.task_id for t in incomplete]
+                logger.info(
+                    f"Crash Recovery Audit: {len(incomplete)} incomplete task(s) detected across reboot. "
+                    f"Active task IDs: {task_ids}"
+                )
+        except Exception as e:
+            logger.warning(f"Crash Recovery Audit on startup encountered error: {e}")
+
     # Initialize orchestrator & planner
     get_orchestrator()
     get_planner()
     yield
-    # Checkpoint on shutdown
+    # Checkpoint WAL on shutdown
     if SubsystemContainer.db:
         SubsystemContainer.db.checkpoint_wal()
+
 
 
 app = FastAPI(
@@ -128,11 +146,11 @@ async def create_and_start_task(req: CreateTaskRequest):
     dag = task_planner.generate_dag(user_goal=req.goal)
     task_orchestrator.register_task(dag)
 
-    # Start DAG execution asynchronously
-    import asyncio
-    asyncio.create_task(task_orchestrator.start_task(dag.task_id))
+    # Start DAG execution
+    await task_orchestrator.start_task(dag.task_id)
 
     return dag
+
 
 
 @app.get("/api/tasks", response_model=List[TaskDAG], tags=["Tasks & DAGs"])
