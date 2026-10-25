@@ -29,17 +29,11 @@ import {
   PermissionApprovalResponse,
   RiskLevel,
   TaskStatus,
+  TruthfulModelStatus,
+  MessageAttachment,
 } from '../api/types';
 import {
-  DEMO_APPROVALS,
-  DEMO_DIAGNOSTIC_METRICS,
-  DEMO_EVENT_LOGS,
-  DEMO_MEMORIES,
   DEMO_PRIVACY_SETTINGS,
-  DEMO_RUNTIME_STATUS,
-  DEMO_SKILLS,
-  DEMO_TASKS,
-  DEMO_SENTINELS,
 } from '../api/fixtures';
 import { api } from '../api/client';
 
@@ -64,6 +58,8 @@ interface RagnarokContextValue {
 
   // Truthful Runtime State
   runtimeState: TruthfulRuntimeState;
+  modelStatus: TruthfulModelStatus;
+  availableModels: string[];
   isBackendOnline: boolean;
   isCheckingBackend: boolean;
   backendError: string | null;
@@ -92,9 +88,10 @@ interface RagnarokContextValue {
   resolveApproval: (requestId: string, decision: 'approved' | 'rejected', notes?: string) => Promise<void>;
 
   // Other Operations
-  sendMessage: (prompt: string, mode?: 'chat' | 'task' | 'memory') => Promise<void>;
+  sendMessage: (prompt: string, mode?: 'chat' | 'task' | 'memory', attachments?: MessageAttachment[]) => Promise<void>;
   isSendingMessage: boolean;
   abortSendMessage: () => void;
+  cancelActiveTask: (taskId?: string) => Promise<void>;
   clearConversation: () => void;
   toggleSkill: (id: string) => void;
   toggleSentinel: (id: string) => void;
@@ -114,15 +111,15 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSendingMessage, setIsSendingMessage] = useState<boolean>(false);
   const activeChatAbortRef = useRef<AbortController | null>(null);
-  const [tasks, setTasks] = useState<TaskGraph[]>(DEMO_TASKS);
-  const [approvals, setApprovals] = useState<ApprovalRequest[]>(DEMO_APPROVALS);
-  const [memories, setMemories] = useState<MemoryRecord[]>(DEMO_MEMORIES);
-  const [skills, setSkills] = useState<SkillDefinition[]>(DEMO_SKILLS);
-  const [sentinels, setSentinels] = useState<SentinelTrigger[]>(DEMO_SENTINELS);
-  const [eventLogs, setEventLogs] = useState<SystemEventLog[]>(DEMO_EVENT_LOGS);
-  const [diagnosticMetrics] = useState<DiagnosticMetric[]>(DEMO_DIAGNOSTIC_METRICS);
+  const [tasks, setTasks] = useState<TaskGraph[]>([]);
+  const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
+  const [memories, setMemories] = useState<MemoryRecord[]>([]);
+  const [skills, setSkills] = useState<SkillDefinition[]>([]);
+  const [sentinels, setSentinels] = useState<SentinelTrigger[]>([]);
+  const [eventLogs, setEventLogs] = useState<SystemEventLog[]>([]);
+  const [diagnosticMetrics] = useState<DiagnosticMetric[]>([]);
   const [settings, setSettings] = useState<PrivacySettings>(DEMO_PRIVACY_SETTINGS);
-  const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus | null>(DEMO_RUNTIME_STATUS);
+  const [runtimeStatus, setRuntimeStatus] = useState<AgentRuntimeStatus | null>(null);
 
   // 4. Backend Connectivity & State
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
@@ -268,7 +265,11 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           setModeState(savedMode);
         }
 
-        const savedTheme = (localStorage.getItem('memorag_preset') || localStorage.getItem('ragnarok_theme')) as AppearancePreset | null;
+        const savedTheme = (
+          localStorage.getItem('memorag_theme') ||
+          localStorage.getItem('memorag_preset') ||
+          localStorage.getItem('ragnarok_theme')
+        ) as AppearancePreset | null;
         const validThemes: AppearancePreset[] = ['light', 'dark', 'oled-light', 'oled-dark'];
         if (savedTheme && validThemes.includes(savedTheme)) {
           setPresetState(savedTheme);
@@ -349,6 +350,22 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     runtimeStatus?.activeModelLoaded,
   ]);
 
+  // --- Derive Truthful Model Status ('ready' | 'connecting' | 'unavailable' | 'offline' | 'error') ---
+  const modelStatus: TruthfulModelStatus = useMemo(() => {
+    if (isCheckingBackend && !hasProbedOnce) return 'connecting';
+    if (!isBackendOnline) return 'offline';
+    if (backendError) return 'error';
+    if (runtimeStatus?.ollamaStatus === 'connected' && runtimeStatus?.activeModelLoaded) {
+      return 'ready';
+    }
+    return 'unavailable';
+  }, [isCheckingBackend, hasProbedOnce, isBackendOnline, backendError, runtimeStatus]);
+
+  const availableModels: string[] = useMemo(() => {
+    const configured = runtimeStatus?.model || 'gemma4:e2b';
+    return [configured];
+  }, [runtimeStatus]);
+
   // --- Fetch Incomplete Tasks (/api/tasks/incomplete & /api/tasks) ---
   const fetchIncompleteTasks = useCallback(async () => {
     setIsLoadingTasks(true);
@@ -401,7 +418,8 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       } else {
         setIsMemoriesLive(false);
         if (!isBackendOnline) {
-          setMemories(DEMO_MEMORIES.map((m) => ({ ...m, isBackendRecord: false })));
+          setMemories([]);
+          setMemoryError('FastAPI backend offline at 127.0.0.1:8000. Connect backend to view encrypted memory records.');
         } else {
           setMemoryError(res.error || 'FastAPI memory endpoints offline');
         }
@@ -624,7 +642,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
   };
 
-  // --- Abort & Clear Operations ---
+  // --- Abort & Cancel Operations ---
   const abortSendMessage = useCallback(() => {
     if (activeChatAbortRef.current) {
       activeChatAbortRef.current.abort();
@@ -632,6 +650,36 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
     setIsSendingMessage(false);
   }, []);
+
+  const cancelActiveTask = useCallback(async (taskId?: string) => {
+    if (activeChatAbortRef.current) {
+      activeChatAbortRef.current.abort();
+      activeChatAbortRef.current = null;
+    }
+    setIsSendingMessage(false);
+
+    if (taskId) {
+      try {
+        await api.cancelTask(taskId);
+      } catch {
+        // graceful offline fallback
+      }
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-abort-${Date.now()}`,
+        role: 'agent',
+        content: 'Task was cancelled by operator.',
+        timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+
+    if (isBackendOnline) {
+      setTimeout(() => fetchIncompleteTasks(), 400);
+    }
+  }, [isBackendOnline, fetchIncompleteTasks]);
 
   const clearConversation = useCallback(() => {
     if (activeChatAbortRef.current) {
@@ -643,7 +691,11 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, []);
 
   // --- Send Message ---
-  const sendMessage = async (prompt: string, sendMode: 'chat' | 'task' | 'memory' = 'chat') => {
+  const sendMessage = async (
+    prompt: string,
+    sendMode: 'chat' | 'task' | 'memory' = 'chat',
+    attachments?: MessageAttachment[]
+  ) => {
     const controller = new AbortController();
     activeChatAbortRef.current = controller;
     setIsSendingMessage(true);
@@ -653,6 +705,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       role: 'user',
       content: prompt,
       timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      attachments: attachments && attachments.length > 0 ? attachments : undefined,
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -663,12 +716,12 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       severity: 'INFO',
       eventType: 'PROMPT_INGEST',
       message: `User submitted request in ${sendMode} mode`,
-      details: { promptLength: prompt.length },
+      details: { promptLength: prompt.length, attachmentCount: attachments?.length || 0 },
     };
     setEventLogs((prev) => [newLog, ...prev]);
 
     try {
-      const response = await api.sendPrompt(prompt, sendMode, controller.signal);
+      const response = await api.sendPrompt(prompt, sendMode, controller.signal, attachments);
       setMessages((prev) => [...prev, response.data]);
 
       // If backend created an active task, sync tasks and attach SSE
@@ -842,6 +895,8 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
         settings,
         runtimeStatus,
         runtimeState,
+        modelStatus,
+        availableModels,
         isBackendOnline,
         isCheckingBackend,
         backendError,
@@ -865,6 +920,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
         sendMessage,
         isSendingMessage,
         abortSendMessage,
+        cancelActiveTask,
         clearConversation,
         toggleSkill,
         toggleSentinel,

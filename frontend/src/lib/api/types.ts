@@ -97,6 +97,16 @@ export interface ActionProposal {
   status: 'pending' | 'approved' | 'rejected' | 'executed';
 }
 
+export type TruthfulModelStatus = 'ready' | 'connecting' | 'unavailable' | 'offline' | 'error';
+
+export interface MessageAttachment {
+  name: string;
+  path?: string;
+  size: number;
+  content: string;
+  type?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'agent' | 'system';
@@ -106,6 +116,7 @@ export interface ChatMessage {
   citedMemoryIds?: string[]; // Referenced memories from Mimir's well
   actionProposal?: ActionProposal; // Embedded approval gate
   relatedTaskId?: string;
+  attachments?: MessageAttachment[];
 }
 
 // --- Autonomous Workflow & Task Execution ---

@@ -17,7 +17,6 @@ export const TerminalPanel: React.FC = () => {
     isExecutingCommand,
     runTerminalCommand,
     clearTerminal,
-    preflightReport,
   } = useForge();
 
   const [inputCommand, setInputCommand] = useState('');
@@ -48,11 +47,11 @@ export const TerminalPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-main font-semibold text-[11px]">
             <TerminalIcon className="w-3.5 h-3.5 text-[#cc785c]" />
-            <span>Terminal</span>
+            <span>Bounded Command Runner</span>
           </div>
 
           <span className="text-[10px] text-muted">
-            ({preflightReport?.security.isolationMode || 'constrained_loopback'})
+            (Batch execution • 25s timeout • non-interactive)
           </span>
         </div>
 

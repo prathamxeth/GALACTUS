@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useForge } from '@/lib/forge/ForgeContext';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
+import { MessageAttachment } from '@/lib/api/types';
 import { Thread } from './Thread';
 import { ForgeComposer } from './ForgeComposer';
 
@@ -60,9 +61,23 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
   const hasDiagnosticTask = Boolean(diagnosticReport || isDiagnosticLoading || diagnosticError);
   const hasActiveConversation = messages.length > 0 || hasDiagnosticTask;
 
-  const handleSubmitPrompt = async (customQuery?: string) => {
-    const query = (customQuery || prompt).trim();
-    if (!query || isSubmitting || isSendingMessage) return;
+  const handleSubmitPrompt = async (
+    customQuery?: string | MessageAttachment[],
+    attachmentsParam?: MessageAttachment[]
+  ) => {
+    let query = '';
+    let attachments: MessageAttachment[] | undefined;
+
+    if (Array.isArray(customQuery)) {
+      attachments = customQuery;
+      query = prompt.trim();
+    } else {
+      query = (customQuery || prompt).trim();
+      attachments = attachmentsParam;
+    }
+
+    const hasAttachments = Boolean(attachments && attachments.length > 0);
+    if ((!query && !hasAttachments) || isSubmitting || isSendingMessage) return;
 
     setPrompt('');
     setComposerError(null);
@@ -70,10 +85,10 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
 
     try {
       const isDiagnosticQuery = /fail|broken|error|fix|build|test|diagnos|bug/i.test(query);
-      if (isDiagnosticQuery) {
+      if (isDiagnosticQuery && !hasAttachments) {
         await startProjectDiagnostics('.', query);
       } else {
-        await sendMessage(query, 'chat');
+        await sendMessage(query || 'Attached files for review', 'chat', attachments);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to process request';

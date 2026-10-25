@@ -317,16 +317,52 @@ async def agent_chat(req: Dict[str, Any]):
     import time
     prompt = req.get("prompt", "")
     task_planner = get_planner()
+    task_orchestrator = get_orchestrator()
     dag = task_planner.generate_dag(prompt)
+    task_orchestrator.register_task(dag)
+
+    # Start DAG execution asynchronously
+    await task_orchestrator.start_task(dag.task_id)
+
+    pending_step = next(
+        (s for s in dag.steps if s.status == "PAUSED_APPROVAL" or s.requires_approval),
+        None,
+    )
+    action_proposal = None
+    if pending_step:
+        risk_val = (
+            pending_step.risk_level.value
+            if hasattr(pending_step.risk_level, "value")
+            else str(pending_step.risk_level).lower()
+        )
+        action_proposal = {
+            "id": pending_step.approval_id or f"apr-{dag.task_id}",
+            "toolName": pending_step.skill_name,
+            "actionTitle": pending_step.title,
+            "description": f"Goal: {prompt}. High-risk operation halted at Gjallarhorn approval gate awaiting human authorization.",
+            "riskLevel": risk_val,
+            "payload": pending_step.parameters,
+            "requiresApproval": True,
+            "status": "pending",
+        }
+
+    status_msg = (
+        f"Protected action halted at approval gate (approval ID: {action_proposal['id']})."
+        if action_proposal
+        else f"Task completed successfully with {len(dag.steps)} step(s)."
+    )
+
     return {
         "id": f"msg-{int(time.time() * 1000)}",
         "role": "agent",
-        "content": f"Acknowledged. Analyzing: {prompt}. Created plan with {len(dag.steps)} step(s).",
+        "content": f"Acknowledged. Analyzing: {prompt}. {status_msg}",
         "thoughtTrace": [
             "Probing encrypted memory vault for relevant user facts and context",
             f"Constructed execution DAG with {len(dag.steps)} step(s)",
             "Evaluating authorization boundary and toolchain permissions",
         ],
+        "relatedTaskId": dag.task_id,
+        "actionProposal": action_proposal,
         "timestamp": os.environ.get("MOCK_TIME", "2026-10-25T20:00:00Z"),
     }
 

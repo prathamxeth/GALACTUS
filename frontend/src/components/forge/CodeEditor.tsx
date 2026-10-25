@@ -131,6 +131,9 @@ export const CodeEditor: React.FC = () => {
           <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-forge-elevated border border-forge text-forge-muted">
             {activeFile.language}
           </span>
+          <span className="text-[10px] text-forge-muted/70 hidden md:inline font-mono">
+            • Buffer Editor • Dirty Tracking • In-line Diff Viewer
+          </span>
           {activeFile.isDirty && (
             <span className="text-[10px] text-amber-500 font-medium">● Unsaved</span>
           )}

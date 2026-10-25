@@ -17,8 +17,8 @@ export interface InlineApprovalCardProps {
   toolName?: string;
   riskLevel?: 'low' | 'medium' | 'high' | 'critical' | string;
   description?: string | null;
-  filesToModify?: string[];
   command?: string | null;
+  payload?: Record<string, unknown> | string | null;
   diff?: string | null;
   status?: 'pending' | 'approved' | 'rejected' | 'denied' | string;
   onApprove: () => Promise<void> | void;
@@ -36,6 +36,7 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
   description,
   filesToModify = [],
   command,
+  payload,
   diff,
   status = 'pending',
   onApprove,
@@ -145,15 +146,15 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
         </div>
       )}
 
-      {/* Command Preview */}
-      {command && (
+      {/* Command / Payload Preview */}
+      {(command || payload) && (
         <div className="space-y-1 pt-1">
           <span className="text-[10px] font-mono uppercase text-forge-muted block flex items-center gap-1">
             <Terminal className="w-3 h-3 text-forge-muted" />
-            <span>Command to execute:</span>
+            <span>Command / Payload:</span>
           </span>
-          <code className="block p-2 rounded bg-forge-canvas border border-forge text-[11px] font-mono text-forge-primary break-all">
-            {command}
+          <code className="block p-2 rounded bg-forge-canvas border border-forge text-[11px] font-mono text-forge-primary break-all whitespace-pre-wrap">
+            {command || (typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2))}
           </code>
         </div>
       )}

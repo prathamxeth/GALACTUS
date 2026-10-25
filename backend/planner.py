@@ -251,19 +251,39 @@ CRITICAL PLANNING RULES:
             )
         )
 
-        # Step 3: Execution Action (High-risk gate requiring explicit user authorization)
-        step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
-        steps.append(
-            DAGStep(
-                step_id=step_3_id,
-                step_number=3,
-                title=f"Execute Side-Effect for Goal: {user_goal[:30]}",
-                skill_name="filesystem.write_file" if "file" in user_goal.lower() else "shell.execute",
-                parameters={"goal": user_goal, "user_preferences": pref_params},
-                dependencies=[step_2_id],
-                risk_level=RiskLevel.HIGH,
-                requires_approval=True,
+        # Differentiate protected side-effects from harmless informational queries
+        harmless_keywords = ["hello", "hi", "status", "who are you", "help", "architecture", "what can you do", "ping", "test connection"]
+        is_harmless = any(user_goal.strip().lower().startswith(kw) or user_goal.strip().lower() == kw for kw in harmless_keywords)
+
+        if not is_harmless:
+            # Step 3: Execution Action (High-risk gate requiring explicit user authorization)
+            step_3_id = f"step-exec-{uuid.uuid4().hex[:6]}"
+            steps.append(
+                DAGStep(
+                    step_id=step_3_id,
+                    step_number=3,
+                    title=f"Execute Side-Effect: {user_goal[:30]}",
+                    skill_name="filesystem.write_file" if "file" in user_goal.lower() else "shell.execute",
+                    parameters={"command": f"execute --goal '{user_goal}'", "goal": user_goal, "user_preferences": pref_params},
+                    dependencies=[step_2_id],
+                    risk_level=RiskLevel.HIGH,
+                    requires_approval=True,
+                )
             )
-        )
+        else:
+            # Step 3: Harmless response synthesis (Low risk, no approval gate)
+            step_3_id = f"step-info-{uuid.uuid4().hex[:6]}"
+            steps.append(
+                DAGStep(
+                    step_id=step_3_id,
+                    step_number=3,
+                    title=f"Synthesize Response: {user_goal[:30]}",
+                    skill_name="system.report_status",
+                    parameters={"query": user_goal, "status": "completed"},
+                    dependencies=[step_2_id],
+                    risk_level=RiskLevel.LOW,
+                    requires_approval=False,
+                )
+            )
 
         return steps

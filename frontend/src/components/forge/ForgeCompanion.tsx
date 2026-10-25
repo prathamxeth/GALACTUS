@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Send,
-  ShieldCheck,
   BrainCircuit,
   Search,
-  ChevronRight,
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
@@ -26,7 +23,6 @@ import { api } from '@/lib/api/client';
 
 export const ForgeCompanion: React.FC = () => {
   const {
-    activeFile,
     openFile,
     diagnosticReport,
     diagnosticStatus,
@@ -39,31 +35,22 @@ export const ForgeCompanion: React.FC = () => {
     resolveDiagnosticRepair,
     recoverDiagnosticProject,
     preflightReport,
+    flightEvents,
   } = useForge();
 
   const {
-    messages,
-    sendMessage,
     memories,
     isBackendOnline,
-    mode,
     probeBackend,
   } = useRagnarok();
 
-  const [inputPrompt, setInputPrompt] = useState('');
-  const [activeTab, setActiveTab] = useState<'diagnostics' | 'chat' | 'memory'>('diagnostics');
-  const [isSending, setIsSending] = useState(false);
+  const [activeTab, setActiveTab] = useState<'diagnostics' | 'flight' | 'memory'>('diagnostics');
   const [memorySearchQuery, setMemorySearchQuery] = useState('');
+  const [flightSearchQuery, setFlightSearchQuery] = useState('');
   const [userRequestInput, setUserRequestInput] = useState('Find why build/test fails');
   const [projectRootInput, setProjectRootInput] = useState('.');
   const [showDiffPreview, setShowDiffPreview] = useState(true);
   const [isResolvingRepair, setIsResolvingRepair] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // If a diagnostic report arrives, ensure user sees it
   useEffect(() => {
@@ -102,30 +89,6 @@ export const ForgeCompanion: React.FC = () => {
     }
   };
 
-  const handleSend = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const prompt = inputPrompt.trim();
-    if (!prompt || isSending) return;
-
-    setInputPrompt('');
-    setIsSending(true);
-    try {
-      await sendMessage(prompt, 'chat');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleQuickPrompt = async (text: string) => {
-    if (isSending) return;
-    setIsSending(true);
-    try {
-      await sendMessage(text, 'chat');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   const getMemoryContent = (m: MemoryRecord): string => {
     if (m.type === 'episodic') {
       return m.content || m.title || 'Episodic event';
@@ -139,8 +102,6 @@ export const ForgeCompanion: React.FC = () => {
     const content = getMemoryContent(m);
     return content.toLowerCase().includes(q) || (m.type || '').toLowerCase().includes(q);
   });
-
-  const isDev = mode === 'developer';
 
   return (
     <aside className="w-88 border-l border-subtle bg-surface flex flex-col h-full select-text shrink-0 text-xs">
@@ -166,7 +127,7 @@ export const ForgeCompanion: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Switcher: Diagnostics vs Chat vs Memory */}
+        {/* Tab Switcher: Diagnostics vs Flight vs Memory */}
         <div className="flex items-center p-0.5 rounded bg-surface border border-subtle text-[11px] font-mono">
           <button
             onClick={() => setActiveTab('diagnostics')}
@@ -179,14 +140,14 @@ export const ForgeCompanion: React.FC = () => {
             Diagnostics
           </button>
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => setActiveTab('flight')}
             className={`px-2 py-0.5 rounded transition-colors ${
-              activeTab === 'chat'
+              activeTab === 'flight'
                 ? 'bg-elevated font-medium text-main shadow-xs'
                 : 'text-muted hover:text-main'
             }`}
           >
-            Chat
+            Flight ({flightEvents.length})
           </button>
           <button
             onClick={() => setActiveTab('memory')}
@@ -567,118 +528,69 @@ export const ForgeCompanion: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 1: Evidence-First Chat & Workflow */}
-      {activeTab === 'chat' && (
+      {/* Tab 1: Sentinel Flight Recorder Events */}
+      {activeTab === 'flight' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Messages Stream */}
-          <div className="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
-            {/* Quick Action Suggestions */}
-            <div className="space-y-1.5 pb-2 border-b border-subtle select-none">
-              <span className="text-[10px] uppercase font-mono text-muted">
-                Evidence Workflows:
-              </span>
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => handleQuickPrompt('What changed since the last passing build?')}
-                  className="flex items-center justify-between p-1.5 rounded bg-canvas border border-subtle hover:border-[#F04424]/50 hover:bg-[#F04424]/5 text-secondary hover:text-main text-left transition-colors font-mono text-[11px]"
-                >
-                  <span className="truncate">What changed since last passing build?</span>
-                  <ChevronRight className="w-3 h-3 text-muted shrink-0" />
-                </button>
-
-                <button
-                  onClick={() => handleQuickPrompt('Inspect environment and verify toolchains')}
-                  className="flex items-center justify-between p-1.5 rounded bg-canvas border border-subtle hover:border-emerald-500/50 hover:bg-emerald-500/5 text-secondary hover:text-main text-left transition-colors font-mono text-[11px]"
-                >
-                  <span className="truncate">Inspect local environment & toolchains</span>
-                  <ChevronRight className="w-3 h-3 text-muted shrink-0" />
-                </button>
-
-                <button
-                  onClick={() => handleQuickPrompt('Audit privacy boundary and memory citations')}
-                  className="flex items-center justify-between p-1.5 rounded bg-canvas border border-subtle hover:border-purple-500/50 hover:bg-purple-500/5 text-secondary hover:text-main text-left transition-colors font-mono text-[11px]"
-                >
-                  <span className="truncate">Audit privacy boundary & Mimir vault</span>
-                  <ChevronRight className="w-3 h-3 text-muted shrink-0" />
-                </button>
-              </div>
+          <div className="p-2 border-b border-subtle bg-canvas shrink-0">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface border border-subtle text-xs">
+              <Search className="w-3 h-3 text-muted shrink-0" />
+              <input
+                type="text"
+                placeholder="Search flight events..."
+                value={flightSearchQuery}
+                onChange={(e) => setFlightSearchQuery(e.target.value)}
+                className="w-full bg-transparent text-xs text-main placeholder:text-muted focus:outline-hidden font-mono"
+              />
             </div>
-
-            {/* Chat Messages */}
-            {messages.map((msg) => {
-              const isAssistant = msg.role === 'agent' || msg.role === 'system';
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col space-y-1 ${
-                    isAssistant ? 'items-start' : 'items-end'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted font-mono">
-                    <span>{isAssistant ? 'MEMORAG Sovereign Agent' : 'You'}</span>
-                    <span>•</span>
-                    <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-
-                  <div
-                    className={`p-3 rounded-lg text-xs leading-relaxed max-w-[95%] select-text ${
-                      isAssistant
-                        ? 'bg-canvas border border-subtle text-secondary'
-                        : 'bg-elevated text-main font-medium border border-subtle'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap font-sans">{msg.content}</p>
-
-                    {isDev && isAssistant && (
-                      <div className="mt-2 pt-2 border-t border-subtle/60 text-[10px] font-mono text-muted space-y-1">
-                        <div className="flex items-center gap-1 text-emerald-500">
-                          <ShieldCheck className="w-3 h-3" />
-                          <span>Local Loopback Policy: Enforced</span>
-                        </div>
-                        {activeFile && (
-                          <div className="text-secondary truncate">
-                            Active Context: {activeFile.path}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {isSending && (
-              <div className="flex items-center gap-2 p-2 rounded bg-canvas border border-subtle text-muted text-[11px]">
-                <span className="w-2 h-2 rounded-full bg-[#F04424] animate-ping" />
-                <span>Consulting local Mimir memory & reasoning...</span>
-              </div>
-            )}
-
-            <div ref={chatEndRef} />
           </div>
 
-          {/* Chat Input */}
-          <form
-            onSubmit={handleSend}
-            className="p-2.5 bg-canvas border-t border-subtle flex items-center gap-2 shrink-0 select-none"
-          >
-            <input
-              type="text"
-              value={inputPrompt}
-              onChange={(e) => setInputPrompt(e.target.value)}
-              disabled={isSending}
-              placeholder="Ask MEMORAG about code, tests, or state..."
-              className="flex-1 bg-surface border border-subtle rounded-md px-3 py-1.5 text-xs text-main placeholder:text-muted focus:outline-hidden font-sans"
-            />
-            <button
-              type="submit"
-              disabled={!inputPrompt.trim() || isSending}
-              className="p-1.5 rounded-md bg-[#F04424] text-white disabled:opacity-40 hover:bg-[#F04424]/90 transition-colors shrink-0"
-              title="Send message"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
+          <div className="flex-1 p-2 overflow-y-auto space-y-2 custom-scrollbar">
+            {flightEvents.length === 0 ? (
+              <div className="text-center text-muted py-8 select-none">
+                <Flame className="w-8 h-8 text-[#F04424]/60 mx-auto mb-2" />
+                <span className="text-secondary font-medium">No Flight Events Recorded</span>
+                <p className="text-[10px] text-muted mt-1 max-w-xs mx-auto">
+                  Sentinel Flight Recorder logs all autonomous task steps, tool executions, and file modifications with cryptographic tamper evidence.
+                </p>
+              </div>
+            ) : (
+              flightEvents
+                .filter((ev) =>
+                  !flightSearchQuery.trim()
+                    ? true
+                    : ev.summary.toLowerCase().includes(flightSearchQuery.toLowerCase()) ||
+                      ev.type.toLowerCase().includes(flightSearchQuery.toLowerCase())
+                )
+                .map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="p-2.5 rounded-md bg-canvas border border-subtle space-y-1.5 hover:border-strong transition-colors text-xs font-mono"
+                  >
+                    <div className="flex items-center justify-between text-[10px] text-muted">
+                      <span className="px-1.5 py-0.2 rounded bg-elevated border border-subtle font-bold text-secondary uppercase">
+                        {ev.type}
+                      </span>
+                      <span>{new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    </div>
+
+                    <p className="text-secondary font-sans leading-relaxed select-text">
+                      {ev.summary}
+                    </p>
+
+                    <div className="flex items-center justify-between text-[10px] text-muted pt-1 border-t border-subtle/50">
+                      <span className="text-[9px] uppercase font-bold text-forge-accent">
+                        Provenance: {ev.provenance || 'observed'}
+                      </span>
+                      {ev.evidence?.affectedPath && (
+                        <span className="truncate max-w-[130px] text-secondary">
+                          {ev.evidence.affectedPath}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
         </div>
       )}
 
@@ -730,12 +642,12 @@ export const ForgeCompanion: React.FC = () => {
                       <span>Encrypted at rest</span>
                       <button
                         onClick={() => {
-                          setInputPrompt(`Cite memory [${m.id}]: "${contentText.slice(0, 60)}..." `);
-                          setActiveTab('chat');
+                          navigator.clipboard.writeText(`[Memory ${m.id}]: "${contentText}"`);
                         }}
-                        className="text-[#cc785c] hover:underline"
+                        className="text-[#cc785c] hover:underline cursor-pointer"
+                        title="Copy memory citation to clipboard"
                       >
-                        Cite in Chat
+                        Copy Citation
                       </button>
                     </div>
                   </div>

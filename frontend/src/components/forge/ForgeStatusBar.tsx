@@ -24,12 +24,21 @@ export const ForgeStatusBar: React.FC = () => {
     diagnosticStatus,
   } = useForge();
 
-  const { mode, preset, isBackendOnline } = useRagnarok();
+  const { mode, preset, isBackendOnline, modelStatus } = useRagnarok();
   const isDev = mode === 'developer';
 
   const errorCount = problems.filter((p) => p.severity === 'error').length;
   const warningCount = problems.filter((p) => p.severity === 'warning').length;
   const lastHealthy = checkpoints.find((c) => c.isHealthy);
+
+  const themeLabel =
+    preset === 'oled-dark'
+      ? 'OLED Dark'
+      : preset === 'oled-light'
+      ? 'OLED Light'
+      : preset === 'light'
+      ? 'Light'
+      : 'Dark';
 
   return (
     <footer
@@ -77,17 +86,17 @@ export const ForgeStatusBar: React.FC = () => {
               )}
             </button>
 
-            {/* Terminal Tab Switcher */}
+            {/* Terminal Tab Switcher (Truthfully labeled as Runner) */}
             <button
               type="button"
               onClick={() => setActiveBottomTab('terminal')}
               className={`flex items-center gap-1 px-1.5 py-0.2 rounded hover:bg-forge-hover transition-colors cursor-pointer ${
                 activeBottomTab === 'terminal' ? 'text-forge-primary font-bold' : 'text-forge-muted'
               }`}
-              title="Toggle Terminal"
+              title="Toggle Bounded Command Runner"
             >
               <Terminal className="w-3 h-3 text-forge-accent" />
-              <span>Terminal</span>
+              <span>Runner</span>
             </button>
 
             {/* Checkpoint Status */}
@@ -113,10 +122,25 @@ export const ForgeStatusBar: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-forge-accent animate-pulse" />
             <span>{isDev ? `Agent: ${diagnosticStatus}` : 'Working on your request...'}</span>
           </span>
-        ) : (
+        ) : modelStatus === 'ready' ? (
           <span className="text-forge-muted flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span>{isDev ? 'Agent: Ready' : 'Ready'}</span>
+          </span>
+        ) : modelStatus === 'connecting' ? (
+          <span className="text-amber-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span>Agent: Connecting...</span>
+          </span>
+        ) : modelStatus === 'unavailable' ? (
+          <span className="text-amber-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>Agent: Model Unavailable</span>
+          </span>
+        ) : (
+          <span className="text-rose-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span>Agent: Offline</span>
           </span>
         )}
       </div>
@@ -148,7 +172,7 @@ export const ForgeStatusBar: React.FC = () => {
 
             {/* Theme Preset Badge */}
             <span className="text-[9px] uppercase px-1 rounded bg-forge-panel text-forge-secondary border border-forge">
-              {preset.includes('light') ? 'Light' : 'Dark'}
+              {themeLabel}
             </span>
           </>
         ) : (
@@ -159,7 +183,7 @@ export const ForgeStatusBar: React.FC = () => {
               <span>User Mode</span>
             </span>
             <span className="text-forge-muted/30">•</span>
-            <span>{preset.includes('light') ? 'Light' : 'Dark'}</span>
+            <span>{themeLabel}</span>
           </div>
         )}
       </div>

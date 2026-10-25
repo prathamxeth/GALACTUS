@@ -44,13 +44,13 @@ import {
   VerificationResult,
   BackendFlightRecorderEvent,
   SSEStreamStatus,
+  MessageAttachment,
 } from './types';
 import {
   DEMO_APPROVALS,
   DEMO_CHAT_MESSAGES,
   DEMO_MEMORIES,
   DEMO_PRIVACY_SETTINGS,
-  DEMO_RUNTIME_STATUS,
   DEMO_SKILLS,
   DEMO_TASKS,
 } from './fixtures';
@@ -117,7 +117,8 @@ export class RagnarokApiClient {
     const start = performance.now();
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4500);
+      // Set 25s timeout to tolerate 12-18 second backend model / cold start
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       // Try /api/agent/status first (canonical agent status endpoint), then /api/health, then /health
       let res = await fetch(`${this.baseUrl}/api/agent/status`, {
@@ -219,7 +220,7 @@ export class RagnarokApiClient {
   async getEpisodicMemories(): Promise<ApiResponse<EpisodicMemory[]>> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       // Primary: /api/memory?memory_type=episodic
       let res = await fetch(`${this.baseUrl}/api/memory?memory_type=episodic`, {
@@ -300,7 +301,7 @@ export class RagnarokApiClient {
     try {
       const q = query ? `query=${encodeURIComponent(query.trim())}` : '';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       // Primary: /api/memory?memory_type=semantic
       let res = await fetch(`${this.baseUrl}/api/memory?memory_type=semantic${q ? `&${q}` : ''}`, {
@@ -570,7 +571,7 @@ export class RagnarokApiClient {
   async getIncompleteTasks(): Promise<ApiResponse<TaskGraph[]>> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       // Try /api/tasks first to get full DAG execution traces
       let res = await fetch(`${this.baseUrl}/api/tasks`, {
@@ -776,23 +777,21 @@ export class RagnarokApiClient {
       if (res.ok) {
         const raw = await res.json();
         const items = Array.isArray(raw) ? (raw as Record<string, unknown>[]) : [];
-        if (items.length > 0) {
-          const approvals: ApprovalRequest[] = items.map((item, idx: number) => ({
-            id: String(item.approval_id || item.id || `appr-${idx}`),
-            taskId: String(item.task_id || item.taskId || ''),
-            stepId: String(item.step_id || item.stepId || ''),
-            taskGoal: String(item.title || item.taskGoal || 'Protected Operation'),
-            actionTitle: String(item.title || item.actionTitle || 'Protected Operation'),
-            toolName: String(item.action || item.toolName || 'system.execute'),
-            riskLevel: (String(item.risk_level || item.riskLevel || 'high').toLowerCase()) as RiskLevel,
-            rationale: 'High-risk operation halted at Gjallarhorn approval gate awaiting explicit human authorization.',
-            commandOrPayload: JSON.stringify(item.parameters || {}, null, 2),
-            parameters: (item.parameters as Record<string, unknown>) || {},
-            createdAt: String(item.created_at || new Date().toISOString()),
-            status: 'pending',
-          }));
-          return { data: approvals, isLive: true };
-        }
+        const approvals: ApprovalRequest[] = items.map((item, idx: number) => ({
+          id: String(item.approval_id || item.id || `appr-${idx}`),
+          taskId: String(item.task_id || item.taskId || ''),
+          stepId: String(item.step_id || item.stepId || ''),
+          taskGoal: String(item.title || item.taskGoal || 'Protected Operation'),
+          actionTitle: String(item.title || item.actionTitle || 'Protected Operation'),
+          toolName: String(item.action || item.toolName || 'system.execute'),
+          riskLevel: (String(item.risk_level || item.riskLevel || 'high').toLowerCase()) as RiskLevel,
+          rationale: 'High-risk operation halted at Gjallarhorn approval gate awaiting explicit human authorization.',
+          commandOrPayload: JSON.stringify(item.parameters || {}, null, 2),
+          parameters: (item.parameters as Record<string, unknown>) || {},
+          createdAt: String(item.created_at || new Date().toISOString()),
+          status: 'pending',
+        }));
+        return { data: approvals, isLive: true };
       }
     } catch {
       // ignore
@@ -842,13 +841,17 @@ export class RagnarokApiClient {
   ): Promise<ApiResponse<PermissionApprovalResponse>> {
     try {
       const approvalId = payload.request_id || payload.requestId || '';
+      const decisionStr = payload.decision
+        ? (payload.decision.toLowerCase() === 'approved' ? 'approved' : 'rejected')
+        : (payload.approved ? 'approved' : 'rejected');
+
       const body = {
         approval_id: approvalId,
         requestId: approvalId,
         request_id: approvalId,
         task_id: payload.task_id,
-        approved: payload.approved,
-        decision: payload.decision,
+        approved: decisionStr === 'approved',
+        decision: decisionStr,
         notes: payload.notes || '',
       };
 
@@ -864,7 +867,7 @@ export class RagnarokApiClient {
         res = await fetch(`${this.baseUrl}/api/approvals/${encodeURIComponent(approvalId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ decision: payload.decision, notes: payload.notes }),
+          body: JSON.stringify({ decision: decisionStr, notes: payload.notes || '' }),
         });
       }
 
@@ -877,8 +880,8 @@ export class RagnarokApiClient {
         return {
           data: {
             success: true,
-            status: payload.decision === 'approved' ? 'approved' : 'denied',
-            message: typeof respData.message === 'string' ? respData.message : 'Permission decision registered',
+            status: decisionStr === 'approved' ? 'approved' : 'denied',
+            message: typeof respData.message === 'string' ? respData.message : `Permission decision '${decisionStr}' registered`,
           },
           isLive: true,
         };
@@ -930,7 +933,7 @@ export class RagnarokApiClient {
   async getSkills(): Promise<ApiResponse<SkillDefinition[]>> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       const res = await fetch(`${this.baseUrl}/api/skills`, {
         signal: controller.signal,
         cache: 'no-store',
@@ -998,7 +1001,7 @@ export class RagnarokApiClient {
     ]);
     const merged = [...epi.data, ...sem.data];
     return {
-      data: merged.length > 0 ? merged : DEMO_MEMORIES,
+      data: merged.length > 0 ? merged : (epi.isLive || sem.isLive ? [] : DEMO_MEMORIES),
       isLive: epi.isLive || sem.isLive,
       error: !epi.isLive && !sem.isLive ? 'Backend memory endpoints unreachable.' : undefined,
     };
@@ -1009,22 +1012,117 @@ export class RagnarokApiClient {
     if (health.online) {
       return {
         data: {
-          ...DEMO_RUNTIME_STATUS,
           online: true,
           model: health.activeModel || 'gemma4:e2b',
+          ollamaEndpoint: 'http://127.0.0.1:11434',
           ollamaStatus: (health.ollamaStatus as AgentRuntimeStatus['ollamaStatus']) || 'degraded',
           activeModelLoaded: health.activeModelLoaded ?? false,
           latencyMs: health.latencyMs || 45,
+          cpuPercent: 0,
+          ramUsageMb: 0,
+          encryptedDatabase: {
+            status: 'unlocked',
+            algorithm: 'AES-256-GCM / SQLite',
+            totalRecords: 0,
+            sizeKb: 0,
+          },
+          telemetry: {
+            outboundBytes: 0,
+            sovereignGuarantee: true,
+            lastAuditTimestamp: new Date().toISOString(),
+          },
+          activeSentinelsCount: 1,
+          pendingApprovalsCount: 0,
           serviceName: health.serviceName || 'Project MEMORAG Sovereign Agent & Orchestrator API',
         },
         isLive: true,
       };
     }
     return {
-      data: DEMO_RUNTIME_STATUS,
+      data: {
+        online: false,
+        model: 'unavailable',
+        ollamaEndpoint: 'http://127.0.0.1:11434',
+        ollamaStatus: 'disconnected',
+        activeModelLoaded: false,
+        latencyMs: 0,
+        cpuPercent: 0,
+        ramUsageMb: 0,
+        encryptedDatabase: {
+          status: 'locked',
+          algorithm: 'AES-256-GCM / SQLite',
+          totalRecords: 0,
+          sizeKb: 0,
+        },
+        telemetry: {
+          outboundBytes: 0,
+          sovereignGuarantee: true,
+          lastAuditTimestamp: new Date().toISOString(),
+        },
+        activeSentinelsCount: 0,
+        pendingApprovalsCount: 0,
+        serviceName: 'MEMORAG Sovereign Agent (Offline)',
+      },
       isLive: false,
       error: `FastAPI backend at ${this.baseUrl} is unreachable.`,
     };
+  }
+
+  /**
+   * POST /api/tasks/{task_id}/cancel
+   * Requests real backend cancellation of a task DAG.
+   */
+  async cancelTask(taskId: string): Promise<ApiResponse<{ success: boolean; status: string; message: string }>> {
+    try {
+      const res = await this.fetchWithTimeout(`${this.baseUrl}/api/tasks/${taskId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }, 5000);
+
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          data: {
+            success: true,
+            status: data.status || 'cancelled',
+            message: 'Task cancellation confirmed by backend orchestrator.',
+          },
+          isLive: true,
+        };
+      }
+
+      if (res.status === 404 || res.status === 405) {
+        return {
+          data: {
+            success: true,
+            status: 'aborted_client_side',
+            message: 'Client request halted. (Backend cancel route /api/tasks/{task_id}/cancel not exposed).',
+          },
+          isLive: true,
+          statusCode: res.status,
+        };
+      }
+
+      return {
+        data: {
+          success: false,
+          status: 'cancel_failed',
+          message: `Backend cancellation returned HTTP ${res.status}.`,
+        },
+        isLive: true,
+        statusCode: res.status,
+      };
+    } catch (err: unknown) {
+      return {
+        data: {
+          success: false,
+          status: 'network_error',
+          message: err instanceof Error ? err.message : 'Network error requesting cancellation',
+        },
+        isLive: false,
+        error: err instanceof Error ? err.message : 'Cancellation request failed',
+      };
+    }
   }
 
   /**
@@ -1034,18 +1132,28 @@ export class RagnarokApiClient {
   async sendPrompt(
     prompt: string,
     mode: 'chat' | 'task' | 'memory' = 'chat',
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    attachments?: MessageAttachment[]
   ): Promise<ApiResponse<ChatMessage>> {
     try {
       if (signal?.aborted) {
         throw new DOMException('Aborted by user', 'AbortError');
       }
 
+      // If attachments are provided, prepend structured context blocks
+      let promptWithAttachments = prompt;
+      if (attachments && attachments.length > 0) {
+        const attachmentBlock = attachments
+          .map((a) => `=== ATTACHMENT: ${a.name} (${a.size} bytes) ===\n${a.content}\n=== END ATTACHMENT ===`)
+          .join('\n\n');
+        promptWithAttachments = `${attachmentBlock}\n\n${prompt}`;
+      }
+
       // 1. Attempt POST /api/agent/chat
       const chatRes = await fetch(`${this.baseUrl}/api/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, mode }),
+        body: JSON.stringify({ prompt: promptWithAttachments, mode, attachments }),
         signal,
       });
 

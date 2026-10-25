@@ -11,6 +11,7 @@ import {
   Sparkles,
   User,
   Bot,
+  FileText,
 } from 'lucide-react';
 import { ChatMessage } from '@/lib/api/types';
 import { InlineApprovalCard } from './InlineApprovalCard';
@@ -166,6 +167,24 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           </div>
         )}
 
+        {/* Attached Files Badges */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pb-1">
+            {message.attachments.map((att, idx) => (
+              <div
+                key={idx}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-forge-canvas border border-forge text-[11px] font-mono text-forge-secondary"
+              >
+                <FileText className="w-3 h-3 text-forge-accent shrink-0" />
+                <span className="font-medium truncate max-w-[150px]">{att.name}</span>
+                <span className="text-[10px] text-forge-muted tabular-nums">
+                  {Math.max(1, Math.round(att.size / 1024))}KB
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Main Text Content */}
         <div className="text-xs sm:text-[13px] leading-relaxed font-sans">
           {renderFormattedContent(message.content)}
@@ -198,6 +217,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               riskLevel={message.actionProposal.riskLevel}
               description={message.actionProposal.description}
               command={message.actionProposal.payload?.command as string | undefined}
+              payload={message.actionProposal.payload}
               status={message.actionProposal.status}
               onApprove={() => onApproveProposal(message.actionProposal!.id)}
               onReject={() => onRejectProposal(message.actionProposal!.id)}

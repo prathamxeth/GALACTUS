@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Bot,
 } from 'lucide-react';
-import { ChatMessage, DiagnosticReport } from '@/lib/api/types';
+import { ChatMessage, DiagnosticReport, MessageAttachment } from '@/lib/api/types';
 import { MessageItem } from './MessageItem';
 import { ToolExecutionCard } from './ToolExecutionCard';
 import { ForgeComposer } from './ForgeComposer';
@@ -15,15 +15,15 @@ import { ForgeComposer } from './ForgeComposer';
 export interface ThreadProps {
   messages: ChatMessage[];
   isSubmitting: boolean;
-  onSendMessage: (text: string) => Promise<void> | void;
+  onSendMessage: (text: string, attachments?: MessageAttachment[]) => Promise<void> | void;
   onStopGeneration?: () => void;
   onClearThread?: () => void;
   diagnosticReport?: DiagnosticReport | null;
   diagnosticStatus?: string;
   isDiagnosticLoading?: boolean;
   diagnosticError?: string | null;
-  onApproveRepair?: () => Promise<void> | void;
-  onRejectRepair?: () => Promise<void> | void;
+  onApproveRepair?: (approvalId?: string) => Promise<void> | void;
+  onRejectRepair?: (approvalId?: string) => Promise<void> | void;
   onRecoverProject?: () => Promise<boolean | void> | void;
   onOpenFile?: (file: string) => void;
   isResolvingRepair?: boolean;
@@ -82,20 +82,21 @@ export const Thread: React.FC<ThreadProps> = ({
     }
   }, [messages, isSubmitting, diagnosticReport, isAtBottom, scrollToBottom]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (attachments?: MessageAttachment[]) => {
     const text = prompt.trim();
-    if (!text || isSubmitting) return;
+    const hasAttachments = Boolean(attachments && attachments.length > 0);
+    if ((!text && !hasAttachments) || isSubmitting) return;
 
     setPrompt('');
     setErrorMessage(null);
-    setLastFailedDraft(null);
+    setLastFailedDraft(text);
 
     try {
-      await onSendMessage(text);
+      await onSendMessage(text, attachments);
+      setLastFailedDraft(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to send message';
       setErrorMessage(msg);
-      setLastFailedDraft(text);
       setPrompt(text); // Preserve user's draft on error
     }
   };
@@ -185,15 +186,15 @@ export const Thread: React.FC<ThreadProps> = ({
               message={msg}
               onApproveProposal={
                 onApproveRepair
-                  ? async () => {
-                      if (onApproveRepair) await onApproveRepair();
+                  ? async (id: string) => {
+                      if (onApproveRepair) await onApproveRepair(id);
                     }
                   : undefined
               }
               onRejectProposal={
                 onRejectRepair
-                  ? async () => {
-                      if (onRejectRepair) await onRejectRepair();
+                  ? async (id: string) => {
+                      if (onRejectRepair) await onRejectRepair(id);
                     }
                   : undefined
               }
