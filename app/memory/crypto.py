@@ -226,4 +226,6 @@ class EncryptionService:
                 "Decryption failed: invalid key or tampered ciphertext token."
             ) from e
         except Exception as e:
+            if isinstance(e, CryptoError):
+                raise
             raise DecryptionError(f"Decryption failed: {e}") from e

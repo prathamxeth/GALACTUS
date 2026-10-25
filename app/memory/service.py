@@ -6,6 +6,7 @@ Plaintext data is decrypted strictly in process memory; no unencrypted search in
 import hashlib
 import json
 import logging
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
@@ -234,7 +235,7 @@ class MemoryService:
     # Retrieval, Inspection, Editing, Deletion & Export
     # =========================================================================
 
-    def get_memory(self, memory_id: str, include_deleted: bool = False) -> Optional[MemoryRecord]:
+    def get_memory(self, memory_id: Union[str, uuid.UUID, Any], include_deleted: bool = False) -> Optional[MemoryRecord]:
         """
         Inspects a single memory by ID.
         Decrypts the payload in process memory before returning.
@@ -244,7 +245,7 @@ class MemoryService:
             return None
         return self._row_to_record(row)
 
-    def update_memory(self, memory_id: str, update: MemoryUpdate) -> MemoryRecord:
+    def update_memory(self, memory_id: Union[str, uuid.UUID, Any], update: MemoryUpdate) -> MemoryRecord:
         """
         Updates an existing memory record. Re-encrypts payload with new values.
         """
@@ -269,23 +270,28 @@ class MemoryService:
         stat_val = new_stat.value if hasattr(new_stat, "value") else str(new_stat)
 
         self.repo.update_memory_row(
-            memory_id=memory_id,
+            memory_id=current.id,
             encrypted_payload=encrypted_payload,
             verification_status=stat_val,
             confidence=new_conf,
         )
 
-        return self.get_memory(memory_id)
+        return self.get_memory(current.id)
 
-    def delete_memory(self, memory_id: str, hard_delete: bool = False) -> bool:
+    def delete_memory(self, memory_id: Union[str, uuid.UUID, Any], hard_delete: bool = False) -> bool:
         """
         Deletes a memory record.
         - If hard_delete is False: soft deletes (sets is_deleted = 1, excluded from queries).
         - If hard_delete is True: cryptographically overwrites payload and deletes SQLite row.
         """
+        current = self.get_memory(memory_id, include_deleted=True)
+        if not current:
+            return False
         if hard_delete:
-            return self.repo.hard_delete_memory(memory_id)
-        return self.repo.soft_delete_memory(memory_id)
+            return self.repo.hard_delete_memory(current.id)
+        if current.is_deleted:
+            return False
+        return self.repo.soft_delete_memory(current.id)
 
     def search_memories(
         self,
@@ -381,3 +387,99 @@ class MemoryService:
             expires_at=row["expires_at"],
             is_deleted=bool(row["is_deleted"]),
         )
+
+    def query_relevant_context(self, user_goal: str, max_items: int = 10) -> Dict[str, Any]:
+        """
+        Milestone 5 Handshake Interface for Member 1 (TaskPlanner):
+        Queries and returns verified facts, user preferences, and goal-relevant context
+        to inject into the LLM system prompt before generating the DAG.
+        """
+        # 1. Fetch user preferences
+        all_preferences = self.search_memories(
+            memory_type=MemoryType.SEMANTIC,
+            category=SemanticCategory.PREFERENCE.value,
+            limit=max_items,
+            include_expired=False,
+        )
+
+        # 2. Fetch verified facts & project context
+        verified_facts: List[MemoryRecord] = []
+        for cat in [SemanticCategory.FACT.value, SemanticCategory.PROJECT_CONTEXT.value]:
+            facts = self.search_memories(
+                memory_type=MemoryType.SEMANTIC,
+                category=cat,
+                limit=max_items,
+                include_expired=False,
+            )
+            for f in facts:
+                if f.verification_status in [VerificationStatus.VERIFIED, VerificationStatus.USER_PROVIDED]:
+                    verified_facts.append(f)
+
+        # 3. Match keyword relevance against user_goal
+        goal_keywords = set(re.findall(r"\b\w{3,}\b", user_goal.lower())) if user_goal else set()
+
+        def relevance_score(rec: MemoryRecord) -> int:
+            payload_text = json.dumps(rec.payload, ensure_ascii=False).lower()
+            return sum(1 for kw in goal_keywords if kw in payload_text)
+
+        sorted_prefs = sorted(all_preferences, key=relevance_score, reverse=True)
+        sorted_facts = sorted(verified_facts, key=relevance_score, reverse=True)
+
+        formatted_prefs: List[str] = []
+        for p in sorted_prefs:
+            subj = p.payload.get("subject", "")
+            pred = p.payload.get("predicate", "")
+            obj = p.payload.get("object_value", "")
+            formatted_prefs.append(f"- User Preference: {subj} {pred} -> {obj}")
+
+        formatted_facts: List[str] = []
+        for f in sorted_facts:
+            subj = f.payload.get("subject", "")
+            pred = f.payload.get("predicate", "")
+            obj = f.payload.get("object_value", "")
+            status = f.verification_status.value if hasattr(f.verification_status, "value") else str(f.verification_status)
+            formatted_facts.append(f"- Verified Fact [{status}]: {subj} {pred} -> {obj}")
+
+        prompt_sections: List[str] = []
+        if formatted_prefs:
+            prompt_sections.append("### User Preferences & Constraints:\n" + "\n".join(formatted_prefs))
+        if formatted_facts:
+            prompt_sections.append("### Verified Project Context & Facts:\n" + "\n".join(formatted_facts))
+
+        formatted_prompt_context = "\n\n".join(prompt_sections)
+
+        return {
+            "preferences": [p.model_dump() if hasattr(p, "model_dump") else p.dict() for p in sorted_prefs],
+            "verified_facts": [f.model_dump() if hasattr(f, "model_dump") else f.dict() for f in sorted_facts],
+            "formatted_prompt_context": formatted_prompt_context,
+        }
+
+
+# ============================================================================
+# Standalone Handshake Function for Member 1 (TaskPlanner)
+# ============================================================================
+
+def query_relevant_context(
+    user_goal: str,
+    db_path: str = "galactus_memory.db",
+    service: Optional[MemoryService] = None,
+) -> Dict[str, Any]:
+    """
+    Convenience function for Member 1 (TaskPlanner) to invoke directly:
+        from app.memory.service import query_relevant_context
+        # or from app.memory import query_relevant_context
+        context = query_relevant_context(user_goal)
+    """
+    if service is not None:
+        return service.query_relevant_context(user_goal)
+
+    # Use existing container or initialize
+    from app.api.routes import SubsystemContainer
+    if SubsystemContainer.memory_service is not None:
+        return SubsystemContainer.memory_service.query_relevant_context(user_goal)
+
+    from app.memory.crypto import CompositeKeyProvider
+    db = DatabaseManager(db_path)
+    crypto = EncryptionService(CompositeKeyProvider())
+    local_service = MemoryService(db, crypto)
+    return local_service.query_relevant_context(user_goal)

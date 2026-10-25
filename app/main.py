@@ -3,11 +3,14 @@ Main entry point for GALACTUS / Ragnarok Memory & Security Service.
 Runs as a local-only daemon bound strictly to 127.0.0.1 by default.
 """
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router, SubsystemContainer
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -16,6 +19,20 @@ async def lifespan(app: FastAPI):
     if SubsystemContainer.db is None:
         db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
         SubsystemContainer.initialize(db_path=db_path)
+
+    # Crash Recovery Audit on startup
+    if SubsystemContainer.recovery_manager:
+        try:
+            incomplete = SubsystemContainer.recovery_manager.load_incomplete_tasks(raise_on_error=False)
+            if incomplete:
+                task_ids = [t.task_id for t in incomplete]
+                logger.info(
+                    f"Crash Recovery Audit: {len(incomplete)} incomplete task(s) detected across reboot. "
+                    f"Active task IDs: {task_ids}"
+                )
+        except Exception as e:
+            logger.warning(f"Crash Recovery Audit on startup encountered error: {e}")
+
     yield
     # Cleanup / flush WAL on shutdown if needed
     if SubsystemContainer.db:
