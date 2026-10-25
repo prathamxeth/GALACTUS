@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { RagnarokProvider } from '@/lib/context/RagnarokContext';
-import { GlobalVideoBackground } from '@/components/shell/GlobalVideoBackground';
 
 export const metadata: Metadata = {
-  title: 'MEMORAG | Sovereign AI Agent — Intelligence Designed To Evolve',
+  title: 'MEMORAG | Sovereign AI Agent',
   description:
     'A sovereign personal AI agent running locally on this device with persistent memory, multi-step workflows, and complete user control.',
 };
@@ -28,15 +27,8 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&display=swap"
           rel="stylesheet"
         />
-
-        {/* BubbledotICG-FinePos for Display Headline & Retro Glyphs */}
-        <link
-          href="https://db.onlinewebfonts.com/c/8cb707a9b8a73f8a7403336b861c3074?family=BubbledotICG-FinePos"
-          rel="stylesheet"
-        />
       </head>
       <body className="bg-canvas text-main antialiased min-h-screen selection:bg-[#ea2804]/20 selection:text-main">
-        <GlobalVideoBackground />
         <RagnarokProvider>{children}</RagnarokProvider>
       </body>
     </html>
