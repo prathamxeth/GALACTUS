@@ -68,7 +68,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
       <div className="flex items-center gap-3">
         {/* Landing Page Showcase Link */}
         <Link
-          href="/landing"
+          href="/"
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-elevated border border-subtle text-xs cursor-pointer hover:border-medium transition-all duration-150 active:scale-95 text-dim hover:text-main"
           title="View Intelligence Designed To Evolve Landing Page"
         >

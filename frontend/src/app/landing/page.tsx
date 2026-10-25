@@ -848,7 +848,7 @@ export default function LandingPage() {
             </nav>
 
             {/* Desktop Sign In (Dark Pill) -> Navigates to Dashboard */}
-            <Link href="/" className="landing-signin-btn">
+            <Link href="/dashboard" className="landing-signin-btn">
               Sign in
             </Link>
 
@@ -901,7 +901,7 @@ export default function LandingPage() {
 
           {/* CTA Button -> Launches Dashboard */}
           <div className="landing-cta-wrapper landing-anim" style={{ '--d': '0.4s' } as React.CSSProperties}>
-            <Link href="/" className="landing-cta-btn">
+            <Link href="/dashboard" className="landing-cta-btn">
               Get Started
             </Link>
           </div>
@@ -930,19 +930,19 @@ export default function LandingPage() {
         <>
           <div className="landing-mobile-overlay" onClick={() => setMenuOpen(false)}></div>
           <div className="landing-mobile-menu">
-            <Link href="/landing" className="landing-mobile-nav-link active" onClick={() => setMenuOpen(false)}>
+            <Link href="/" className="landing-mobile-nav-link active" onClick={() => setMenuOpen(false)}>
               Home
             </Link>
-            <Link href="/#product" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
+            <Link href="/dashboard" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
               Product
             </Link>
-            <Link href="/#case-studies" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
+            <Link href="/tasks" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
               Case Studies
             </Link>
-            <Link href="/#contact" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
+            <Link href="/settings" className="landing-mobile-nav-link" onClick={() => setMenuOpen(false)}>
               Contact
             </Link>
-            <Link href="/" className="landing-mobile-signin-btn" onClick={() => setMenuOpen(false)}>
+            <Link href="/dashboard" className="landing-mobile-signin-btn" onClick={() => setMenuOpen(false)}>
               Sign in
             </Link>
           </div>

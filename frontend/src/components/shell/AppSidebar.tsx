@@ -17,6 +17,7 @@ import {
   Radio,
   SlidersHorizontal,
   Laptop,
+  Compass,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
@@ -40,7 +41,7 @@ export const AppSidebar: React.FC = () => {
   const userNavItems: NavItem[] = [
     {
       name: 'Assistant',
-      href: '/',
+      href: '/dashboard',
       icon: Sparkles,
     },
     {
@@ -65,12 +66,17 @@ export const AppSidebar: React.FC = () => {
       href: '/settings',
       icon: ShieldCheck,
     },
+    {
+      name: 'Landing Showcase',
+      href: '/',
+      icon: Compass,
+    },
   ];
 
   const devNavItems: NavItem[] = [
     {
       name: 'Command Center',
-      href: '/',
+      href: '/dashboard',
       icon: Terminal,
     },
     {
@@ -95,6 +101,11 @@ export const AppSidebar: React.FC = () => {
       href: '/settings',
       icon: ShieldCheck,
     },
+    {
+      name: 'Landing Showcase',
+      href: '/',
+      icon: Compass,
+    },
   ];
 
   const currentNavItems = isDev ? devNavItems : userNavItems;
@@ -104,7 +115,7 @@ export const AppSidebar: React.FC = () => {
       {/* Top Header & Brand */}
       <div>
         <div className="px-5 py-4 border-b border-subtle">
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/dashboard" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:border-emerald-500/60 transition-colors">
               <span className="font-mono font-bold text-sm">ᛗ</span>
             </div>
@@ -159,7 +170,9 @@ export const AppSidebar: React.FC = () => {
           </div>
           {currentNavItems.map((item) => {
             const isActive =
-              item.href === '/'
+              item.href === '/dashboard'
+                ? pathname === '/dashboard'
+                : item.href === '/'
                 ? pathname === '/'
                 : pathname.startsWith(item.href);
             const Icon = item.icon;
