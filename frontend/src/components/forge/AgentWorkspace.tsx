@@ -46,6 +46,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
     isBackendOnline,
     probeBackend,
     mode,
+    resolveApproval,
   } = useRagnarok();
 
   const isDev = mode === 'developer';
@@ -120,25 +121,35 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
     }
   };
 
-  const handleApproveRepair = async () => {
-    if (!diagnosticReport?.proposed_repair) return;
-    const approvalId =
-      diagnosticReport.proposed_repair.approval_id || diagnosticReport.proposed_repair.proposal_id;
+  const handleApproveRepair = async (id?: string) => {
     setIsResolving(true);
     try {
-      await resolveDiagnosticRepair(approvalId, 'approved');
+      if (diagnosticReport?.proposed_repair) {
+        const approvalId =
+          id ||
+          diagnosticReport.proposed_repair.approval_id ||
+          diagnosticReport.proposed_repair.proposal_id;
+        await resolveDiagnosticRepair(approvalId, 'approved');
+      } else if (id) {
+        await resolveApproval(id, 'approved');
+      }
     } finally {
       setIsResolving(false);
     }
   };
 
-  const handleRejectRepair = async () => {
-    if (!diagnosticReport?.proposed_repair) return;
-    const approvalId =
-      diagnosticReport.proposed_repair.approval_id || diagnosticReport.proposed_repair.proposal_id;
+  const handleRejectRepair = async (id?: string) => {
     setIsResolving(true);
     try {
-      await resolveDiagnosticRepair(approvalId, 'rejected');
+      if (diagnosticReport?.proposed_repair) {
+        const approvalId =
+          id ||
+          diagnosticReport.proposed_repair.approval_id ||
+          diagnosticReport.proposed_repair.proposal_id;
+        await resolveDiagnosticRepair(approvalId, 'rejected');
+      } else if (id) {
+        await resolveApproval(id, 'rejected');
+      }
     } finally {
       setIsResolving(false);
     }
