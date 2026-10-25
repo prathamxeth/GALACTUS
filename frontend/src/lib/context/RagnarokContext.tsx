@@ -32,7 +32,6 @@ import {
 } from '../api/types';
 import {
   DEMO_APPROVALS,
-  DEMO_CHAT_MESSAGES,
   DEMO_DIAGNOSTIC_METRICS,
   DEMO_EVENT_LOGS,
   DEMO_MEMORIES,
@@ -94,6 +93,9 @@ interface RagnarokContextValue {
 
   // Other Operations
   sendMessage: (prompt: string, mode?: 'chat' | 'task' | 'memory') => Promise<void>;
+  isSendingMessage: boolean;
+  abortSendMessage: () => void;
+  clearConversation: () => void;
   toggleSkill: (id: string) => void;
   toggleSentinel: (id: string) => void;
   updateSettings: (newSettings: Partial<PrivacySettings>) => Promise<void>;
@@ -108,8 +110,10 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   // 2. Appearance Preset (Default 'dark', persisted)
   const [preset, setPresetState] = useState<AppearancePreset>('dark');
 
-  // 3. Domain State
-  const [messages, setMessages] = useState<ChatMessage[]>(DEMO_CHAT_MESSAGES);
+  // 3. Domain State (Messages start empty for clean OLED empty state, thread activates on first interaction)
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isSendingMessage, setIsSendingMessage] = useState<boolean>(false);
+  const activeChatAbortRef = useRef<AbortController | null>(null);
   const [tasks, setTasks] = useState<TaskGraph[]>(DEMO_TASKS);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>(DEMO_APPROVALS);
   const [memories, setMemories] = useState<MemoryRecord[]>(DEMO_MEMORIES);
@@ -620,8 +624,30 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
   };
 
+  // --- Abort & Clear Operations ---
+  const abortSendMessage = useCallback(() => {
+    if (activeChatAbortRef.current) {
+      activeChatAbortRef.current.abort();
+      activeChatAbortRef.current = null;
+    }
+    setIsSendingMessage(false);
+  }, []);
+
+  const clearConversation = useCallback(() => {
+    if (activeChatAbortRef.current) {
+      activeChatAbortRef.current.abort();
+      activeChatAbortRef.current = null;
+    }
+    setMessages([]);
+    setIsSendingMessage(false);
+  }, []);
+
   // --- Send Message ---
   const sendMessage = async (prompt: string, sendMode: 'chat' | 'task' | 'memory' = 'chat') => {
+    const controller = new AbortController();
+    activeChatAbortRef.current = controller;
+    setIsSendingMessage(true);
+
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       role: 'user',
@@ -642,7 +668,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     setEventLogs((prev) => [newLog, ...prev]);
 
     try {
-      const response = await api.sendPrompt(prompt, sendMode);
+      const response = await api.sendPrompt(prompt, sendMode, controller.signal);
       setMessages((prev) => [...prev, response.data]);
 
       // If backend created an active task, sync tasks and attach SSE
@@ -674,16 +700,32 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           ];
         });
       }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-err-${Date.now()}`,
-          role: 'agent',
-          content: 'I could not communicate with the local agent gateway. Please verify that the local service is running.',
-          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-abort-${Date.now()}`,
+            role: 'agent',
+            content: 'Generation was stopped by user. Local model halted.',
+            timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-err-${Date.now()}`,
+            role: 'agent',
+            content: 'I could not communicate with the local agent gateway. Please verify that the local service is running.',
+            timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        throw err;
+      }
+    } finally {
+      setIsSendingMessage(false);
+      activeChatAbortRef.current = null;
     }
   };
 
@@ -821,6 +863,9 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
         submitPermissionApproval,
         resolveApproval,
         sendMessage,
+        isSendingMessage,
+        abortSendMessage,
+        clearConversation,
         toggleSkill,
         toggleSentinel,
         updateSettings,

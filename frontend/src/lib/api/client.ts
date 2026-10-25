@@ -1033,14 +1033,20 @@ export class RagnarokApiClient {
    */
   async sendPrompt(
     prompt: string,
-    mode: 'chat' | 'task' | 'memory' = 'chat'
+    mode: 'chat' | 'task' | 'memory' = 'chat',
+    signal?: AbortSignal
   ): Promise<ApiResponse<ChatMessage>> {
     try {
+      if (signal?.aborted) {
+        throw new DOMException('Aborted by user', 'AbortError');
+      }
+
       // 1. Attempt POST /api/agent/chat
       const chatRes = await fetch(`${this.baseUrl}/api/agent/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, mode }),
+        signal,
       });
 
       if (chatRes.ok) {
@@ -1054,6 +1060,7 @@ export class RagnarokApiClient {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ goal: prompt.trim(), priority: 'normal' }),
+          signal,
         });
 
         if (taskRes.ok) {
@@ -1089,8 +1096,11 @@ export class RagnarokApiClient {
           return { data: chatMessage, isLive: true };
         }
       }
-    } catch {
-      // offline
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw err;
+      }
+      // offline fallback
     }
 
     return {
