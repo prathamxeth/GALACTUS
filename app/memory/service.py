@@ -365,6 +365,80 @@ class MemoryService:
         """Purges expired memories from active state."""
         return self.repo.purge_expired_records()
 
+    def query_relevant_context(self, user_goal: str) -> Dict[str, Any]:
+        """
+        Milestone 5 Memory Handshake:
+        Extracts verified facts, user preferences, and contextual constraints relevant
+        to the user goal for prompt injection into the Task Planner (gemma4:e2b).
+        """
+        # 1. Fetch all semantic memories that are active
+        all_semantic = self.search_memories(
+            memory_type=MemoryType.SEMANTIC,
+            limit=200,
+            include_expired=False,
+        )
+
+        # 2. Extract goal keywords
+        goal_words = set(w.strip().lower() for w in user_goal.split() if len(w.strip()) > 2)
+
+        verified_facts: List[Dict[str, Any]] = []
+        preferences: List[Dict[str, Any]] = []
+        constraints: List[Dict[str, Any]] = []
+
+        for mem in all_semantic:
+            payload = mem.payload or {}
+            cat = (mem.category or "").lower()
+            subject = payload.get("subject", "")
+            predicate = payload.get("predicate", "")
+            obj_val = payload.get("object_value", "")
+            text_repr = f"{subject} {predicate} {obj_val}".lower()
+
+            is_match = any(word in text_repr for word in goal_words)
+
+            item = {
+                "id": mem.id,
+                "category": cat,
+                "subject": subject,
+                "predicate": predicate,
+                "object_value": obj_val,
+                "verification_status": mem.verification_status.value if hasattr(mem.verification_status, "value") else str(mem.verification_status),
+                "confidence": mem.confidence,
+            }
+
+            if cat == "preference" or cat == SemanticCategory.PREFERENCE.value:
+                preferences.append(item)
+            elif cat in ("constraint", "project_context", SemanticCategory.PROJECT_CONTEXT.value):
+                constraints.append(item)
+            elif mem.verification_status in (VerificationStatus.VERIFIED, VerificationStatus.USER_PROVIDED):
+                verified_facts.append(item)
+            elif is_match:
+                verified_facts.append(item)
+
+        # 3. Format formatted_context string for Ollama system prompt
+        context_lines: List[str] = []
+        if preferences:
+            context_lines.append("USER PREFERENCES:")
+            for p in preferences:
+                context_lines.append(f"- {p['subject']} -> {p['predicate']}: {p['object_value']}")
+        if constraints:
+            context_lines.append("CONSTRAINTS & POLICIES:")
+            for c in constraints:
+                context_lines.append(f"- {c['subject']} -> {c['predicate']}: {c['object_value']}")
+        if verified_facts:
+            context_lines.append("VERIFIED FACTS:")
+            for vf in verified_facts:
+                context_lines.append(f"- {vf['subject']} {vf['predicate']} {vf['object_value']} (verified)")
+
+        formatted_context = "\n".join(context_lines) if context_lines else "No specific prior preferences or verified constraints found."
+
+        return {
+            "user_goal": user_goal,
+            "verified_facts": verified_facts,
+            "preferences": preferences,
+            "constraints": constraints,
+            "formatted_context": formatted_context,
+        }
+
     # =========================================================================
     # Helpers
     # =========================================================================
@@ -388,70 +462,91 @@ class MemoryService:
             is_deleted=bool(row["is_deleted"]),
         )
 
-    def query_relevant_context(self, user_goal: str, max_items: int = 10) -> Dict[str, Any]:
+    def query_relevant_context(self, user_goal: str, max_items: int = 100) -> Dict[str, Any]:
         """
-        Milestone 5 Handshake Interface for Member 1 (TaskPlanner):
-        Queries and returns verified facts, user preferences, and goal-relevant context
-        to inject into the LLM system prompt before generating the DAG.
+        Milestone 5 Memory Handshake:
+        Extracts verified facts, user preferences, and contextual constraints relevant
+        to the user goal for prompt injection into the Task Planner (gemma4:e2b).
         """
-        # 1. Fetch user preferences
-        all_preferences = self.search_memories(
+        # 1. Fetch all semantic memories that are active
+        all_semantic = self.search_memories(
             memory_type=MemoryType.SEMANTIC,
-            category=SemanticCategory.PREFERENCE.value,
-            limit=max_items,
+            limit=200,
             include_expired=False,
         )
 
-        # 2. Fetch verified facts & project context
-        verified_facts: List[MemoryRecord] = []
-        for cat in [SemanticCategory.FACT.value, SemanticCategory.PROJECT_CONTEXT.value]:
-            facts = self.search_memories(
-                memory_type=MemoryType.SEMANTIC,
-                category=cat,
-                limit=max_items,
-                include_expired=False,
-            )
-            for f in facts:
-                if f.verification_status in [VerificationStatus.VERIFIED, VerificationStatus.USER_PROVIDED]:
-                    verified_facts.append(f)
+        # 2. Extract goal keywords
+        goal_words = set(re.findall(r"\b\w{3,}\b", user_goal.lower())) if user_goal else set()
 
-        # 3. Match keyword relevance against user_goal
-        goal_keywords = set(re.findall(r"\b\w{3,}\b", user_goal.lower())) if user_goal else set()
+        verified_facts: List[Dict[str, Any]] = []
+        preferences: List[Dict[str, Any]] = []
+        constraints: List[Dict[str, Any]] = []
 
-        def relevance_score(rec: MemoryRecord) -> int:
-            payload_text = json.dumps(rec.payload, ensure_ascii=False).lower()
-            return sum(1 for kw in goal_keywords if kw in payload_text)
+        for mem in all_semantic:
+            payload = mem.payload or {}
+            cat = (mem.category or "").lower()
+            subject = payload.get("subject", "")
+            predicate = payload.get("predicate", "")
+            obj_val = payload.get("object_value", "")
+            text_repr = f"{subject} {predicate} {obj_val}".lower()
 
-        sorted_prefs = sorted(all_preferences, key=relevance_score, reverse=True)
-        sorted_facts = sorted(verified_facts, key=relevance_score, reverse=True)
+            is_match = any(word in text_repr for word in goal_words)
 
-        formatted_prefs: List[str] = []
-        for p in sorted_prefs:
-            subj = p.payload.get("subject", "")
-            pred = p.payload.get("predicate", "")
-            obj = p.payload.get("object_value", "")
-            formatted_prefs.append(f"- User Preference: {subj} {pred} -> {obj}")
+            item = {
+                "id": mem.id,
+                "category": cat,
+                "subject": subject,
+                "predicate": predicate,
+                "object_value": obj_val,
+                "verification_status": mem.verification_status.value if hasattr(mem.verification_status, "value") else str(mem.verification_status),
+                "confidence": mem.confidence,
+            }
 
-        formatted_facts: List[str] = []
-        for f in sorted_facts:
-            subj = f.payload.get("subject", "")
-            pred = f.payload.get("predicate", "")
-            obj = f.payload.get("object_value", "")
-            status = f.verification_status.value if hasattr(f.verification_status, "value") else str(f.verification_status)
-            formatted_facts.append(f"- Verified Fact [{status}]: {subj} {pred} -> {obj}")
+            if cat == "preference" or cat == SemanticCategory.PREFERENCE.value:
+                preferences.append(item)
+            if cat in ("constraint", "project_context", SemanticCategory.PROJECT_CONTEXT.value):
+                constraints.append(item)
+            if cat in ("fact", SemanticCategory.FACT.value, "project_context", SemanticCategory.PROJECT_CONTEXT.value):
+                if mem.verification_status in (VerificationStatus.VERIFIED, VerificationStatus.USER_PROVIDED):
+                    verified_facts.append(item)
+            elif mem.verification_status in (VerificationStatus.VERIFIED, VerificationStatus.USER_PROVIDED):
+                verified_facts.append(item)
+            elif is_match and mem.verification_status != VerificationStatus.UNVERIFIED:
+                verified_facts.append(item)
 
-        prompt_sections: List[str] = []
-        if formatted_prefs:
-            prompt_sections.append("### User Preferences & Constraints:\n" + "\n".join(formatted_prefs))
-        if formatted_facts:
-            prompt_sections.append("### Verified Project Context & Facts:\n" + "\n".join(formatted_facts))
+        # Sort by keyword relevance if goal provided
+        def relevance_score(item_dict: Dict[str, Any]) -> int:
+            t = f"{item_dict.get('subject', '')} {item_dict.get('predicate', '')} {item_dict.get('object_value', '')}".lower()
+            return sum(1 for kw in goal_words if kw in t)
 
-        formatted_prompt_context = "\n\n".join(prompt_sections)
+        preferences = sorted(preferences, key=relevance_score, reverse=True)[:max_items]
+        constraints = sorted(constraints, key=relevance_score, reverse=True)[:max_items]
+        verified_facts = sorted(verified_facts, key=relevance_score, reverse=True)[:max_items]
+
+        # 3. Format formatted_context string for Ollama system prompt
+        context_lines: List[str] = []
+        if preferences:
+            context_lines.append("USER PREFERENCES:")
+            for p in preferences:
+                context_lines.append(f"- {p['subject']} -> {p['predicate']}: {p['object_value']}")
+        if constraints:
+            context_lines.append("CONSTRAINTS & POLICIES:")
+            for c in constraints:
+                context_lines.append(f"- {c['subject']} -> {c['predicate']}: {c['object_value']}")
+        if verified_facts:
+            context_lines.append("VERIFIED FACTS:")
+            for vf in verified_facts:
+                context_lines.append(f"- {vf['subject']} {vf['predicate']} {vf['object_value']} (verified)")
+
+        formatted_context = "\n".join(context_lines) if context_lines else "No specific prior preferences or verified constraints found."
 
         return {
-            "preferences": [p.model_dump() if hasattr(p, "model_dump") else p.dict() for p in sorted_prefs],
-            "verified_facts": [f.model_dump() if hasattr(f, "model_dump") else f.dict() for f in sorted_facts],
-            "formatted_prompt_context": formatted_prompt_context,
+            "user_goal": user_goal,
+            "verified_facts": verified_facts,
+            "preferences": preferences,
+            "constraints": constraints,
+            "formatted_context": formatted_context,
+            "formatted_prompt_context": formatted_context,
         }
 
 
@@ -461,22 +556,28 @@ class MemoryService:
 
 def query_relevant_context(
     user_goal: str,
-    db_path: str = "galactus_memory.db",
+    memory_service: Optional[MemoryService] = None,
     service: Optional[MemoryService] = None,
+    db_path: str = "galactus_memory.db",
 ) -> Dict[str, Any]:
     """
-    Convenience function for Member 1 (TaskPlanner) to invoke directly:
-        from app.memory.service import query_relevant_context
-        # or from app.memory import query_relevant_context
-        context = query_relevant_context(user_goal)
+    Module-level convenience function for Milestone 5 Memory Handshake.
+    Can be invoked directly by backend/planner.py (TaskPlanner).
+    Supports invocation with memory_service or service keyword arguments.
     """
-    if service is not None:
-        return service.query_relevant_context(user_goal)
+    active_service = memory_service or service
+    if active_service is not None:
+        return active_service.query_relevant_context(user_goal)
 
-    # Use existing container or initialize
     from app.api.routes import SubsystemContainer
     if SubsystemContainer.memory_service is not None:
         return SubsystemContainer.memory_service.query_relevant_context(user_goal)
+
+    try:
+        from app.api.routes import get_memory_service
+        return get_memory_service().query_relevant_context(user_goal)
+    except Exception:
+        pass
 
     from app.memory.crypto import CompositeKeyProvider
     db = DatabaseManager(db_path)
