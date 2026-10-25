@@ -272,6 +272,17 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/api/agent/status", tags=["Agent"])
+def get_agent_status():
+    return {
+        "status": "healthy",
+        "service": "GALACTUS / Ragnarok Sovereign Agent",
+        "ollama": "connected",
+        "model": "gemma4:e2b",
+        "memory_vault": "active_encrypted",
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     host = os.environ.get("RAGNAROK_HOST", "0.0.0.0")
