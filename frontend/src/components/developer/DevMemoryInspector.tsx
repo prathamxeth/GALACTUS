@@ -28,6 +28,7 @@ import {
   CreateSemanticFactRequest,
 } from '@/lib/api/types';
 import { FadeContent, CountUp, StarBorder } from '@/components/reactbits';
+import { CopyField } from '@/components/bencho';
 
 export const DevMemoryInspector: React.FC = () => {
   const {
@@ -580,6 +581,17 @@ export const DevMemoryInspector: React.FC = () => {
                   <span>Vector Dimension:</span>
                   <span className="text-main">384-dim (nomic-embed-text)</span>
                 </div>
+              </div>
+
+              <div>
+                <span className="text-[11px] text-faint uppercase block mb-1">
+                  Rune Reference Key
+                </span>
+                <CopyField
+                  text={`ragnarok:rune:${inspectingItem.type}:${inspectingItem.id}`}
+                  label="RUNE-REF"
+                  truncate={false}
+                />
               </div>
 
               <div>

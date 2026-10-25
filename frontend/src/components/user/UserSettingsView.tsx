@@ -14,6 +14,7 @@ import { Badge } from '../ui/Badge';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
 import { AppearancePreset } from '@/lib/api/types';
 import { FadeContent } from '@/components/reactbits';
+import { CopyField } from '@/components/bencho';
 
 export const UserSettingsView: React.FC = () => {
   const { preset, setPreset, settings, updateSettings } = useRagnarok();
@@ -186,6 +187,23 @@ export const UserSettingsView: React.FC = () => {
                   </span>
                 </div>
                 <Badge variant="emerald">Under 30% load</Badge>
+              </div>
+
+              {/* Local Vault Fingerprint */}
+              <div className="p-4 sm:p-5 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <span className="text-sm font-medium text-main block">
+                    Local Vault Fingerprint
+                  </span>
+                  <span className="text-xs text-dim">
+                    SHA-256 fingerprint of your on-device SQLite encryption seal
+                  </span>
+                </div>
+                <CopyField
+                  label="VAULT-FINGERPRINT"
+                  text="sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069"
+                  truncate
+                />
               </div>
             </Card>
           </div>

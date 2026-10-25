@@ -14,6 +14,7 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
 import { BlurText, FadeContent, CountUp, StarBorder } from '@/components/reactbits';
+import { ThinkingTrace } from '@/components/bencho';
 
 export const UserHomeView: React.FC = () => {
   const {
@@ -113,6 +114,21 @@ export const UserHomeView: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {/* Bencho Thinking Trace Component (https://bencho.dev/blocks/thinking) */}
+      <FadeContent blur duration={350} trigger="mount">
+        <ThinkingTrace
+          thoughts={[
+            "Ingesting local user intent and verifying sovereign prompt parameters...",
+            "Retrieving verified semantic facts and user preferences via query_relevant_context()...",
+            "Targeting local inference engine gemma4:e2b with zero outbound telemetry...",
+            "Classified execution DAG: 3 steps mapped with default-deny security barrier.",
+          ]}
+          isThinking={isSending}
+          elapsedSeconds={1.4}
+        />
+      </FadeContent>
+
 
       {/* Gentle Attention Card ("Can I go ahead?") with StarBorder on confirmation */}
       {pendingApproval && (

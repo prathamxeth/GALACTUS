@@ -7,6 +7,7 @@ import { Badge, BadgeVariant } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { ApprovalRequest, RiskLevel } from '../../lib/api/types';
 import { FadeContent, StarBorder } from '@/components/reactbits';
+import { SlideConfirm, CopyField } from '@/components/bencho';
 
 interface ApprovalModalProps {
   request: ApprovalRequest | null;
@@ -75,12 +76,16 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
             </div>
           </div>
 
-          {/* Task Context */}
-          <div className="text-xs text-dim bg-surface p-2.5 rounded-md border border-subtle">
-            <span className="font-medium text-main">Associated Task:</span> {request.taskGoal}
-            <span className="block text-[11px] font-mono text-faint mt-0.5">
-              Request ID: #{request.id} • Step ID: {request.stepId}
-            </span>
+          {/* Task Context & Token Copy */}
+          <div className="text-xs text-dim bg-surface p-2.5 rounded-md border border-subtle space-y-2">
+            <div>
+              <span className="font-medium text-main">Associated Task:</span> {request.taskGoal}
+            </div>
+            <CopyField
+              text={request.id}
+              label="Approval Token"
+              className="bg-elevated border-subtle"
+            />
           </div>
 
           {/* Command or Payload Inspection */}
@@ -96,6 +101,20 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
             </div>
           </div>
 
+          {/* Tactile Authorization Gate (Bencho Slide to Confirm) */}
+          <div className="rounded-xl border border-subtle bg-surface/60 p-3 flex flex-col items-center justify-center gap-2">
+            <span className="text-[10px] font-mono text-dim uppercase tracking-wider">
+              Slide Handle To Authorize (Bencho.dev/blocks/slide-confirm)
+            </span>
+            <SlideConfirm
+              label="Slide to authorize action"
+              confirmedLabel="Action Authorized"
+              onConfirm={() => handleAction('approved')}
+              disabled={isSubmitting}
+              width={340}
+            />
+          </div>
+
           {/* Execution Notice */}
           <div className="flex items-start gap-2 p-2.5 rounded bg-surface border border-subtle text-[11px] text-dim">
             <Info className="w-3.5 h-3.5 text-sky-500 shrink-0 mt-0.5" />
@@ -103,6 +122,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
               Granting approval will execute this step within the verified sandbox and transition status from PAUSED_APPROVAL to RUNNING.
             </span>
           </div>
+
 
           {/* Denial Reason Input */}
           {showRejectionInput && (

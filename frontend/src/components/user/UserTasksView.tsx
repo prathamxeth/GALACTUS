@@ -17,6 +17,7 @@ import { Modal } from '../ui/Modal';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
 import { TaskGraph, TaskStep } from '@/lib/api/types';
 import { FadeContent, CountUp, StarBorder } from '@/components/reactbits';
+import { StepPlayer, CopyField } from '@/components/bencho';
 
 export const UserTasksView: React.FC = () => {
   const {
@@ -166,8 +167,33 @@ export const UserTasksView: React.FC = () => {
         </div>
       )}
 
+      {/* Bencho Step Player Component (https://bencho.dev/blocks/step-player) */}
+      {tasks.length > 0 && tasks[0].steps && tasks[0].steps.length > 0 && (
+        <FadeContent blur duration={300} trigger="mount">
+          <div className="space-y-1.5">
+            <span className="text-[10px] font-mono text-dim uppercase tracking-wider">
+              Autonomous Timeline Playback (Bencho.dev/blocks/step-player)
+            </span>
+            <StepPlayer
+              steps={tasks[0].steps.map((s) => ({
+                id: s.id,
+                title: s.title,
+                status: s.status,
+              }))}
+              currentStepIndex={Math.max(
+                0,
+                tasks[0].steps.findIndex(
+                  (s) => s.status === 'running' || s.status === 'awaiting_approval'
+                )
+              )}
+            />
+          </div>
+        </FadeContent>
+      )}
+
       {/* Task Cards List with React Bits FadeContent */}
       <div className="space-y-4">
+
         {tasks.length === 0 ? (
           <FadeContent blur duration={300} trigger="mount">
             <div className="p-12 text-center rounded-xl bg-surface border border-subtle text-dim space-y-3">
