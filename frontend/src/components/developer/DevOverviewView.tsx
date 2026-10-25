@@ -356,15 +356,15 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
           {/* Developer Multi-Mode Prompt Bar */}
           <Card className="p-2 border-medium shadow-md">
             <div className="px-2 py-1 flex items-center justify-between border-b border-subtle pb-1.5 mb-2 text-xs font-mono">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-faint uppercase mr-1">Target Mode:</span>
                 <button
                   type="button"
                   onClick={() => setActiveMode('chat')}
-                  className={`px-2 py-0.5 rounded cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
                     activeMode === 'chat'
-                      ? 'bg-elevated text-main font-semibold border border-subtle'
-                      : 'text-dim hover:text-main'
+                      ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                      : 'text-dim hover:text-main bg-elevated/50'
                   }`}
                 >
                   Inference (Chat)
@@ -372,10 +372,10 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                 <button
                   type="button"
                   onClick={() => setActiveMode('task')}
-                  className={`px-2 py-0.5 rounded cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
                     activeMode === 'task'
-                      ? 'bg-elevated text-main font-semibold border border-subtle'
-                      : 'text-dim hover:text-main'
+                      ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                      : 'text-dim hover:text-main bg-elevated/50'
                   }`}
                 >
                   DAG Workflow (FR3)
@@ -383,10 +383,10 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                 <button
                   type="button"
                   onClick={() => setActiveMode('memory')}
-                  className={`px-2 py-0.5 rounded cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
                     activeMode === 'memory'
-                      ? 'bg-elevated text-main font-semibold border border-subtle'
-                      : 'text-dim hover:text-main'
+                      ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                      : 'text-dim hover:text-main bg-elevated/50'
                   }`}
                 >
                   Rune Vector Lookup

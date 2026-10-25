@@ -1,59 +1,110 @@
 @import "tailwindcss";
 
 @layer base {
-  /* 1. DARK PRESET (Default) - True OLED Pitch Black */
+  /* ========================================================================
+     REPLICATE DESIGN SYSTEM (Primary Theme across Dashboard & Technical Views)
+     Ref: https://getdesign.md/replicate/design-md
+     ======================================================================== */
   :root,
   [data-theme="dark"] {
-    --bg-canvas: #000000;
-    --bg-surface: #0a0a0d;
-    --bg-elevated: #131317;
-    --bg-subtle: #1c1c22;
-    --border-subtle: rgba(255, 255, 255, 0.11);
-    --border-medium: rgba(255, 255, 255, 0.20);
+    /* Replicate Dark Mode */
+    --color-replicate-primary: #ea2804;
+    --color-replicate-primary-deep: #c01f00;
+    --color-replicate-on-primary: #ffffff;
+
+    --bg-canvas: #0d0d0f;
+    --bg-surface: #141418;
+    --bg-elevated: #1c1c22;
+    --bg-subtle: #26262e;
+
+    --border-subtle: rgba(255, 255, 255, 0.10);
+    --border-medium: rgba(255, 255, 255, 0.18);
     --border-strong: rgba(255, 255, 255, 0.35);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --accent-emerald: #10b981;
-    --accent-emerald-bg: rgba(16, 185, 129, 0.14);
+
+    --text-primary: #fcfcfc;
+    --text-secondary: #a0a0a8;
+    --text-muted: #6a6a74;
+
+    --accent-primary: #ea2804;
+    --accent-primary-hover: #ff3e1c;
+    --accent-emerald: #2b9a66;
+    --accent-emerald-bg: rgba(43, 154, 102, 0.14);
     --accent-amber: #f59e0b;
     --accent-amber-bg: rgba(245, 158, 11, 0.14);
     --accent-sky: #38bdf8;
     --accent-sky-bg: rgba(56, 189, 248, 0.14);
-    --accent-rose: #f43f5e;
-    --accent-rose-bg: rgba(244, 63, 94, 0.14);
-    --scrollbar-thumb: #22222a;
-    --scrollbar-thumb-hover: #33333f;
+
+    --scrollbar-thumb: #25252d;
+    --scrollbar-thumb-hover: #373743;
+
+    /* ========================================================================
+       CLAUDE DESIGN SYSTEM (AI Chat Screen Theme)
+       Ref: https://getdesign.md/claude/design-md
+       ======================================================================== */
+    --claude-primary: #cc785c;
+    --claude-primary-active: #a9583e;
+    --claude-primary-soft: rgba(204, 120, 92, 0.18);
+    --claude-canvas: #181715;
+    --claude-surface-soft: #1f1e1b;
+    --claude-surface-card: #252320;
+    --claude-surface-elevated: #2d2b27;
+    --claude-hairline: #33312c;
+    --claude-hairline-soft: #2a2824;
+    --claude-text-body: #eceae5;
+    --claude-text-muted: #a09d96;
+    --claude-serif: "Newsreader", "Georgia", "Copernicus", serif;
   }
 
-  /* 2. LIGHT PRESET - True OLED Paper White Crisp Minimal */
+  /* 2. REPLICATE LIGHT PRESET — Warm Cream Developer Canvas */
   [data-theme="light"] {
-    --bg-canvas: #ffffff;
-    --bg-surface: #ffffff;
-    --bg-elevated: #f8fafc;
-    --bg-subtle: #f1f5f9;
-    --border-subtle: rgba(0, 0, 0, 0.12);
-    --border-medium: rgba(0, 0, 0, 0.22);
-    --border-strong: rgba(0, 0, 0, 0.38);
-    --text-primary: #000000;
-    --text-secondary: #334155;
-    --text-muted: #64748b;
-    --accent-emerald: #047857;
-    --accent-emerald-bg: rgba(4, 120, 87, 0.10);
-    --accent-amber: #b45309;
-    --accent-amber-bg: rgba(180, 83, 9, 0.10);
-    --accent-sky: #0369a1;
-    --accent-sky-bg: rgba(3, 105, 161, 0.10);
-    --accent-rose: #b91c1c;
-    --accent-rose-bg: rgba(185, 28, 28, 0.10);
-    --scrollbar-thumb: #cbd5e1;
-    --scrollbar-thumb-hover: #94a3b8;
+    --color-replicate-primary: #ea2804;
+    --color-replicate-primary-deep: #c01f00;
+    --color-replicate-on-primary: #ffffff;
+
+    --bg-canvas: #f9f7f3;        /* Replicate Signature Warm Cream Canvas */
+    --bg-surface: #ffffff;       /* Surface Card */
+    --bg-elevated: #f3f0e8;      /* Surface Bone */
+    --bg-subtle: #eae5d9;
+
+    --border-subtle: rgba(32, 32, 32, 0.10);
+    --border-medium: rgba(32, 32, 32, 0.18);
+    --border-strong: rgba(32, 32, 32, 0.35);
+
+    --text-primary: #202020;     /* Replicate Ink */
+    --text-secondary: #575757;   /* Replicate Charcoal */
+    --text-muted: #8d8d8d;      /* Replicate Ash */
+
+    --accent-primary: #ea2804;
+    --accent-primary-hover: #c01f00;
+    --accent-emerald: #2b9a66;
+    --accent-emerald-bg: rgba(43, 154, 102, 0.10);
+    --accent-amber: #d97706;
+    --accent-amber-bg: rgba(217, 119, 6, 0.10);
+    --accent-sky: #0284c7;
+    --accent-sky-bg: rgba(2, 132, 199, 0.10);
+
+    --scrollbar-thumb: #d9d4c7;
+    --scrollbar-thumb-hover: #bebaae;
+
+    /* Claude Light Mode Tokens */
+    --claude-primary: #cc785c;
+    --claude-primary-active: #a9583e;
+    --claude-primary-soft: rgba(204, 120, 92, 0.12);
+    --claude-canvas: #faf9f5;
+    --claude-surface-soft: #f5f0e8;
+    --claude-surface-card: #efe9de;
+    --claude-surface-elevated: #e8e0d2;
+    --claude-hairline: #e6dfd8;
+    --claude-hairline-soft: #ebe6df;
+    --claude-text-body: #3d3d3a;
+    --claude-text-muted: #6c6a64;
+    --claude-serif: "Newsreader", "Georgia", "Copernicus", serif;
   }
 
   body {
     background-color: var(--bg-canvas);
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
     overflow-x: clip;
     -webkit-font-smoothing: antialiased;
@@ -73,7 +124,7 @@
   }
 }
 
-/* Custom scrollbar driven by tokens */
+/* Custom scrollbar driven by Replicate tokens */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -83,16 +134,16 @@
 }
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 3px;
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Accessible focus ring */
+/* Accessible focus ring using Replicate hot orange */
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--accent-emerald);
+  box-shadow: 0 0 0 2px var(--color-replicate-primary);
 }
 
 /* Utility classes mapping semantic tokens */
@@ -102,6 +153,24 @@
 .bg-subtle { background-color: var(--bg-subtle); }
 .border-subtle { border-color: var(--border-subtle); }
 .border-medium { border-color: var(--border-medium); }
+.border-strong { border-color: var(--border-strong); }
 .text-main { color: var(--text-primary); }
 .text-dim { color: var(--text-secondary); }
 .text-faint { color: var(--text-muted); }
+
+/* Replicate Specific Classes */
+.bg-replicate-primary { background-color: var(--color-replicate-primary); }
+.text-replicate-primary { color: var(--color-replicate-primary); }
+.border-replicate-primary { border-color: var(--color-replicate-primary); }
+
+/* Claude Specific Classes */
+.bg-claude-primary { background-color: var(--claude-primary); }
+.text-claude-primary { color: var(--claude-primary); }
+.border-claude-primary { border-color: var(--claude-primary); }
+.font-claude-serif { font-family: var(--claude-serif); }
+.bg-claude-canvas { background-color: var(--claude-canvas); }
+.bg-claude-soft { background-color: var(--claude-surface-soft); }
+.bg-claude-card { background-color: var(--claude-surface-card); }
+.border-claude-hairline { border-color: var(--claude-hairline); }
+.text-claude-body { color: var(--claude-text-body); }
+.text-claude-muted { color: var(--claude-text-muted); }

@@ -14,8 +14,8 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <div
-      className={`rounded-xl bg-surface border border-subtle shadow-xs transition-colors ${
-        glow ? 'ring-1 ring-emerald-500/30' : ''
+      className={`rounded-xl bg-surface border border-subtle shadow-xs transition-all ${
+        glow ? 'ring-1 ring-[#ea2804]/40 border-[#ea2804]/40' : ''
       } ${className}`}
       {...props}
     >
@@ -53,7 +53,7 @@ export const CardFooter: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => (
-  <div className={`px-5 py-3 border-t border-subtle bg-elevated/50 rounded-b-xl ${className}`}>
+  <div className={`px-5 py-3 border-t border-subtle bg-elevated/40 rounded-b-xl ${className}`}>
     {children}
   </div>
 );

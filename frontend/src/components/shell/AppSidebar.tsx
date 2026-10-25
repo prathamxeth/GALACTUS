@@ -115,8 +115,8 @@ export const AppSidebar: React.FC = () => {
       {/* Top Header & Brand */}
       <div>
         <div className="px-5 py-4 border-b border-subtle">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:border-emerald-500/60 transition-colors">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 rounded-lg bg-[#ea2804]/10 border border-[#ea2804]/30 flex items-center justify-center text-[#ea2804] group-hover:border-[#ea2804]/60 transition-colors">
               <span className="font-mono font-bold text-sm">ᛗ</span>
             </div>
             <div>
@@ -190,7 +190,7 @@ export const AppSidebar: React.FC = () => {
                 <div className="flex items-center gap-2.5">
                   <Icon
                     className={`w-4 h-4 shrink-0 ${
-                      isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-dim'
+                      isActive ? 'text-[#ea2804]' : 'text-dim'
                     }`}
                   />
                   <span>{item.name}</span>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type BadgeVariant = 'emerald' | 'amber' | 'sky' | 'rose' | 'zinc' | 'purple';
+export type BadgeVariant = 'emerald' | 'amber' | 'sky' | 'rose' | 'zinc' | 'purple' | 'replicate' | 'claude';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -46,6 +46,18 @@ const variantStyles: Record<BadgeVariant, { bg: string; text: string; border: st
     border: 'border-purple-500/30',
     dot: 'bg-purple-600 dark:bg-purple-400',
   },
+  replicate: {
+    bg: 'bg-[#ea2804]/10 dark:bg-[#ea2804]/15',
+    text: 'text-[#ea2804] dark:text-[#ff4e2f]',
+    border: 'border-[#ea2804]/30',
+    dot: 'bg-[#ea2804]',
+  },
+  claude: {
+    bg: 'bg-[#cc785c]/10 dark:bg-[#cc785c]/15',
+    text: 'text-[#cc785c] dark:text-[#e08f75]',
+    border: 'border-[#cc785c]/30',
+    dot: 'bg-[#cc785c]',
+  },
 };
 
 export const Badge: React.FC<BadgeProps> = ({
@@ -58,7 +70,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles.bg} ${styles.text} ${styles.border} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${styles.bg} ${styles.text} ${styles.border} ${className}`}
     >
       {dot && <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />}
       {children}
