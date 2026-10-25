@@ -201,7 +201,10 @@ export const UserHomeView: React.FC = () => {
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.content}</p>
-                    <span className="block mt-1.5 text-[10px] text-faint text-right">
+                    <span
+                      suppressHydrationWarning
+                      className="block mt-1.5 text-[10px] text-faint text-right"
+                    >
                       {msg.timestamp}
                     </span>
                   </div>
@@ -262,9 +265,12 @@ export const UserHomeView: React.FC = () => {
                       </div>
                     </div>
 
-                    <span className="text-xs text-faint shrink-0 flex items-center gap-1">
+                    <span
+                      suppressHydrationWarning
+                      className="text-xs text-faint shrink-0 flex items-center gap-1"
+                    >
                       <Clock className="w-3 h-3 text-faint" />
-                      {new Date(task.createdAt).toLocaleTimeString([], {
+                      {new Date(task.createdAt).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}

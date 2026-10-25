@@ -173,8 +173,8 @@ export const DevDiagnosticsView: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <span className="text-faint text-[11px]">
-                          {new Date(log.timestamp).toLocaleTimeString([], {
+                        <span className="text-faint text-[11px]" suppressHydrationWarning>
+                          {new Date(log.timestamp).toLocaleTimeString('en-US', {
                             hour: '2-digit',
                             minute: '2-digit',
                             second: '2-digit',

@@ -161,8 +161,8 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                     </span>
                   ),
                   meta: (
-                    <span className="font-mono text-[10px] text-faint">
-                      {new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className="font-mono text-[10px] text-faint" suppressHydrationWarning>
+                      {new Date(t.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   ),
                   icon: (

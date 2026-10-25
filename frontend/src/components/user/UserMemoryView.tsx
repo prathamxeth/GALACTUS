@@ -421,10 +421,14 @@ export const UserMemoryView: React.FC = () => {
                       <span>Why I remember this: {utility}</span>
                     </span>
 
-                    <span className="text-faint text-[10px]">
+                    <span className="text-faint text-[10px]" suppressHydrationWarning>
                       {new Date(
                         mem.type === 'episodic' ? mem.timestamp : mem.updatedAt
-                      ).toLocaleDateString()}
+                      ).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </span>
                   </div>
                 </Card>

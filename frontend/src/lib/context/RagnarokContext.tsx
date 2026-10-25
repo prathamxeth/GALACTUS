@@ -453,7 +453,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       id: `msg-${Date.now()}`,
       role: 'user',
       content: prompt,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -478,7 +478,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           id: `msg-err-${Date.now()}`,
           role: 'agent',
           content: 'I could not communicate with the local agent gateway. Please verify that the local service is running.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
     }

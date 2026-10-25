@@ -253,9 +253,9 @@ export const UserTasksView: React.FC = () => {
                             ? "Couldn't finish"
                             : 'Working on it'}
                         </Badge>
-                        <span className="text-xs text-faint">
+                        <span className="text-xs text-faint" suppressHydrationWarning>
                           Started at{' '}
-                          {new Date(task.createdAt).toLocaleTimeString([], {
+                          {new Date(task.createdAt).toLocaleTimeString('en-US', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
