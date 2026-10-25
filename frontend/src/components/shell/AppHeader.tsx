@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Clock,
   Server,
@@ -9,6 +10,7 @@ import {
   Moon,
   Sparkles,
   Code2,
+  Compass,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -64,8 +66,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Landing Page Showcase Link */}
+        <Link
+          href="/landing"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-elevated border border-subtle text-xs cursor-pointer hover:border-medium transition-all duration-150 active:scale-95 text-dim hover:text-main"
+          title="View Intelligence Designed To Evolve Landing Page"
+        >
+          <Compass className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="text-[11px] font-medium hidden sm:inline">Landing</span>
+        </Link>
+
         {/* Appearance Preset Selector */}
-        <div className="flex items-center gap-1 p-1 bg-elevated border border-subtle rounded-lg text-xs">
+        <div className="flex items-center gap-1.5 p-1 bg-elevated border border-subtle rounded-lg text-xs">
           {(['light', 'dark'] as AppearancePreset[]).map(
             (p) => {
               const config = presetLabels[p];
