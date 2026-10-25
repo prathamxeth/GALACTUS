@@ -1,0 +1,7 @@
+"""
+API package for GALACTUS Memory & Security Subsystem.
+"""
+
+from app.api.routes import router
+
+__all__ = ["router"]
