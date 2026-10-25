@@ -30,8 +30,8 @@ export const UserSettingsView: React.FC = () => {
     },
     {
       id: 'dark',
-      title: 'OLED',
-      desc: 'Deep tinted carbon canvas with ultra-crisp hairline borders and high-contrast ink.',
+      title: 'Dark',
+      desc: 'Deep carbon canvas with ultra-crisp hairline borders and high-contrast ink.',
       icon: Moon,
     },
   ];
@@ -68,13 +68,13 @@ export const UserSettingsView: React.FC = () => {
         </div>
       </FadeContent>
 
-      {/* Appearance Selection (Light & OLED Only) */}
+      {/* Appearance Selection (Light & Dark) */}
       <FadeContent blur duration={300} delay={100} trigger="mount">
         <div className="space-y-4">
           <div>
             <h3 className="text-base font-semibold text-main">Appearance</h3>
             <p className="text-xs text-dim mt-0.5">
-              Choose your visual profile: Warm Sand Light or Pure Pitch-Black OLED.
+              Choose your visual profile: Clean Light or Pure Dark.
             </p>
           </div>
 

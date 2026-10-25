@@ -25,9 +25,9 @@ export const ForgeWorkbench: React.FC = () => {
 
   // Default: Side-by-side Split View (Code Editor + Agent Session)
   return (
-    <div className="flex-1 flex overflow-hidden bg-[#000000]">
+    <div className="flex-1 flex overflow-hidden bg-forge-canvas">
       {/* Left Pane: Code Editor with Tabs & Diff Viewer */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-[#242424] overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 border-r border-forge overflow-hidden">
         <CodeEditor />
       </div>
 

@@ -146,8 +146,8 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
     ) {
       return {
         label: isDev ? 'PATCH PROPOSED — REVIEW REQUIRED' : 'CHANGES READY FOR REVIEW',
-        color: 'text-[#F04424] bg-[#F04424]/10 border-[#F04424]/30',
-        icon: <AlertTriangle className="w-3 h-3 text-[#F04424]" />,
+        color: 'text-forge-accent bg-forge-accent/10 border-forge-accent/30',
+        icon: <AlertTriangle className="w-3 h-3 text-forge-accent" />,
       };
     }
     if (diagnosticStatus === 'REPAIRING') {
@@ -173,7 +173,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
     }
     return {
       label: isDev ? (diagnosticStatus || 'READY') : 'READY',
-      color: 'text-zinc-400 bg-zinc-800/50 border-zinc-700',
+      color: 'text-forge-muted bg-forge-panel border-forge',
       icon: <Activity className="w-3 h-3" />,
     };
   };
@@ -234,16 +234,16 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
       <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto px-6 py-8 space-y-8">
         {/* Backend Offline Banner */}
         {!isBackendOnline && (
-          <div className="p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/5 flex items-center justify-between text-xs text-amber-200">
+          <div className="p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/10 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
               <span>
                 Backend disconnected at http://127.0.0.1:8000. Reconnection attempts in progress.
               </span>
             </div>
             <button
               onClick={() => probeBackend()}
-              className="px-2.5 py-1 rounded text-[11px] font-mono font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 transition-colors duration-150 active:translate-y-px cursor-pointer"
+              className="px-2.5 py-1 rounded text-[11px] font-mono font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 border border-amber-500/40 transition-colors duration-150 active:translate-y-px cursor-pointer"
             >
               Retry Connection
             </button>
@@ -256,7 +256,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
         {hasDiagnosticTask ? (
           <div className="space-y-6">
             {/* Task Header */}
-            <div className="p-5 rounded-xl border border-[#242424] bg-[#090909] space-y-4">
+            <div className="p-5 rounded-xl border border-forge bg-forge-panel space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -267,24 +267,24 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                       {statusBadge.label}
                     </span>
                     {isDev && diagnosticReport?.task_id && (
-                      <span className="text-[11px] font-mono text-[#71717A] tabular-nums">
+                      <span className="text-[11px] font-mono text-forge-muted tabular-nums">
                         task: {diagnosticReport.task_id}
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base font-semibold text-[#F5F5F5] font-sans">
+                  <h2 className="text-base font-semibold text-forge-primary font-sans">
                     {diagnosticReport?.user_request || (isDev ? 'Project Diagnostic & Verified Repair' : 'Workspace Update')}
                   </h2>
                 </div>
 
                 {/* Sub-view switcher */}
-                <div className="flex items-center p-0.5 rounded-lg bg-[#111111] border border-[#242424] text-xs font-mono">
+                <div className="flex items-center p-0.5 rounded-lg bg-forge-canvas border border-forge text-xs font-mono">
                   <button
                     onClick={() => setActiveTaskView('overview')}
                     className={`px-3 py-1 rounded-md transition-colors duration-150 ${
                       activeTaskView === 'overview'
-                        ? 'bg-[#171717] text-[#F5F5F5] font-medium border border-[#242424]'
-                        : 'text-[#71717A] hover:text-[#A1A1AA]'
+                        ? 'bg-forge-panel text-forge-primary font-medium border border-forge shadow-xs'
+                        : 'text-forge-muted hover:text-forge-primary'
                     }`}
                   >
                     {isDev ? 'Overview & Plan' : 'Overview'}
@@ -293,8 +293,8 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     onClick={() => setActiveTaskView('evidence')}
                     className={`px-3 py-1 rounded-md transition-colors duration-150 ${
                       activeTaskView === 'evidence'
-                        ? 'bg-[#171717] text-[#F5F5F5] font-medium border border-[#242424]'
-                        : 'text-[#71717A] hover:text-[#A1A1AA]'
+                        ? 'bg-forge-panel text-forge-primary font-medium border border-forge shadow-xs'
+                        : 'text-forge-muted hover:text-forge-primary'
                     }`}
                   >
                     {isDev
@@ -306,30 +306,30 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                       onClick={() => setActiveTaskView('diff')}
                       className={`px-3 py-1 rounded-md transition-colors duration-150 flex items-center gap-1 ${
                         activeTaskView === 'diff'
-                          ? 'bg-[#171717] text-[#F04424] font-medium border border-[#242424]'
-                          : 'text-[#71717A] hover:text-[#F04424]'
+                          ? 'bg-forge-panel text-forge-accent font-medium border border-forge shadow-xs'
+                          : 'text-forge-muted hover:text-forge-accent'
                       }`}
                     >
                       <span>{isDev ? 'Diff' : 'Changes'}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F04424]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-forge-accent" />
                     </button>
                   )}
                 </div>
               </div>
 
               {/* Observable Progress Stepper */}
-              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-[#1b1b1b] text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-[#111111] border border-[#242424] space-y-1">
-                  <span className="text-[10px] text-[#71717A] block">{isDev ? '1. INSPECT' : '1. CHECK'}</span>
-                  <div className="text-[11px] text-[#F5F5F5] font-semibold flex items-center gap-1">
+              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-forge text-xs font-mono">
+                <div className="p-2.5 rounded-lg bg-forge-elevated border border-forge space-y-1">
+                  <span className="text-[10px] text-forge-muted block">{isDev ? '1. INSPECT' : '1. CHECK'}</span>
+                  <div className="text-[11px] text-forge-primary font-semibold flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                     <span>{isDev ? 'Workspace Verified' : 'Files Checked'}</span>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-[#111111] border border-[#242424] space-y-1">
-                  <span className="text-[10px] text-[#71717A] block">{isDev ? '2. EVIDENCE' : '2. FINDINGS'}</span>
-                  <div className="text-[11px] text-[#F5F5F5] font-semibold flex items-center gap-1">
+                <div className="p-2.5 rounded-lg bg-forge-elevated border border-forge space-y-1">
+                  <span className="text-[10px] text-forge-muted block">{isDev ? '2. EVIDENCE' : '2. FINDINGS'}</span>
+                  <div className="text-[11px] text-forge-primary font-semibold flex items-center gap-1">
                     {diagnosticReport?.observed_facts && diagnosticReport.observed_facts.length > 0 ? (
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                     ) : (
@@ -343,13 +343,13 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-[#111111] border border-[#242424] space-y-1">
-                  <span className="text-[10px] text-[#71717A] block">{isDev ? '3. PROPOSAL' : '3. SUGGESTION'}</span>
-                  <div className="text-[11px] text-[#F5F5F5] font-semibold flex items-center gap-1">
+                <div className="p-2.5 rounded-lg bg-forge-elevated border border-forge space-y-1">
+                  <span className="text-[10px] text-forge-muted block">{isDev ? '3. PROPOSAL' : '3. SUGGESTION'}</span>
+                  <div className="text-[11px] text-forge-primary font-semibold flex items-center gap-1">
                     {diagnosticReport?.proposed_repair ? (
-                      <CheckCircle2 className="w-3 h-3 text-[#F04424]" />
+                      <CheckCircle2 className="w-3 h-3 text-forge-accent" />
                     ) : (
-                      <span className="w-3 h-3 rounded-full border border-dashed border-[#71717A]" />
+                      <span className="w-3 h-3 rounded-full border border-dashed border-forge-strong" />
                     )}
                     <span>
                       {diagnosticReport?.proposed_repair
@@ -359,15 +359,15 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-[#111111] border border-[#242424] space-y-1">
-                  <span className="text-[10px] text-[#71717A] block">{isDev ? '4. VERIFICATION' : '4. FINISH'}</span>
-                  <div className="text-[11px] text-[#F5F5F5] font-semibold flex items-center gap-1">
+                <div className="p-2.5 rounded-lg bg-forge-elevated border border-forge space-y-1">
+                  <span className="text-[10px] text-forge-muted block">{isDev ? '4. VERIFICATION' : '4. FINISH'}</span>
+                  <div className="text-[11px] text-forge-primary font-semibold flex items-center gap-1">
                     {diagnosticReport?.verification_results?.passed ? (
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                     ) : diagnosticReport?.verification_results ? (
                       <XCircle className="w-3 h-3 text-rose-400" />
                     ) : (
-                      <span className="w-3 h-3 rounded-full border border-dashed border-[#71717A]" />
+                      <span className="w-3 h-3 rounded-full border border-dashed border-forge-strong" />
                     )}
                     <span>
                       {diagnosticReport?.verification_results?.passed
@@ -386,33 +386,33 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
               <div className="space-y-6">
                 {/* Proposed Repair Action Banner (if active) */}
                 {diagnosticReport?.proposed_repair && (
-                  <div className="p-5 rounded-xl border border-[#F04424]/40 bg-[#111111] space-y-4">
+                  <div className="p-5 rounded-xl border border-forge-accent/40 bg-forge-elevated space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#F04424]/15 text-[#F04424] border border-[#F04424]/30">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-forge-accent/15 text-forge-accent border border-forge-accent/30">
                             {isDev ? 'APPROVAL GATE' : 'REVIEW NEEDED'}
                           </span>
-                          <span className="text-xs font-mono text-[#A1A1AA]">
+                          <span className="text-xs font-mono text-forge-muted">
                             {isDev
                               ? `risk: ${diagnosticReport.proposed_repair.risk_level?.toUpperCase() || 'LOW'}`
                               : `Priority: ${diagnosticReport.proposed_repair.risk_level === 'high' ? 'High' : 'Normal'}`}
                           </span>
                         </div>
-                        <h3 className="text-sm font-semibold text-[#F5F5F5]">
+                        <h3 className="text-sm font-semibold text-forge-primary">
                           {isDev
                             ? `Proposed Patch for ${diagnosticReport.proposed_repair.files_to_modify?.join(', ') || 'project files'}`
                             : `Suggested updates for ${diagnosticReport.proposed_repair.files_to_modify?.join(', ') || 'files'}`}
                         </h3>
                         {isDev ? (
-                          <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                          <p className="text-xs text-forge-secondary leading-relaxed">
                             Verification command after patch application:{' '}
-                            <code className="text-[#F5F5F5] font-mono bg-[#171717] px-1.5 py-0.5 rounded border border-[#242424]">
+                            <code className="text-forge-primary font-mono bg-forge-panel px-1.5 py-0.5 rounded border border-forge">
                               {diagnosticReport.proposed_repair.expected_verification_commands?.[0] || 'npm test'}
                             </code>
                           </p>
                         ) : (
-                          <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                          <p className="text-xs text-forge-secondary leading-relaxed">
                             These updates have been prepared safely and will be verified automatically when applied.
                           </p>
                         )}
@@ -423,7 +423,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                         <button
                           onClick={handleRejectRepair}
                           disabled={isResolving}
-                          className="px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#171717] hover:bg-rose-500/10 text-rose-400 border border-[#242424] hover:border-rose-500/40 transition-colors duration-150 active:translate-y-px cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                          className="px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-forge-panel hover:bg-rose-500/10 text-rose-400 border border-forge hover:border-rose-500/40 transition-colors duration-150 active:translate-y-px cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                         >
                           <X className="w-3.5 h-3.5" />
                           <span>{isDev ? 'Reject Patch' : 'Dismiss'}</span>
@@ -431,7 +431,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                         <button
                           onClick={handleApproveRepair}
                           disabled={isResolving}
-                          className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-[#F04424] hover:bg-[#ff5733] text-white transition-colors duration-150 active:translate-y-px cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                          className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-forge-accent hover:bg-forge-accent/90 text-white transition-colors duration-150 active:translate-y-px cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
                         >
                           {isResolving ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -448,25 +448,25 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                 {/* Hypotheses Grid */}
                 {diagnosticReport?.hypotheses && diagnosticReport.hypotheses.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="text-xs font-mono uppercase tracking-wider text-[#71717A]">
+                    <h4 className="text-xs font-mono uppercase tracking-wider text-forge-muted">
                       {isDev ? 'Diagnostic Hypotheses (Ranked by Confidence)' : 'Identified Issues & Causes'}
                     </h4>
                     <div className="grid grid-cols-1 gap-2.5">
                       {diagnosticReport.hypotheses.map((hyp, i) => (
                         <div
                           key={hyp.finding_id || i}
-                          className="p-3.5 rounded-lg bg-[#090909] border border-[#242424] space-y-1.5"
+                          className="p-3.5 rounded-lg bg-forge-panel border border-forge space-y-1.5"
                         >
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-medium text-[#F5F5F5]">{hyp.summary}</span>
-                            <span className="text-[11px] font-mono text-[#A1A1AA] tabular-nums">
+                            <span className="font-medium text-forge-primary">{hyp.summary}</span>
+                            <span className="text-[11px] font-mono text-forge-muted tabular-nums">
                               {isDev
                                 ? `confidence: ${Math.round((hyp.confidence || 0.8) * 100)}%`
                                 : `${Math.round((hyp.confidence || 0.8) * 100)}% match`}
                             </span>
                           </div>
                           {hyp.limitations && (
-                            <p className="text-xs text-[#A1A1AA] font-mono leading-relaxed pl-2 border-l border-[#333333]">
+                            <p className="text-xs text-forge-secondary font-mono leading-relaxed pl-2 border-l border-forge-strong">
                               {hyp.limitations}
                             </p>
                           )}
@@ -478,7 +478,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
 
                 {/* Verification Result Output */}
                 {diagnosticReport?.verification_results && (
-                  <div className="p-4 rounded-xl bg-[#090909] border border-[#242424] space-y-2.5">
+                  <div className="p-4 rounded-xl bg-forge-panel border border-forge space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs font-mono font-semibold">
                         {diagnosticReport.verification_results.passed ? (
@@ -493,21 +493,21 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                         </span>
                       </div>
                       {isDev && (
-                        <span className="text-[11px] font-mono text-[#71717A] tabular-nums">
+                        <span className="text-[11px] font-mono text-forge-muted tabular-nums">
                           {Object.entries(diagnosticReport.verification_results.exit_codes).map(([cmd, code]) => `${cmd}: exit ${code}`).join(', ') || 'exit 0'}
                         </span>
                       )}
                     </div>
 
                     {isDev && diagnosticReport.verification_results.outputs && Object.keys(diagnosticReport.verification_results.outputs).length > 0 && (
-                      <pre className="p-3 rounded bg-[#000000] border border-[#242424] text-[11px] font-mono text-[#A1A1AA] leading-5 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                      <pre className="p-3 rounded bg-forge-canvas border border-forge text-[11px] font-mono text-forge-secondary leading-5 whitespace-pre-wrap max-h-40 overflow-y-auto">
                         {Object.entries(diagnosticReport.verification_results.outputs).map(([cmd, out]) => `$ ${cmd}\n${out}`).join('\n\n')}
                       </pre>
                     )}
 
                     {!diagnosticReport.verification_results.passed && (
                       <div className="pt-2 flex items-center justify-between">
-                        <span className="text-xs text-[#71717A]">
+                        <span className="text-xs text-forge-muted">
                           {isDev
                             ? 'Project state can be safely restored without affecting unrelated files.'
                             : 'You can undo these changes and return to the previous safe state.'}
@@ -529,27 +529,27 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
             {/* TAB CONTENT: Evidence Viewer */}
             {activeTaskView === 'evidence' && (
               <div className="space-y-3">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-[#71717A]">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-forge-muted">
                   Observed Facts & Telemetry
                 </h4>
-                <div className="p-4 rounded-xl bg-[#090909] border border-[#242424] space-y-2">
+                <div className="p-4 rounded-xl bg-forge-panel border border-forge space-y-2">
                   {diagnosticReport?.observed_facts && diagnosticReport.observed_facts.length > 0 ? (
                     diagnosticReport.observed_facts.map((ev, i) => (
                       <div
                         key={ev.finding_id || i}
-                        className="p-2.5 rounded bg-[#111111] border border-[#242424] text-xs font-mono text-[#A1A1AA] flex items-start justify-between gap-3"
+                        className="p-2.5 rounded bg-forge-elevated border border-forge text-xs font-mono text-forge-secondary flex items-start justify-between gap-3"
                       >
                         <div className="flex items-start gap-2">
-                          <span className="text-[#F04424] font-bold">›</span>
+                          <span className="text-forge-accent font-bold">›</span>
                           <span className="leading-relaxed select-text">{ev.summary}</span>
                         </div>
-                        <span className="text-[10px] text-[#71717A] shrink-0 font-mono">
+                        <span className="text-[10px] text-forge-muted shrink-0 font-mono">
                           {ev.category} ({Math.round((ev.confidence || 1) * 100)}%)
                         </span>
                       </div>
                     ))
                   ) : (
-                    <div className="text-xs text-[#71717A] font-mono py-4 text-center">
+                    <div className="text-xs text-forge-muted font-mono py-4 text-center">
                       No external error traces recorded during this diagnostic cycle.
                     </div>
                   )}
@@ -561,7 +561,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
             {activeTaskView === 'diff' && diagnosticReport?.proposed_repair && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-mono uppercase tracking-wider text-[#71717A]">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-forge-muted">
                     Review Proposed File Modifications
                   </h4>
                   <div className="flex items-center gap-2">
@@ -569,16 +569,16 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                       <button
                         key={i}
                         onClick={() => (onOpenFile ? onOpenFile(file) : openFile(file))}
-                        className="px-2 py-0.5 rounded text-[11px] font-mono text-[#A1A1AA] bg-[#111111] border border-[#242424] hover:border-[#F04424] hover:text-[#F5F5F5] transition-colors flex items-center gap-1 cursor-pointer"
+                        className="px-2 py-0.5 rounded text-[11px] font-mono text-forge-secondary bg-forge-elevated border border-forge hover:border-forge-accent hover:text-forge-primary transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <FileCode className="w-3 h-3 text-[#F04424]" />
+                        <FileCode className="w-3 h-3 text-forge-accent" />
                         <span>Open in Editor ({file})</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#090909] border border-[#242424] overflow-x-auto">
+                <div className="p-4 rounded-xl bg-forge-panel border border-forge overflow-x-auto">
                   <pre className="text-xs font-mono leading-5 select-text">
                     {(
                       diagnosticReport.proposed_repair.exact_patch ||
@@ -596,12 +596,12 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                             key={idx}
                             className={`px-2 py-0.5 ${
                               isAdd
-                                ? 'bg-emerald-500/10 text-emerald-300'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
                                 : isDel
-                                ? 'bg-rose-500/10 text-rose-300'
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-300'
                                 : isMeta
-                                ? 'text-purple-400 bg-purple-500/5'
-                                : 'text-[#A1A1AA]'
+                                ? 'text-purple-600 dark:text-purple-400 bg-purple-500/5'
+                                : 'text-forge-secondary'
                             }`}
                           >
                             {line}
@@ -613,8 +613,8 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
               </div>
             )}
             {/* Docked Agent Follow-up Composer in Active Task State */}
-            <div className="pt-4 border-t border-[#1b1b1b]">
-              <form onSubmit={handleSubmitPrompt} className="rounded-xl border border-[#242424] bg-[#090909] p-3 space-y-2 focus-within:border-[#F04424]/60 transition-colors">
+            <div className="pt-4 border-t border-forge">
+              <form onSubmit={handleSubmitPrompt} className="rounded-xl border border-forge bg-forge-panel p-3 space-y-2 focus-within:border-forge-accent/60 transition-colors">
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -630,11 +630,11 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                       ? 'Ask follow-up, request adjustment, or instruct next step...'
                       : 'Describe what you would like to change or do next...'
                   }
-                  className="w-full bg-transparent text-xs text-[#F5F5F5] placeholder:text-[#71717A] focus:outline-none resize-none font-sans leading-relaxed"
+                  className="w-full bg-transparent text-xs text-forge-primary placeholder:text-forge-muted focus:outline-none resize-none font-sans leading-relaxed"
                 />
-                <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-[#71717A]">
+                <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-forge-muted">
                   <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.2 rounded bg-[#111111] border border-[#242424] text-[#A1A1AA] text-[10px]">
+                    <span className="px-1.5 py-0.2 rounded bg-forge-elevated border border-forge text-forge-secondary text-[10px]">
                       @workspace
                     </span>
                     <span className="text-[10px]">Enter to send • Shift+Enter for newline</span>
@@ -642,7 +642,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                   <button
                     type="submit"
                     disabled={!prompt.trim() || isSubmitting}
-                    className="px-3 py-1 rounded-md text-xs font-semibold bg-[#F04424] hover:bg-[#ff5733] text-white transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-xs"
+                    className="px-3 py-1 rounded-md text-xs font-semibold bg-forge-accent hover:bg-forge-accent/90 text-white transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-xs"
                   >
                     {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                     <span>Send</span>
@@ -658,10 +658,10 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
           <div className="space-y-8 my-auto py-6">
             {/* Center Heading */}
             <div className="text-center space-y-2">
-              <h1 className="font-heading text-2xl sm:text-3xl font-medium tracking-tight text-[#F5F5F5]">
+              <h1 className="font-heading text-2xl sm:text-3xl font-medium tracking-tight text-forge-primary">
                 What would you like to accomplish?
               </h1>
-              <p className="text-xs sm:text-sm text-[#71717A] max-w-md mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-forge-muted max-w-md mx-auto leading-relaxed">
                 Describe what you want to build, understand, or fix.
               </p>
             </div>
@@ -735,7 +735,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <Bug className="w-3.5 h-3.5" />
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-forge-primary group-hover:text-white flex items-center gap-1">
+                    <span className="text-xs font-semibold text-forge-primary group-hover:text-forge-accent flex items-center gap-1">
                       <span>{isDev ? 'Investigate failure' : 'Fix an issue'}</span>
                       <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-forge-accent transition-transform duration-150 group-hover:translate-x-0.5" />
                     </span>
@@ -757,7 +757,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <GitCompare className="w-3.5 h-3.5" />
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-forge-primary group-hover:text-white flex items-center gap-1">
+                    <span className="text-xs font-semibold text-forge-primary group-hover:text-forge-accent flex items-center gap-1">
                       <span>{isDev ? 'Recent changes' : 'Review recent changes'}</span>
                       <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-purple-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                     </span>
@@ -779,7 +779,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <Code2 className="w-3.5 h-3.5" />
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-forge-primary group-hover:text-white flex items-center gap-1">
+                    <span className="text-xs font-semibold text-forge-primary group-hover:text-forge-accent flex items-center gap-1">
                       <span>{isDev ? 'Implement feature' : 'Create something new'}</span>
                       <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-amber-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                     </span>
@@ -801,7 +801,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <Wrench className="w-3.5 h-3.5" />
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-forge-primary group-hover:text-white flex items-center gap-1">
+                    <span className="text-xs font-semibold text-forge-primary group-hover:text-forge-accent flex items-center gap-1">
                       <span>{isDev ? 'Review proposed fix' : 'Review suggestions'}</span>
                       <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-emerald-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                     </span>
@@ -823,7 +823,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <Brain className="w-3.5 h-3.5" />
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-forge-primary group-hover:text-white flex items-center gap-1">
+                    <span className="text-xs font-semibold text-forge-primary group-hover:text-forge-accent flex items-center gap-1">
                       <span>{isDev ? 'Project memory' : 'Project notes & rules'}</span>
                       <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-blue-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                     </span>

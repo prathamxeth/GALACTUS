@@ -148,7 +148,7 @@ export const ForgeStatusBar: React.FC = () => {
 
             {/* Theme Preset Badge */}
             <span className="text-[9px] uppercase px-1 rounded bg-forge-panel text-forge-secondary border border-forge">
-              {preset}
+              {preset.includes('light') ? 'Light' : 'Dark'}
             </span>
           </>
         ) : (
@@ -159,7 +159,7 @@ export const ForgeStatusBar: React.FC = () => {
               <span>User Mode</span>
             </span>
             <span className="text-forge-muted/30">•</span>
-            <span className="capitalize">{preset.replace('-', ' ')}</span>
+            <span>{preset.includes('light') ? 'Light' : 'Dark'}</span>
           </div>
         )}
       </div>

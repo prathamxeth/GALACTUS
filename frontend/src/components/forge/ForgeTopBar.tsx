@@ -42,8 +42,9 @@ export const ForgeTopBar: React.FC<ForgeTopBarProps> = ({
   const isDev = mode === 'developer';
   const hasActiveTask = Boolean(diagnosticReport);
 
-  const toggleOledTheme = () => {
-    if (preset === 'oled-dark') {
+  const isDark = preset === 'oled-dark' || preset === 'dark';
+  const toggleTheme = () => {
+    if (isDark) {
       setPreset('oled-light');
     } else {
       setPreset('oled-dark');
@@ -145,23 +146,23 @@ export const ForgeTopBar: React.FC<ForgeTopBarProps> = ({
           </button>
         </div>
 
-        {/* Dedicated Pitch OLED Light / Pitch OLED Dark Toggle */}
+        {/* Dedicated Light / Dark Toggle */}
         <button
           type="button"
-          onClick={toggleOledTheme}
+          onClick={toggleTheme}
           className="px-2 py-1 rounded-md bg-forge-panel border border-forge text-forge-secondary hover:text-forge-primary hover:bg-forge-hover transition-colors cursor-pointer text-[10px] font-mono flex items-center gap-1.5"
-          title={`Switch to ${preset === 'oled-dark' ? 'Pitch OLED Light' : 'Pitch OLED Dark'}`}
-          aria-label="Toggle OLED Theme"
+          title={`Switch to ${isDark ? 'Light' : 'Dark'}`}
+          aria-label="Toggle Theme"
         >
-          {preset === 'oled-dark' ? (
+          {isDark ? (
             <>
-              <Sun className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">OLED Light</span>
+              <Sun className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Light</span>
             </>
           ) : (
             <>
               <Moon className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="hidden sm:inline">OLED Dark</span>
+              <span className="hidden sm:inline">Dark</span>
             </>
           )}
         </button>

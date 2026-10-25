@@ -7,7 +7,6 @@ import {
   Activity,
   CheckCircle2,
   RotateCcw,
-  Sun,
   Moon,
   SunMedium,
   User,
@@ -170,31 +169,17 @@ export const CommandPalette: React.FC = () => {
           // Appearance Presets
           {
             id: 'theme-oled-dark',
-            title: 'Appearance: OLED Dark (Pitch Black)',
+            title: 'Appearance: Dark',
             category: 'Themes',
             icon: <Moon className="w-3.5 h-3.5 text-purple-400" />,
             action: () => setPreset('oled-dark'),
           },
           {
             id: 'theme-oled-light',
-            title: 'Appearance: OLED Light (Pure White)',
+            title: 'Appearance: Light',
             category: 'Themes',
             icon: <SunMedium className="w-3.5 h-3.5 text-amber-400" />,
             action: () => setPreset('oled-light'),
-          },
-          {
-            id: 'theme-dark',
-            title: 'Appearance: Dark (Slate Deep Charcoal)',
-            category: 'Themes',
-            icon: <Moon className="w-3.5 h-3.5 text-indigo-400" />,
-            action: () => setPreset('dark'),
-          },
-          {
-            id: 'theme-light',
-            title: 'Appearance: Light (Warm Editorial Canvas)',
-            category: 'Themes',
-            icon: <Sun className="w-3.5 h-3.5 text-amber-500" />,
-            action: () => setPreset('light'),
           },
 
           // Modes
@@ -255,14 +240,14 @@ export const CommandPalette: React.FC = () => {
           // Themes
           {
             id: 'theme-oled-dark',
-            title: 'Appearance: Pitch OLED Dark',
+            title: 'Appearance: Dark',
             category: 'Themes',
             icon: <Moon className="w-3.5 h-3.5 text-purple-400" />,
             action: () => setPreset('oled-dark'),
           },
           {
             id: 'theme-oled-light',
-            title: 'Appearance: Pitch OLED Light',
+            title: 'Appearance: Light',
             category: 'Themes',
             icon: <SunMedium className="w-3.5 h-3.5 text-amber-400" />,
             action: () => setPreset('oled-light'),

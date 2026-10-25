@@ -24,8 +24,8 @@ interface AppHeaderProps {
 const presetLabels: Record<AppearancePreset, { label: string; icon: React.ElementType }> = {
   light: { label: 'Light', icon: Sun },
   dark: { label: 'Dark', icon: Moon },
-  'oled-light': { label: 'OLED Light', icon: SunMedium },
-  'oled-dark': { label: 'OLED Dark', icon: Moon },
+  'oled-light': { label: 'Light', icon: SunMedium },
+  'oled-dark': { label: 'Dark', icon: Moon },
 };
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
