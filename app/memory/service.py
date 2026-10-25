@@ -359,6 +359,80 @@ class MemoryService:
         """Purges expired memories from active state."""
         return self.repo.purge_expired_records()
 
+    def query_relevant_context(self, user_goal: str) -> Dict[str, Any]:
+        """
+        Milestone 5 Memory Handshake:
+        Extracts verified facts, user preferences, and contextual constraints relevant
+        to the user goal for prompt injection into the Task Planner (gemma4:e2b).
+        """
+        # 1. Fetch all semantic memories that are active
+        all_semantic = self.search_memories(
+            memory_type=MemoryType.SEMANTIC,
+            limit=200,
+            include_expired=False,
+        )
+
+        # 2. Extract goal keywords
+        goal_words = set(w.strip().lower() for w in user_goal.split() if len(w.strip()) > 2)
+
+        verified_facts: List[Dict[str, Any]] = []
+        preferences: List[Dict[str, Any]] = []
+        constraints: List[Dict[str, Any]] = []
+
+        for mem in all_semantic:
+            payload = mem.payload or {}
+            cat = (mem.category or "").lower()
+            subject = payload.get("subject", "")
+            predicate = payload.get("predicate", "")
+            obj_val = payload.get("object_value", "")
+            text_repr = f"{subject} {predicate} {obj_val}".lower()
+
+            is_match = any(word in text_repr for word in goal_words)
+
+            item = {
+                "id": mem.id,
+                "category": cat,
+                "subject": subject,
+                "predicate": predicate,
+                "object_value": obj_val,
+                "verification_status": mem.verification_status.value if hasattr(mem.verification_status, "value") else str(mem.verification_status),
+                "confidence": mem.confidence,
+            }
+
+            if cat == "preference" or cat == SemanticCategory.PREFERENCE.value:
+                preferences.append(item)
+            elif cat in ("constraint", "project_context", SemanticCategory.PROJECT_CONTEXT.value):
+                constraints.append(item)
+            elif mem.verification_status in (VerificationStatus.VERIFIED, VerificationStatus.USER_PROVIDED):
+                verified_facts.append(item)
+            elif is_match:
+                verified_facts.append(item)
+
+        # 3. Format formatted_context string for Ollama system prompt
+        context_lines: List[str] = []
+        if preferences:
+            context_lines.append("USER PREFERENCES:")
+            for p in preferences:
+                context_lines.append(f"- {p['subject']} -> {p['predicate']}: {p['object_value']}")
+        if constraints:
+            context_lines.append("CONSTRAINTS & POLICIES:")
+            for c in constraints:
+                context_lines.append(f"- {c['subject']} -> {c['predicate']}: {c['object_value']}")
+        if verified_facts:
+            context_lines.append("VERIFIED FACTS:")
+            for vf in verified_facts:
+                context_lines.append(f"- {vf['subject']} {vf['predicate']} {vf['object_value']} (verified)")
+
+        formatted_context = "\n".join(context_lines) if context_lines else "No specific prior preferences or verified constraints found."
+
+        return {
+            "user_goal": user_goal,
+            "verified_facts": verified_facts,
+            "preferences": preferences,
+            "constraints": constraints,
+            "formatted_context": formatted_context,
+        }
+
     # =========================================================================
     # Helpers
     # =========================================================================
@@ -381,3 +455,15 @@ class MemoryService:
             expires_at=row["expires_at"],
             is_deleted=bool(row["is_deleted"]),
         )
+
+
+def query_relevant_context(user_goal: str, memory_service: Optional[MemoryService] = None) -> Dict[str, Any]:
+    """
+    Module-level convenience function for Milestone 5 Memory Handshake.
+    Can be invoked directly by backend/planner.py (TaskPlanner).
+    """
+    if memory_service is None:
+        from app.api.routes import get_memory_service
+        memory_service = get_memory_service()
+    return memory_service.query_relevant_context(user_goal)
+
