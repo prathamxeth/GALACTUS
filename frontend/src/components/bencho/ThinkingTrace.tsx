@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, Cpu, CheckCircle2 } from 'lucide-react';
 
 export interface ThinkingTraceProps {
   thoughts: string[];
@@ -14,8 +14,7 @@ export interface ThinkingTraceProps {
 
 /**
  * AI Thinking State with a Reasoning Trace from Bencho (https://bencho.dev/blocks/thinking).
- * Displays an assistant thinking out loud: reasoning steps arrive chronologically,
- * then fold into a compact summary line with duration metrics that can be expanded.
+ * Hallmark hardened: Solid ink typography, tabular numbers, no gradient text or decorative glassmorphism.
  */
 export function ThinkingTrace({
   thoughts,
@@ -28,47 +27,47 @@ export function ThinkingTrace({
 
   return (
     <div
-      className={`rounded-xl border border-border-subtle bg-bg-surface/80 p-3.5 backdrop-blur-md transition-all ${className}`}
+      className={`rounded-xl border border-subtle bg-surface p-3.5 transition-colors duration-150 ${className}`}
     >
       {/* Header bar */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="group flex items-center gap-2 text-xs font-medium text-text-primary cursor-pointer select-none"
+          className="group flex items-center gap-2 text-xs font-medium text-main cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
         >
           <motion.div
             animate={{ rotate: isExpanded ? 90 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="text-text-muted group-hover:text-text-primary"
+            transition={{ duration: 0.15 }}
+            className="text-muted group-hover:text-main"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </motion.div>
 
           <div className="flex items-center gap-1.5">
-            <Sparkles
+            <Cpu
               className={`w-3.5 h-3.5 ${
-                isThinking ? 'text-accent-primary animate-pulse' : 'text-emerald-400'
+                isThinking ? 'text-accent animate-pulse' : 'text-emerald-500'
               }`}
             />
             {isThinking ? (
-              <span className="font-semibold bg-gradient-to-r from-accent-primary via-indigo-300 to-accent-primary bg-[length:200%_auto] bg-clip-text text-transparent animate-[shimmer_2s_linear_infinite]">
-                Synthesizing sovereign reasoning...
+              <span className="font-semibold text-main">
+                Synthesizing reasoning trace…
               </span>
             ) : (
-              <span className="font-semibold text-text-primary">
+              <span className="font-semibold text-main">
                 Reasoning Trace Completed
               </span>
             )}
           </div>
         </button>
 
-        {/* Runtime metric badge */}
+        {/* Runtime metric badge with tabular numbers */}
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-border-subtle bg-bg-elevated px-2 py-0.5 font-mono text-[10px] text-text-muted">
+          <span className="rounded-full border border-subtle bg-elevated px-2 py-0.5 font-mono tabular-nums text-[10px] text-muted">
             {isThinking ? 'streaming' : `${elapsedSeconds.toFixed(1)}s elapsed`}
           </span>
-          <span className="text-[11px] font-mono text-text-muted">
+          <span className="text-[11px] font-mono tabular-nums text-muted">
             {thoughts.length} {thoughts.length === 1 ? 'step' : 'steps'}
           </span>
         </div>

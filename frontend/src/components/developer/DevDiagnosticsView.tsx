@@ -50,8 +50,8 @@ export const DevDiagnosticsView: React.FC = () => {
       {/* Restrained Developer GridScan Canvas Backdrop */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.05] overflow-hidden z-0">
         <GridScan
-          linesColor={isLight ? '#000000' : '#ffffff'}
-          scanColor={isLight ? '#0284c7' : '#38bdf8'}
+          linesColor={isLight ? '#1c1b18' : '#e4e4e9'}
+          scanColor={isLight ? '#cc785c' : '#e08a6e'}
           cells={14}
           lineThickness={1}
           autoScan={true}
@@ -68,18 +68,18 @@ export const DevDiagnosticsView: React.FC = () => {
               <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               Diagnostics, Events &amp; Performance
             </h2>
-            <p className="text-xs text-dim mt-0.5 font-mono">
+            <p className="text-xs text-dim mt-0.5 font-subheading">
               Structured execution event streams, verified performance benchmarks, and runtime telemetry
             </p>
           </div>
 
-          <div className="flex items-center gap-1 bg-surface p-1 rounded-full border border-subtle text-xs font-mono">
+          <div className="flex items-center gap-1 bg-surface p-1 rounded-full border border-subtle text-xs font-mono tabular-nums">
             <button
               type="button"
               onClick={() => setActiveTab('events')}
-              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-all ${
+              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                 activeTab === 'events'
-                  ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
+                  ? 'bg-[#cc785c] text-white font-semibold shadow-sm'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -88,9 +88,9 @@ export const DevDiagnosticsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('performance')}
-              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-all ${
+              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                 activeTab === 'performance'
-                  ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
+                  ? 'bg-[#cc785c] text-white font-semibold shadow-sm'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -99,9 +99,9 @@ export const DevDiagnosticsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('runtime')}
-              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-all ${
+              className={`px-3.5 py-1.5 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                 activeTab === 'runtime'
-                  ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
+                  ? 'bg-[#cc785c] text-white font-semibold shadow-sm'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -123,7 +123,7 @@ export const DevDiagnosticsView: React.FC = () => {
                     onClick={() => setSeverityFilter(sev)}
                     className={`px-3 py-1 rounded-full cursor-pointer transition-colors ${
                       severityFilter === sev
-                        ? 'bg-[#ea2804] text-white font-semibold shadow-sm'
+                        ? 'bg-[#cc785c] text-white font-semibold shadow-sm'
                         : 'text-dim hover:text-main'
                     }`}
                   >
@@ -139,7 +139,7 @@ export const DevDiagnosticsView: React.FC = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search event messages, eventType, or task ID..."
-                  className="w-full text-xs font-mono bg-surface border border-subtle rounded-full pl-8.5 pr-3 py-1.5 text-main placeholder-faint focus:outline-none focus:border-[#ea2804]"
+                  className="w-full text-xs font-mono bg-surface border border-subtle rounded-full pl-8.5 pr-3 py-1.5 text-main placeholder-faint focus:outline-none focus:border-[#cc785c]"
                 />
               </div>
             </div>
@@ -325,8 +325,8 @@ export const DevDiagnosticsView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => toggleSentinel(s.id)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-in-out focus:outline-none active:scale-95 ${
-                          s.isActive ? 'bg-[#ea2804]' : 'bg-subtle'
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:translate-y-px ${
+                          s.isActive ? 'bg-[#cc785c]' : 'bg-subtle'
                         }`}
                       >
                         <span

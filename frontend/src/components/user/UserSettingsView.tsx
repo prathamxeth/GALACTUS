@@ -25,13 +25,13 @@ export const UserSettingsView: React.FC = () => {
     {
       id: 'light',
       title: 'Light',
-      desc: 'True OLED paper-white finish with sharp hairline contrast and crisp readability.',
+      desc: 'Clean paper-white finish with comfortable contrast and warm reading tones.',
       icon: Sun,
     },
     {
       id: 'dark',
-      title: 'Dark',
-      desc: 'Pure pitch-black OLED background with ultra-crisp hairline outlines and zero battery drain.',
+      title: 'OLED',
+      desc: 'Deep tinted carbon canvas with ultra-crisp hairline borders and high-contrast ink.',
       icon: Moon,
     },
   ];
@@ -68,13 +68,13 @@ export const UserSettingsView: React.FC = () => {
         </div>
       </FadeContent>
 
-      {/* Appearance Selection (Light & Dark OLED Only) */}
+      {/* Appearance Selection (Light & OLED Only) */}
       <FadeContent blur duration={300} delay={100} trigger="mount">
         <div className="space-y-4">
           <div>
             <h3 className="text-base font-semibold text-main">Appearance</h3>
             <p className="text-xs text-dim mt-0.5">
-              Choose your visual profile. Precisely tuned for true OLED contrast.
+              Choose your visual profile: Warm Sand Light or Pure Pitch-Black OLED.
             </p>
           </div>
 
@@ -87,7 +87,7 @@ export const UserSettingsView: React.FC = () => {
                 <div
                   key={opt.id}
                   onClick={() => setPreset(opt.id)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all duration-150 active:scale-98 flex items-start gap-3.5 select-none ${
+                  className={`p-4 rounded-2xl border cursor-pointer transition-[background-color,border-color,box-shadow,transform] duration-150 active:translate-y-px flex items-start gap-3.5 select-none ${
                     isSelected
                       ? 'bg-surface/90 border-[#ea2804] ring-1 ring-[#ea2804]/30 shadow-xs'
                       : 'bg-surface/90 hover:bg-elevated border-subtle'
@@ -224,7 +224,6 @@ export const UserSettingsView: React.FC = () => {
               variant="primary"
               size="md"
               icon={<Save className="w-4 h-4" />}
-              className="transition-transform active:scale-95"
             >
               Save settings
             </Button>

@@ -149,7 +149,7 @@ class MemoryService:
         """
         cat_str = category.value if hasattr(category, "value") else str(category)
         dedup_hash = compute_dedup_hash(cat_str, subject, predicate, object_value)
-        existing_row = self.repo.find_by_dedup_hash(dedup_hash)
+        existing_row = self.repo.find_by_dedup_hash(dedup_hash, include_deleted=True)
 
         now = utc_now()
         expires_at = None
@@ -175,6 +175,7 @@ class MemoryService:
                 encrypted_payload=encrypted_payload,
                 verification_status=stat_str,
                 confidence=confidence,
+                is_deleted=0,
             )
             return SemanticMemory(
                 id=mem_id,

@@ -40,10 +40,10 @@ export const DevSkillRegistry: React.FC = () => {
       {/* Header */}
       <div>
         <h2 className="text-xl font-semibold text-main flex items-center gap-2">
-          <Wrench className="w-5 h-5 text-[#ea2804]" />
+          <Wrench className="w-5 h-5 text-[#cc785c]" />
           Skill &amp; Tool Extension Registry (FR2)
         </h2>
-        <p className="text-xs text-dim mt-0.5 font-mono">
+        <p className="text-xs text-dim mt-0.5 font-subheading">
           Standardized tool interfaces, parameter validation schemas, and sandboxed isolation boundaries
         </p>
       </div>
@@ -53,7 +53,7 @@ export const DevSkillRegistry: React.FC = () => {
         {skills.map((skill, index) => (
           <FadeContent key={skill.id} blur duration={250} delay={index * 40} trigger="mount">
             <Card
-              className={`flex flex-col justify-between transition-all h-full rounded-2xl bg-surface/90 border border-subtle hover:border-[#ea2804]/40 ${
+              className={`flex flex-col justify-between transition-[border-color,opacity] duration-150 ease-out h-full rounded-2xl bg-surface/90 border border-subtle hover:border-[#cc785c]/40 ${
                 !skill.enabled ? 'opacity-50' : ''
               }`}
             >
@@ -61,9 +61,9 @@ export const DevSkillRegistry: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs font-semibold text-main">
-                      memorag / <span className="text-[#ea2804]">{skill.name}</span>
+                      memorag / <span className="text-[#cc785c]">{skill.name}</span>
                     </span>
-                    <Badge variant={skill.riskLevel === 'high' ? 'rose' : skill.riskLevel === 'medium' ? 'amber' : 'replicate'}>
+                    <Badge variant={skill.riskLevel === 'high' ? 'rose' : skill.riskLevel === 'medium' ? 'amber' : 'dev'}>
                       {skill.riskLevel.toUpperCase()}
                     </Badge>
                     {skill.isMock && (
@@ -77,7 +77,7 @@ export const DevSkillRegistry: React.FC = () => {
                       </span>
                     )}
                     {!skill.isMock && !skill.isIncomplete && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ea2804]/10 text-[#ea2804] border border-[#ea2804]/30 font-mono font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#cc785c]/10 text-[#cc785c] border border-[#cc785c]/30 font-mono font-medium">
                         REGISTERED TOOL
                       </span>
                     )}
@@ -88,8 +88,8 @@ export const DevSkillRegistry: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => toggleSkill(skill.id)}
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-in-out focus:outline-none active:scale-95 ${
-                    skill.enabled ? 'bg-[#ea2804]' : 'bg-subtle'
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:translate-y-px ${
+                    skill.enabled ? 'bg-[#cc785c]' : 'bg-subtle'
                   }`}
                 >
                   <span

@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Sparkles,
+  Bot,
   CheckCircle2,
   Brain,
   Wrench,
@@ -17,7 +17,6 @@ import {
   Radio,
   SlidersHorizontal,
   Laptop,
-  Compass,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
@@ -40,9 +39,14 @@ export const AppSidebar: React.FC = () => {
   // Mode-Specific Navigation Items
   const userNavItems: NavItem[] = [
     {
+      name: 'Forge IDE',
+      href: '/',
+      icon: Laptop,
+    },
+    {
       name: 'Assistant',
       href: '/dashboard',
-      icon: Sparkles,
+      icon: Bot,
     },
     {
       name: "What I'm Working On",
@@ -66,16 +70,16 @@ export const AppSidebar: React.FC = () => {
       href: '/settings',
       icon: ShieldCheck,
     },
-    {
-      name: 'Landing Showcase',
-      href: '/',
-      icon: Compass,
-    },
   ];
 
   const devNavItems: NavItem[] = [
     {
-      name: 'Command Center',
+      name: 'Forge IDE',
+      href: '/',
+      icon: Laptop,
+    },
+    {
+      name: 'Overview Dashboard',
       href: '/dashboard',
       icon: Terminal,
     },
@@ -97,14 +101,14 @@ export const AppSidebar: React.FC = () => {
       icon: SlidersHorizontal,
     },
     {
-      name: 'Permissions & Diagnostics',
-      href: '/settings',
-      icon: ShieldCheck,
+      name: 'Diagnostics & Sentinels',
+      href: '/diagnostics',
+      icon: Radio,
     },
     {
-      name: 'Landing Showcase',
-      href: '/',
-      icon: Compass,
+      name: 'Permissions & Settings',
+      href: '/settings',
+      icon: ShieldCheck,
     },
   ];
 
@@ -116,19 +120,25 @@ export const AppSidebar: React.FC = () => {
       <div>
         <div className="px-5 py-4 border-b border-[#e2dfd8] dark:border-[#222226]">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-full bg-[#ea2804] text-white flex items-center justify-center shadow-[0_0_15px_rgba(234,40,4,0.35)] group-hover:scale-105 transition-transform">
+            <div
+              className={`w-9 h-9 rounded-full ${
+                isDev
+                  ? 'bg-[#cc785c] shadow-[0_0_15px_rgba(204,120,92,0.35)]'
+                  : 'bg-[#ea2804] shadow-[0_0_15px_rgba(234,40,4,0.35)]'
+              } text-white flex items-center justify-center group-hover:scale-105 transition-transform`}
+            >
               <span className="font-mono font-bold text-sm">ᛗ</span>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm tracking-tight text-main">
+                <span className="font-heading font-semibold text-base tracking-tight text-main">
                   MEMORAG
                 </span>
                 <span className="text-[10px] font-mono uppercase bg-elevated text-dim px-1.5 py-0.5 rounded-full border border-subtle">
                   {isDev ? 'CORE' : 'PERSONAL'}
                 </span>
               </div>
-              <p className="text-[11px] text-faint">
+              <p className="text-[11px] text-faint font-subheading">
                 {isDev ? 'Sovereign Agent Runtime' : 'Personal AI Assistant'}
               </p>
             </div>
@@ -141,9 +151,9 @@ export const AppSidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setMode('user')}
-              className={`py-1.5 px-2 rounded-full transition-all duration-150 cursor-pointer text-center active:scale-95 ${
+              className={`py-1.5 px-2 rounded-full transition-colors duration-150 cursor-pointer text-center active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                 !isDev
-                  ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
+                  ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -152,9 +162,9 @@ export const AppSidebar: React.FC = () => {
             <button
               type="button"
               onClick={() => setMode('developer')}
-              className={`py-1.5 px-2 rounded-full transition-all duration-150 cursor-pointer text-center active:scale-95 ${
+              className={`py-1.5 px-2 rounded-full transition-colors duration-150 cursor-pointer text-center active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                 isDev
-                  ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                  ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                   : 'text-dim hover:text-main'
               }`}
             >
@@ -181,7 +191,7 @@ export const AppSidebar: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between px-3.5 py-2 rounded-full text-xs font-medium transition-all ${
+                className={`flex items-center justify-between px-3.5 py-2 rounded-full text-xs font-medium transition-colors duration-150 ${
                   isActive
                     ? 'bg-elevated text-main shadow-xs border border-medium font-semibold'
                     : 'text-dim hover:text-main hover:bg-elevated/50 border border-transparent'
@@ -190,7 +200,7 @@ export const AppSidebar: React.FC = () => {
                 <div className="flex items-center gap-2.5">
                   <Icon
                     className={`w-4 h-4 shrink-0 transition-colors ${
-                      isActive ? 'text-[#ea2804]' : 'text-dim'
+                      isActive ? (isDev ? 'text-[#cc785c]' : 'text-[#ea2804]') : 'text-dim'
                     }`}
                   />
                   <span>{item.name}</span>

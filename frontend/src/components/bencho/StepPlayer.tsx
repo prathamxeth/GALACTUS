@@ -29,11 +29,13 @@ export function StepPlayer({
   className = '',
 }: StepPlayerProps) {
   const [activeIdx, setActiveIdx] = useState(currentStepIndex);
+  const [prevIndex, setPrevIndex] = useState(currentStepIndex);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  useEffect(() => {
+  if (prevIndex !== currentStepIndex) {
+    setPrevIndex(currentStepIndex);
     setActiveIdx(currentStepIndex);
-  }, [currentStepIndex]);
+  }
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -63,7 +65,7 @@ export function StepPlayer({
 
   return (
     <div
-      className={`rounded-xl border border-border-subtle bg-bg-surface p-4 backdrop-blur-md ${className}`}
+      className={`rounded-xl border border-border-subtle bg-bg-surface p-4 ${className}`}
     >
       {/* Control row */}
       <div className="flex items-center justify-between mb-4">
@@ -71,7 +73,7 @@ export function StepPlayer({
           <button
             type="button"
             onClick={() => setIsPlaying((p) => !p)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border-subtle bg-bg-elevated text-text-primary hover:bg-accent-primary hover:text-white transition-colors cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border-subtle bg-bg-elevated text-text-primary hover:bg-accent-primary hover:text-white transition-colors duration-150 active:translate-y-px cursor-pointer"
             aria-label={isPlaying ? 'Pause timeline playback' : 'Play timeline'}
           >
             {isPlaying ? (
@@ -80,7 +82,7 @@ export function StepPlayer({
               <Play className="w-3.5 h-3.5 ml-0.5" />
             )}
           </button>
-          <span className="text-xs font-semibold uppercase tracking-wider text-text-primary">
+          <span className="text-xs font-semibold uppercase tracking-wider text-text-primary tabular-nums">
             DAG Step {activeIdx + 1} of {steps.length}
           </span>
         </div>
@@ -127,9 +129,9 @@ export function StepPlayer({
                 setActiveIdx(idx);
                 onSelectStep?.(idx);
               }}
-              className={`relative z-10 flex h-6 w-6 items-center justify-center rounded-full border transition-all cursor-pointer ${
+              className={`relative z-10 flex h-6 w-6 items-center justify-center rounded-full border transition-[background-color,border-color,color] duration-150 cursor-pointer ${
                 isCurrent
-                  ? 'border-accent-primary bg-accent-primary text-white scale-110 shadow-md shadow-accent-primary/30'
+                  ? 'border-accent-primary bg-accent-primary text-white ring-2 ring-accent-primary/30 ring-offset-1 ring-offset-bg-surface'
                   : isDone
                   ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
                   : 'border-border-subtle bg-bg-elevated text-text-muted hover:border-text-muted'
@@ -138,7 +140,7 @@ export function StepPlayer({
               {isDone ? (
                 <Check className="w-3 h-3 stroke-[2.5]" />
               ) : (
-                <span className="font-mono text-[10px] font-bold">{idx + 1}</span>
+                <span className="font-mono text-[10px] font-bold tabular-nums">{idx + 1}</span>
               )}
             </button>
           );

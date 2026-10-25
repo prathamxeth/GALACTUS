@@ -8,7 +8,9 @@ export type BadgeVariant =
   | 'zinc'
   | 'purple'
   | 'replicate'
-  | 'memorag';
+  | 'memorag'
+  | 'chat'
+  | 'dev';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -61,6 +63,18 @@ const variantStyles: Record<BadgeVariant, { bg: string; text: string; border: st
     dot: 'bg-[#ea2804]',
   },
   memorag: {
+    bg: 'bg-[#cc785c]/10 dark:bg-[#cc785c]/15',
+    text: 'text-[#cc785c] dark:text-[#e08f75]',
+    border: 'border-[#cc785c]/30',
+    dot: 'bg-[#cc785c]',
+  },
+  chat: {
+    bg: 'bg-[#ea2804]/10 dark:bg-[#ea2804]/15',
+    text: 'text-[#ea2804] dark:text-[#ff4e2f]',
+    border: 'border-[#ea2804]/30',
+    dot: 'bg-[#ea2804]',
+  },
+  dev: {
     bg: 'bg-[#cc785c]/10 dark:bg-[#cc785c]/15',
     text: 'text-[#cc785c] dark:text-[#e08f75]',
     border: 'border-[#cc785c]/30',

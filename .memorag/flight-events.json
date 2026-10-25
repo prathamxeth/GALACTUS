@@ -1,0 +1,336 @@
+[
+  {
+    "id": "flight-test-1792938509799",
+    "timestamp": "2026-10-25T14:28:29.799Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792938576126",
+    "timestamp": "2026-10-25T14:29:36.126Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792938620983",
+    "timestamp": "2026-10-25T14:30:20.983Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792939087976",
+    "timestamp": "2026-10-25T14:38:07.976Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "evt-1792939411364-chk",
+    "timestamp": "2026-10-25T14:43:31.364Z",
+    "projectId": "GALACTUS",
+    "type": "checkpoint_created",
+    "summary": "Checkpoint created: \"Verified Passing Baseline\" (Healthy: YES)",
+    "evidence": {
+      "gitCommit": "93e38d9"
+    },
+    "healthyState": true,
+    "provenance": "user"
+  },
+  {
+    "id": "flight-test-1792940879959",
+    "timestamp": "2026-10-25T15:07:59.959Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792940891037",
+    "timestamp": "2026-10-25T15:08:11.037Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792940947788",
+    "timestamp": "2026-10-25T15:09:07.788Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792941040831",
+    "timestamp": "2026-10-25T15:10:40.831Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792941741701",
+    "timestamp": "2026-10-25T15:22:21.701Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792941749195",
+    "timestamp": "2026-10-25T15:22:29.195Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792944544159",
+    "timestamp": "2026-10-25T16:09:04.159Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792944695760",
+    "timestamp": "2026-10-25T16:11:35.760Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792944739525",
+    "timestamp": "2026-10-25T16:12:19.525Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792944996967",
+    "timestamp": "2026-10-25T16:16:36.967Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792946800277",
+    "timestamp": "2026-10-25T16:46:40.277Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792946808812",
+    "timestamp": "2026-10-25T16:46:48.812Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "evt-1792947988371-heq2p",
+    "timestamp": "2026-10-25T17:06:28.371Z",
+    "projectId": "GALACTUS",
+    "type": "test_failed",
+    "summary": "npm test finished with exit code 254",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 254,
+      "outputExcerpt": "file or directory, open '/Users/pratham/.gemini/antigravity-ide/scratch/GALACTUS/package.json'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /Users/pratham/.npm/_logs/2026-10-25T17_06_28_330Z-debug-0.log\n"
+    },
+    "healthyState": false,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792949607133",
+    "timestamp": "2026-10-25T17:33:27.133Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792949614690",
+    "timestamp": "2026-10-25T17:33:34.690Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792951179472",
+    "timestamp": "2026-10-25T17:59:39.472Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792951187466",
+    "timestamp": "2026-10-25T17:59:47.466Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792952554260",
+    "timestamp": "2026-10-25T18:22:34.260Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  },
+  {
+    "id": "flight-test-1792953451723",
+    "timestamp": "2026-10-25T18:37:31.723Z",
+    "projectId": "GALACTUS",
+    "type": "test_passed",
+    "summary": "Verified unit test execution in automated test runner",
+    "evidence": {
+      "command": "npm test",
+      "exitCode": 0,
+      "outputExcerpt": "23 passing (120ms)"
+    },
+    "healthyState": true,
+    "provenance": "terminal"
+  }
+]

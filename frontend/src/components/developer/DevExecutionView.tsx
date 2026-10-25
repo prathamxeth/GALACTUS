@@ -14,7 +14,7 @@ import { Modal } from '../ui/Modal';
 import { TaskTimelineCard } from '../tasks/TaskTimelineCard';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
 import { TaskStatus } from '@/lib/api/types';
-import { FadeContent, CountUp, StarBorder } from '@/components/reactbits';
+import { FadeContent, CountUp } from '@/components/reactbits';
 
 export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => void }> = ({
   onOpenApproval,
@@ -67,15 +67,15 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold text-main flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[#ea2804]" />
+              <Activity className="w-5 h-5 text-[#cc785c]" />
               Live Execution &amp; Task Graph (FR3)
             </h2>
-            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-mono bg-[#ea2804]/10 text-[#ea2804] border border-[#ea2804]/25">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ea2804] animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-mono bg-[#cc785c]/10 text-[#cc785c] border border-[#cc785c]/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-pulse" />
               POLL /api/tasks/incomplete (3s)
             </span>
           </div>
-          <p className="text-xs text-dim mt-0.5 font-mono">
+          <p className="text-xs text-dim mt-0.5 font-subheading">
             Sub-task decomposition, step dependencies, and self-correction loops
           </p>
         </div>
@@ -92,9 +92,9 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
                     key={f}
                     type="button"
                     onClick={() => setFilter(f)}
-                    className={`px-3 py-1 rounded-full cursor-pointer capitalize transition-all ${
+                    className={`px-3 py-1 rounded-full cursor-pointer capitalize transition-colors duration-150 active:translate-y-px select-none tabular-nums ${
                       isActive
-                        ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                        ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                         : 'text-dim hover:text-main'
                     }`}
                   >
@@ -115,16 +115,14 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
             Poll Now
           </Button>
 
-          <StarBorder
-            as="button"
+          <Button
+            size="sm"
+            variant="dev"
             onClick={() => setIsModalOpen(true)}
-            color="#38bdf8"
-            trailColor="rgba(56, 189, 248, 0.3)"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-sky-600 hover:bg-sky-500 cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
+            icon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" />
-            <span>Dispatch DAG</span>
-          </StarBorder>
+            Dispatch DAG
+          </Button>
         </div>
       </div>
 
@@ -265,7 +263,7 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
             </Button>
             <Button
               type="submit"
-              variant="primary"
+              variant="dev"
               size="sm"
               disabled={!newGoal.trim()}
               icon={<Plus className="w-3.5 h-3.5" />}

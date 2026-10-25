@@ -60,8 +60,8 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
       {/* Restrained Developer GridScan Canvas Backdrop */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.06] overflow-hidden z-0">
         <GridScan
-          linesColor={isLight ? '#000000' : '#ffffff'}
-          scanColor={isLight ? '#0284c7' : '#38bdf8'}
+          linesColor={isLight ? '#1c1b18' : '#e4e4e9'}
+          scanColor={isLight ? '#cc785c' : '#e08a6e'}
           cells={14}
           lineThickness={1}
           autoScan={true}
@@ -179,7 +179,7 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                     />
                   ),
                 }))}
-                theme={preset}
+                theme={preset === 'light' || preset === 'oled-light' ? 'light' : 'dark'}
                 animation="slide"
                 maxHeight={200}
                 className="w-full rounded-xl border border-subtle bg-surface/80"
@@ -225,7 +225,7 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                     className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
                   >
                     {!isUser && (
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-mono text-xs font-bold mt-1">
+                      <div className="w-7 h-7 rounded-lg bg-[#cc785c]/15 border border-[#cc785c]/35 flex items-center justify-center text-[#cc785c] shrink-0 font-mono text-xs font-bold mt-1">
                         ᚱ
                       </div>
                     )}
@@ -327,7 +327,7 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                                   }
                                   color="#10b981"
                                   trailColor="rgba(16, 185, 129, 0.3)"
-                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:translate-y-px transition-[background-color,transform] duration-150 ease-out font-mono select-none"
                                 >
                                   <span>Authorize Step</span>
                                 </StarBorder>
@@ -361,9 +361,9 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                 <button
                   type="button"
                   onClick={() => setActiveMode('chat')}
-                  className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                     activeMode === 'chat'
-                      ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                      ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                       : 'text-dim hover:text-main bg-elevated/50'
                   }`}
                 >
@@ -372,9 +372,9 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                 <button
                   type="button"
                   onClick={() => setActiveMode('task')}
-                  className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                     activeMode === 'task'
-                      ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                      ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                       : 'text-dim hover:text-main bg-elevated/50'
                   }`}
                 >
@@ -383,9 +383,9 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
                 <button
                   type="button"
                   onClick={() => setActiveMode('memory')}
-                  className={`px-3 py-1 rounded-full cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
                     activeMode === 'memory'
-                      ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                      ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                       : 'text-dim hover:text-main bg-elevated/50'
                   }`}
                 >
@@ -411,12 +411,11 @@ export const DevOverviewView: React.FC<{ onOpenApproval: (reqId: string) => void
               />
               <Button
                 type="submit"
-                variant="primary"
+                variant="dev"
                 size="sm"
                 loading={isSending}
                 disabled={!input.trim()}
                 icon={<Send className="w-3.5 h-3.5" />}
-                className="transition-transform active:scale-95"
               >
                 Dispatch
               </Button>

@@ -1,111 +1,322 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   /* ========================================================================
-     REPLICATE DESIGN SYSTEM (Primary Theme across Dashboard & Technical Views)
-     Ref: https://getdesign.md/replicate/design-md
+     HALLMARK-COMPLIANT DESIGN TOKENS (ANTI-SLOP ARCHITECTURE)
+     - No pure #000000, no pure #ffffff surfaces (tinted carbon & tinted paper)
+     - Typography Pairing: Newsreader (Editorial Serif) + Geist (UI) + JetBrains Mono
+     - Tabular numbers on all technical and quantitative displays
      ======================================================================== */
+
+  /* ------------------------------------------------------------------------
+     1. PRESET: OLED DARK (True OLED Black Identity)
+     ------------------------------------------------------------------------ */
   :root,
+  [data-theme="oled"],
+  [data-theme="oled-dark"] {
+    /* Color Mode Identity */
+    --color-scheme: dark;
+
+    /* A. Conversational Assistant: Cursor-grade OLED Precision */
+    --chat-bg-canvas: #000000;           /* True OLED Black */
+    --chat-bg-surface: #090909;          /* Primary Panels */
+    --chat-bg-elevated: #111111;         /* Elevated Surfaces */
+    --chat-bg-subtle: #171717;           /* Hover & Subtle Surfaces */
+    --chat-border: #242424;              /* Precise Hairline Borders */
+    --chat-border-subtle: #1b1b1b;
+    --chat-border-strong: #333333;
+    --chat-text-primary: #F5F5F5;        /* High-Contrast Crisp Ink */
+    --chat-text-secondary: #A1A1AA;
+    --chat-text-muted: #71717A;
+    --chat-accent: #F04424;              /* Restrained MEMORAG Signal Orange */
+    --chat-accent-hover: #ff5733;
+    --chat-accent-soft: rgba(240, 68, 36, 0.14);
+    --chat-accent-ring: rgba(240, 68, 36, 0.40);
+
+    /* B. Developer & Operations: True OLED with Restrained Warmth */
+    --dev-bg-canvas: #000000;
+    --dev-bg-surface: #090909;
+    --dev-bg-elevated: #111111;
+    --dev-bg-subtle: #171717;
+    --dev-border: #242424;
+    --dev-border-subtle: #1b1b1b;
+    --dev-border-strong: #333333;
+    --dev-text-primary: #F5F5F5;
+    --dev-text-secondary: #A1A1AA;
+    --dev-text-muted: #71717A;
+    --dev-accent: #F04424;
+    --dev-accent-hover: #ff5733;
+    --dev-accent-soft: rgba(240, 68, 36, 0.14);
+    --dev-accent-ring: rgba(240, 68, 36, 0.40);
+
+    /* Shared Status Indicators (Accessible & State-Only) */
+    --status-success: #10B981;
+    --status-success-bg: rgba(16, 185, 129, 0.12);
+    --status-warning: #F59E0B;
+    --status-warning-bg: rgba(245, 158, 11, 0.12);
+    --status-danger: #EF4444;
+    --status-danger-bg: rgba(239, 68, 68, 0.12);
+    --status-info: #3B82F6;
+    --status-info-bg: rgba(59, 130, 246, 0.12);
+
+    /* Centralized MEMORAG Forge Workbench Tokens (VS Code × Cursor OLED Spec) */
+    --forge-canvas: #000000;
+    --forge-panel: #080808;
+    --forge-panel-secondary: #0D0D0D;
+    --forge-elevated: #111111;
+    --forge-hover: #191919;
+    --forge-border: #252525;
+    --forge-border-strong: #383838;
+    --forge-text-primary: #F5F5F5;
+    --forge-text-secondary: #B0B0B5;
+    --forge-text-muted: #77777F;
+    --forge-accent: #F04424;
+
+    /* Active Defaults */
+    --bg-canvas: var(--forge-canvas);
+    --bg-surface: var(--forge-panel);
+    --bg-elevated: var(--forge-elevated);
+    --bg-hover: var(--forge-hover);
+    --bg-subtle: var(--forge-panel-secondary);
+    --border-subtle: var(--forge-border);
+    --border-medium: var(--forge-border-strong);
+    --text-primary: var(--forge-text-primary);
+    --text-secondary: var(--forge-text-secondary);
+    --text-muted: var(--forge-text-muted);
+    --accent-primary: var(--forge-accent);
+    --accent-primary-hover: #ff5733;
+    --scrollbar-thumb: #252525;
+    --scrollbar-thumb-hover: #383838;
+  }
+
+  /* ------------------------------------------------------------------------
+     2. PRESET: DARK (Deep Slate / Graphite)
+     ------------------------------------------------------------------------ */
   [data-theme="dark"] {
-    /* Replicate Dark Mode */
-    --color-replicate-primary: #ea2804;
-    --color-replicate-primary-deep: #c01f00;
-    --color-replicate-on-primary: #ffffff;
+    --color-scheme: dark;
 
-    --bg-canvas: #0d0d0f;
-    --bg-surface: #141418;
-    --bg-elevated: #1c1c22;
-    --bg-subtle: #26262e;
+    --chat-bg-canvas: #111114;
+    --chat-bg-surface: #17171c;
+    --chat-bg-elevated: #202026;
+    --chat-bg-subtle: #27272f;
+    --chat-border: #2f2f38;
+    --chat-border-subtle: #23232a;
+    --chat-border-strong: #42424e;
+    --chat-text-primary: #f2f2f5;
+    --chat-text-secondary: #9e9ea7;
+    --chat-text-muted: #6c6c76;
+    --chat-accent: #ea2804;
+    --chat-accent-hover: #ff3e1c;
+    --chat-accent-soft: rgba(234, 40, 4, 0.16);
+    --chat-accent-ring: rgba(234, 40, 4, 0.45);
 
-    --border-subtle: rgba(255, 255, 255, 0.10);
-    --border-medium: rgba(255, 255, 255, 0.18);
-    --border-strong: rgba(255, 255, 255, 0.35);
+    --dev-bg-canvas: #121110;
+    --dev-bg-surface: #181715;
+    --dev-bg-elevated: #21201d;
+    --dev-bg-subtle: #2a2824;
+    --dev-border: #34322d;
+    --dev-border-subtle: #24221f;
+    --dev-border-strong: #4e4a42;
+    --dev-text-primary: #f5f3ee;
+    --dev-text-secondary: #b0ada5;
+    --dev-text-muted: #75726a;
+    --dev-accent: #cc785c;
+    --dev-accent-hover: #e08f75;
+    --dev-accent-soft: rgba(204, 120, 92, 0.18);
+    --dev-accent-ring: rgba(204, 120, 92, 0.45);
 
-    --text-primary: #fcfcfc;
-    --text-secondary: #a0a0a8;
-    --text-muted: #6a6a74;
+    --status-success: #34d399;
+    --status-success-bg: rgba(52, 211, 153, 0.16);
+    --status-warning: #fbbf24;
+    --status-warning-bg: rgba(251, 191, 36, 0.16);
+    --status-danger: #ea2804;
+    --status-danger-bg: rgba(234, 40, 4, 0.16);
+    --status-info: #38bdf8;
+    --status-info-bg: rgba(56, 189, 248, 0.16);
 
-    --accent-primary: #ea2804;
-    --accent-primary-hover: #ff3e1c;
-    --accent-emerald: #2b9a66;
-    --accent-emerald-bg: rgba(43, 154, 102, 0.14);
-    --accent-amber: #f59e0b;
-    --accent-amber-bg: rgba(245, 158, 11, 0.14);
-    --accent-sky: #38bdf8;
-    --accent-sky-bg: rgba(56, 189, 248, 0.14);
+    /* Forge Workbench Tokens for Dark Mode */
+    --forge-canvas: #111114;
+    --forge-panel: #17171c;
+    --forge-panel-secondary: #1a1a22;
+    --forge-elevated: #202026;
+    --forge-hover: #27272f;
+    --forge-border: #2f2f38;
+    --forge-border-strong: #42424e;
+    --forge-text-primary: #f2f2f5;
+    --forge-text-secondary: #9e9ea7;
+    --forge-text-muted: #6c6c76;
+    --forge-accent: #F04424;
 
-    --scrollbar-thumb: #25252d;
-    --scrollbar-thumb-hover: #373743;
-
-    /* ========================================================================
-       MEMORAG CONVERSATIONAL THEME (Warm Editorial System)
-       ======================================================================== */
-    --memorag-primary: #cc785c;
-    --memorag-primary-active: #a9583e;
-    --memorag-primary-soft: rgba(204, 120, 92, 0.18);
-    --memorag-canvas: #181715;
-    --memorag-surface-soft: #1f1e1b;
-    --memorag-surface-card: #252320;
-    --memorag-surface-elevated: #2d2b27;
-    --memorag-hairline: #33312c;
-    --memorag-hairline-soft: #2a2824;
-    --memorag-text-body: #eceae5;
-    --memorag-text-muted: #a09d96;
-    --memorag-serif: "Newsreader", "Georgia", "Copernicus", serif;
-
+    --bg-canvas: var(--forge-canvas);
+    --bg-surface: var(--forge-panel);
+    --bg-elevated: var(--forge-elevated);
+    --bg-subtle: var(--forge-panel-secondary);
+    --border-subtle: var(--forge-border);
+    --border-medium: var(--forge-border-strong);
+    --text-primary: var(--forge-text-primary);
+    --text-secondary: var(--forge-text-secondary);
+    --text-muted: var(--forge-text-muted);
+    --accent-primary: var(--forge-accent);
+    --accent-primary-hover: var(--chat-accent-hover);
+    --scrollbar-thumb: #27272f;
+    --scrollbar-thumb-hover: #3e3e4a;
   }
 
-  /* 2. REPLICATE LIGHT PRESET — Warm Cream Developer Canvas */
+  /* ------------------------------------------------------------------------
+     3. PRESET: OLED LIGHT (Crisp Tinted Paper)
+     ------------------------------------------------------------------------ */
+  [data-theme="oled-light"] {
+    --color-scheme: light;
+
+    --chat-bg-canvas: #faf8f5;           /* Hallmark Tinted Paper, not pure #fff */
+    --chat-bg-surface: #fdfcfb;
+    --chat-bg-elevated: #f4f0e8;
+    --chat-bg-subtle: #eae4d8;
+    --chat-border: #dcd4c5;
+    --chat-border-subtle: #e9e3d8;
+    --chat-border-strong: #968c7c;
+    --chat-text-primary: #181715;
+    --chat-text-secondary: #4f4c47;
+    --chat-text-muted: #7c7870;
+    --chat-accent: #ea2804;
+    --chat-accent-hover: #c01f00;
+    --chat-accent-soft: rgba(234, 40, 4, 0.10);
+    --chat-accent-ring: rgba(234, 40, 4, 0.25);
+
+    --dev-bg-canvas: #faf9f6;
+    --dev-bg-surface: #fdfcfb;
+    --dev-bg-elevated: #f5f0e7;
+    --dev-bg-subtle: #eae3d5;
+    --dev-border: #ded6c8;
+    --dev-border-subtle: #ece5d9;
+    --dev-border-strong: #968c7c;
+    --dev-text-primary: #191715;
+    --dev-text-secondary: #4f4c47;
+    --dev-text-muted: #7c7870;
+    --dev-accent: #cc785c;
+    --dev-accent-hover: #a9583e;
+    --dev-accent-soft: rgba(204, 120, 92, 0.12);
+    --dev-accent-ring: rgba(204, 120, 92, 0.25);
+
+    --status-success: #16a34a;
+    --status-success-bg: rgba(22, 163, 74, 0.10);
+    --status-warning: #d97706;
+    --status-warning-bg: rgba(217, 119, 6, 0.10);
+    --status-danger: #ea2804;
+    --status-danger-bg: rgba(234, 40, 4, 0.10);
+    --status-info: #0284c7;
+    --status-info-bg: rgba(2, 132, 199, 0.10);
+
+    /* Forge Workbench Tokens for OLED Light (Pure White Canvas) */
+    --forge-canvas: #ffffff;
+    --forge-panel: #fafafa;
+    --forge-panel-secondary: #f4f4f4;
+    --forge-elevated: #f0f0f0;
+    --forge-hover: #e8e8e8;
+    --forge-border: #d4d4d8;
+    --forge-border-strong: #a1a1aa;
+    --forge-text-primary: #09090b;
+    --forge-text-secondary: #52525b;
+    --forge-text-muted: #71717a;
+    --forge-accent: #F04424;
+
+    --bg-canvas: var(--forge-canvas);
+    --bg-surface: var(--forge-panel);
+    --bg-elevated: var(--forge-elevated);
+    --bg-subtle: var(--forge-panel-secondary);
+    --border-subtle: var(--forge-border);
+    --border-medium: var(--forge-border-strong);
+    --text-primary: var(--forge-text-primary);
+    --text-secondary: var(--forge-text-secondary);
+    --text-muted: var(--forge-text-muted);
+    --accent-primary: var(--forge-accent);
+    --accent-primary-hover: var(--chat-accent-hover);
+    --scrollbar-thumb: #dcd4c5;
+    --scrollbar-thumb-hover: #968c7c;
+  }
+
+  /* ------------------------------------------------------------------------
+     4. PRESET: LIGHT (Warm Sand Linen)
+     ------------------------------------------------------------------------ */
   [data-theme="light"] {
-    --color-replicate-primary: #ea2804;
-    --color-replicate-primary-deep: #c01f00;
-    --color-replicate-on-primary: #ffffff;
+    --color-scheme: light;
 
-    --bg-canvas: #f9f7f3;        /* Replicate Signature Warm Cream Canvas */
-    --bg-surface: #ffffff;       /* Surface Card */
-    --bg-elevated: #f3f0e8;      /* Surface Bone */
-    --bg-subtle: #eae5d9;
+    /* A. Conversational Assistant: Claude ergonomics + Replicate colors */
+    --chat-bg-canvas: #f7f4ee;           /* Warm Sand Linen Paper */
+    --chat-bg-surface: #fdfcf9;
+    --chat-bg-elevated: #f0ebe0;
+    --chat-bg-subtle: #e6dfd1;
+    --chat-border: rgba(32, 32, 32, 0.12);
+    --chat-border-subtle: rgba(32, 32, 32, 0.06);
+    --chat-border-strong: rgba(32, 32, 32, 0.28);
+    --chat-text-primary: #1a1918;        /* Replicate Tinted Ink */
+    --chat-text-secondary: #524f4a;
+    --chat-text-muted: #827e77;
+    --chat-accent: #ea2804;              /* Replicate Signal Orange */
+    --chat-accent-hover: #c01f00;
+    --chat-accent-soft: rgba(234, 40, 4, 0.10);
+    --chat-accent-ring: rgba(234, 40, 4, 0.25);
 
-    --border-subtle: rgba(32, 32, 32, 0.10);
-    --border-medium: rgba(32, 32, 32, 0.18);
-    --border-strong: rgba(32, 32, 32, 0.35);
+    /* B. Developer & Operations: Replicate ergonomics + Claude colors */
+    --dev-bg-canvas: #f8f6f0;            /* Claude Signature Tinted Cream */
+    --dev-bg-surface: #fdfcf9;
+    --dev-bg-elevated: #ece5d8;
+    --dev-bg-subtle: #e2dac9;
+    --dev-border: #e0d7c7;               /* Claude Hairline */
+    --dev-border-subtle: #e8e1d4;
+    --dev-border-strong: rgba(20, 20, 19, 0.28);
+    --dev-text-primary: #181715;         /* Claude Ink */
+    --dev-text-secondary: #4a4742;
+    --dev-text-muted: #78736a;
+    --dev-accent: #cc785c;              /* Claude Terracotta Coral */
+    --dev-accent-hover: #a9583e;
+    --dev-accent-soft: rgba(204, 120, 92, 0.12);
+    --dev-accent-ring: rgba(204, 120, 92, 0.25);
 
-    --text-primary: #202020;     /* Replicate Ink */
-    --text-secondary: #575757;   /* Replicate Charcoal */
-    --text-muted: #8d8d8d;      /* Replicate Ash */
+    /* Shared Status Indicators */
+    --status-success: #2b9a66;
+    --status-success-bg: rgba(43, 154, 102, 0.10);
+    --status-warning: #d97706;
+    --status-warning-bg: rgba(217, 119, 6, 0.10);
+    --status-danger: #ea2804;
+    --status-danger-bg: rgba(234, 40, 4, 0.10);
+    --status-info: #0284c7;
+    --status-info-bg: rgba(2, 132, 199, 0.10);
 
-    --accent-primary: #ea2804;
-    --accent-primary-hover: #c01f00;
-    --accent-emerald: #2b9a66;
-    --accent-emerald-bg: rgba(43, 154, 102, 0.10);
-    --accent-amber: #d97706;
-    --accent-amber-bg: rgba(217, 119, 6, 0.10);
-    --accent-sky: #0284c7;
-    --accent-sky-bg: rgba(2, 132, 199, 0.10);
+    /* Forge Workbench Tokens for Light */
+    --forge-canvas: #f7f4ee;
+    --forge-panel: #fdfcf9;
+    --forge-panel-secondary: #ece5d8;
+    --forge-elevated: #f0ebe0;
+    --forge-hover: #e2dac9;
+    --forge-border: rgba(32, 32, 32, 0.12);
+    --forge-border-strong: rgba(32, 32, 32, 0.28);
+    --forge-text-primary: #1a1918;
+    --forge-text-secondary: #524f4a;
+    --forge-text-muted: #827e77;
+    --forge-accent: #F04424;
 
-    --scrollbar-thumb: #d9d4c7;
-    --scrollbar-thumb-hover: #bebaae;
-
-    /* MEMORAG Light Mode Tokens */
-    --memorag-primary: #cc785c;
-    --memorag-primary-active: #a9583e;
-    --memorag-primary-soft: rgba(204, 120, 92, 0.12);
-    --memorag-canvas: #faf9f5;
-    --memorag-surface-soft: #f5f0e8;
-    --memorag-surface-card: #efe9de;
-    --memorag-surface-elevated: #e8e0d2;
-    --memorag-hairline: #e6dfd8;
-    --memorag-hairline-soft: #ebe6df;
-    --memorag-text-body: #3d3d3a;
-    --memorag-text-muted: #6c6a64;
-    --memorag-serif: "Newsreader", "Georgia", "Copernicus", serif;
-
+    --bg-canvas: var(--forge-canvas);
+    --bg-surface: var(--forge-panel);
+    --bg-elevated: var(--forge-elevated);
+    --bg-subtle: var(--forge-panel-secondary);
+    --border-subtle: var(--forge-border);
+    --border-medium: var(--forge-border-strong);
+    --text-primary: var(--forge-text-primary);
+    --text-secondary: var(--forge-text-secondary);
+    --text-muted: var(--forge-text-muted);
+    --accent-primary: var(--forge-accent);
+    --accent-primary-hover: var(--chat-accent-hover);
+    --scrollbar-thumb: #d7d0bf;
+    --scrollbar-thumb-hover: #b8b09d;
   }
+
 
   body {
     background-color: var(--bg-canvas);
     color: var(--text-primary);
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     min-height: 100vh;
     overflow-x: clip;
     -webkit-font-smoothing: antialiased;
@@ -113,19 +324,28 @@
     transition: background-color 150ms ease-out, color 150ms ease-out;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  /* Headings: Newsreader (Upright Roman Editorial Serif) */
+  h1, h2, h3, .font-heading {
+    font-family: "Newsreader", "Georgia", serif;
     font-style: normal;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-weight: 500;
+    letter-spacing: -0.025em;
   }
 
-  code, pre, kbd {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Subheadings & Regular Accent: Bricolage Grotesque */
+  h4, h5, h6, .subheading, .font-subheading, .font-grotesque {
+    font-family: "Bricolage Grotesque", "Geist", sans-serif;
+    letter-spacing: -0.015em;
+  }
+
+  code, pre, kbd, .font-mono, .tabular-nums {
+    font-family: "JetBrains Mono", "Geist Mono", ui-monospace, SFMono-Regular, monospace;
     font-feature-settings: "liga" 0;
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Custom scrollbar driven by Replicate tokens */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -141,39 +361,73 @@
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Accessible focus ring using Replicate hot orange */
-*:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-replicate-primary);
-}
+/* ========================================================================
+   SEMANTIC UTILITIES: CHAT (Claude Editorial + Replicate Colors)
+   ======================================================================== */
+.bg-chat-canvas { background-color: var(--chat-bg-canvas); }
+.bg-chat-surface { background-color: var(--chat-bg-surface); }
+.bg-chat-elevated { background-color: var(--chat-bg-elevated); }
+.bg-chat-subtle { background-color: var(--chat-bg-subtle); }
+.border-chat-subtle { border-color: var(--chat-border); }
+.border-chat-strong { border-color: var(--chat-border-strong); }
+.text-chat-main { color: var(--chat-text-primary); }
+.text-chat-dim { color: var(--chat-text-secondary); }
+.text-chat-faint { color: var(--chat-text-muted); }
+.text-chat-accent { color: var(--chat-accent); }
+.bg-chat-accent { background-color: var(--chat-accent); }
+.bg-chat-accent-soft { background-color: var(--chat-accent-soft); }
+.border-chat-accent { border-color: var(--chat-accent); }
+.font-editorial-serif { font-family: "Newsreader", "Georgia", "Copernicus", serif; }
 
-/* Utility classes mapping semantic tokens */
+/* ========================================================================
+   SEMANTIC UTILITIES: DEVELOPER (Replicate Structure + Claude Colors)
+   ======================================================================== */
+.bg-dev-canvas { background-color: var(--dev-bg-canvas); }
+.bg-dev-surface { background-color: var(--dev-dev-surface, var(--dev-bg-surface)); }
+.bg-dev-elevated { background-color: var(--dev-bg-elevated); }
+.bg-dev-subtle { background-color: var(--dev-bg-subtle); }
+.border-dev-subtle { border-color: var(--dev-border); }
+.border-dev-strong { border-color: var(--dev-border-strong); }
+.text-dev-main { color: var(--dev-text-primary); }
+.text-dev-dim { color: var(--dev-text-secondary); }
+.text-dev-faint { color: var(--dev-text-muted); }
+.text-dev-accent { color: var(--dev-accent); }
+.bg-dev-accent { background-color: var(--dev-accent); }
+.bg-dev-accent-soft { background-color: var(--dev-accent-soft); }
+.border-dev-accent { border-color: var(--dev-accent); }
+
+/* Generic Fallback Utilities for Shared Shell */
 .bg-canvas { background-color: var(--bg-canvas); }
 .bg-surface { background-color: var(--bg-surface); }
 .bg-elevated { background-color: var(--bg-elevated); }
+.bg-hover { background-color: var(--bg-hover, var(--bg-elevated)); }
 .bg-subtle { background-color: var(--bg-subtle); }
 .border-subtle { border-color: var(--border-subtle); }
 .border-medium { border-color: var(--border-medium); }
-.border-strong { border-color: var(--border-strong); }
+.border-strong { border-color: var(--border-medium); }
 .text-main { color: var(--text-primary); }
 .text-dim { color: var(--text-secondary); }
 .text-faint { color: var(--text-muted); }
 
-/* Replicate Specific Classes */
-.bg-replicate-primary { background-color: var(--color-replicate-primary); }
-.text-replicate-primary { color: var(--color-replicate-primary); }
-.border-replicate-primary { border-color: var(--color-replicate-primary); }
+/* Typography Scale Utilities */
+.font-heading { font-family: "Newsreader", "Georgia", "Copernicus", serif; }
+.font-subheading, .font-grotesque { font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.font-body, .font-inter { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-/* MEMORAG Conversational Theme Classes */
-.bg-memorag-primary { background-color: var(--memorag-primary); }
-.text-memorag-primary { color: var(--memorag-primary); }
-.border-memorag-primary { border-color: var(--memorag-primary); }
-.font-memorag-serif { font-family: var(--memorag-serif); }
-.bg-memorag-canvas { background-color: var(--memorag-canvas); }
-.bg-memorag-soft { background-color: var(--memorag-surface-soft); }
-.bg-memorag-card { background-color: var(--memorag-surface-card); }
-.border-memorag-hairline { border-color: var(--memorag-hairline); }
-.text-memorag-body { color: var(--memorag-text-body); }
-.text-memorag-muted { color: var(--memorag-text-muted); }
+/* ========================================================================
+   VS CODE × CURSOR WORKBENCH UTILITIES (Direct --forge-* bindings)
+   ======================================================================== */
+.bg-forge-canvas { background-color: var(--forge-canvas); }
+.bg-forge-panel { background-color: var(--forge-panel); }
+.bg-forge-panel-secondary { background-color: var(--forge-panel-secondary); }
+.bg-forge-elevated { background-color: var(--forge-elevated); }
+.bg-forge-hover { background-color: var(--forge-hover); }
+.border-forge { border-color: var(--forge-border); }
+.border-forge-strong { border-color: var(--forge-border-strong); }
+.text-forge-primary { color: var(--forge-text-primary); }
+.text-forge-secondary { color: var(--forge-text-secondary); }
+.text-forge-muted { color: var(--forge-text-muted); }
+.text-forge-accent { color: var(--forge-accent); }
+.bg-forge-accent { background-color: var(--forge-accent); }
 
 

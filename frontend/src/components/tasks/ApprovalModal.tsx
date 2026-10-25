@@ -182,7 +182,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({
                 onClick={() => handleAction('approved')}
                 color="#10b981"
                 trailColor="rgba(16, 185, 129, 0.3)"
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:translate-y-px transition-[background-color,transform] duration-150 ease-out font-mono select-none"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Authorize Action</span>

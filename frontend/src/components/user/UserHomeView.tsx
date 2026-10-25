@@ -1,19 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
-  Send,
-  Sparkles,
   AlertCircle,
-  Laptop,
   CheckCircle2,
   Clock,
   ChevronDown,
   ChevronUp,
+  Shield,
+  Cpu,
+  ArrowRight,
+  Database,
 } from 'lucide-react';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { ChatInput, ChatInputTextArea, ChatInputSubmit } from '../ui/ChatInput';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
 import { FadeContent, CountUp } from '@/components/reactbits';
 
@@ -24,18 +26,17 @@ export const UserHomeView: React.FC = () => {
     approvals,
     sendMessage,
     resolveApproval,
+    runtimeStatus,
   } = useRagnarok();
 
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showThinking, setShowThinking] = useState(true);
+  const [showThinking, setShowThinking] = useState(false);
 
   // Pending user attention (Approvals translated into calm language)
   const pendingApproval = approvals.find((a) => a.status === 'pending');
-  const runningTasksCount = tasks.filter((t) => t.status === 'running').length;
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async () => {
     if (!input.trim() || isSending) return;
 
     const text = input.trim();
@@ -55,182 +56,245 @@ export const UserHomeView: React.FC = () => {
   ];
 
   return (
-    <div className="memorag-chat-container max-w-4xl w-full mx-auto p-4 sm:p-8 space-y-7 transition-colors">
-      {/* 1. MEMORAG Editorial Welcome Header */}
-      <div className="text-center pt-2 pb-1 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#cc785c]/10 dark:bg-[#cc785c]/15 text-[#cc785c] dark:text-[#e08f75] text-xs font-medium border border-[#cc785c]/25 mb-1">
-          <Laptop className="w-3.5 h-3.5 text-[#cc785c]" />
-          <span>Sovereign Assistant • 100% On-Device &amp; Air-Gapped</span>
+    <div className="max-w-3xl w-full mx-auto px-4 py-8 sm:py-10 space-y-8 transition-colors font-sans">
+      {/* ====================================================================
+          1. PRODUCT HERO (Restrained, Product-Focused, Local-First Invariant)
+          ==================================================================== */}
+      <section className="text-center space-y-4 pt-2 pb-1">
+        {/* Real Local Runtime Invariant Seal */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-elevated border border-subtle text-xs font-mono text-dim">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="text-main font-semibold">Local-First AI Agent</span>
+          <span className="text-faint">•</span>
+          <span>100% Loopback ({runtimeStatus?.ollamaEndpoint ? '127.0.0.1:11434' : 'Ollama'})</span>
+          <span className="text-faint">•</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">0 Bytes Egress</span>
         </div>
 
-        <h2 className="text-3xl sm:text-4xl text-[#141413] dark:text-[#faf9f5] tracking-tight font-normal font-serif [font-family:var(--memorag-serif)]">
-          How can I help you today?
-        </h2>
+        {/* Distinctive Editorial Typographic Composition (Newsreader Serif + Replicate Ink) */}
+        <h1 className="text-3xl sm:text-4xl md:text-5xl tracking-tight text-main font-normal font-editorial-serif leading-[1.15]">
+          Intelligence designed for your device.
+        </h1>
 
-        <p className="text-sm text-[#6c6a64] dark:text-[#a09d96] max-w-md mx-auto leading-relaxed">
-          I remember verified context, plan multi-step workflows, and only carry out actions with your explicit permission.
+        <p className="text-sm sm:text-base text-dim max-w-xl mx-auto leading-relaxed font-subheading">
+          MEMORAG plans and executes multi-step workflows with persistent cryptographic memory. Sensitive file writes and commands only run with your explicit authorization.
         </p>
-      </div>
 
-      {/* 2. Floating Input Box */}
-      <FadeContent blur duration={400} delay={60} trigger="mount">
-        <div className="rounded-2xl sm:rounded-3xl bg-surface dark:bg-[#1f1e1b] border border-[#e6dfd8] dark:border-[#33312c] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] focus-within:border-[#cc785c] focus-within:ring-2 focus-within:ring-[#cc785c]/20 transition-all p-2 sm:p-2.5">
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask a question, query memory, or initiate a local task..."
-              className="flex-1 bg-transparent border-0 px-4 py-3 text-sm text-[#141413] dark:text-[#faf9f5] placeholder-[#8e8b82] dark:placeholder-[#6c6a64] focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isSending}
-              className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-medium text-xs text-white bg-[#cc785c] hover:bg-[#a9583e] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
-            >
-              {isSending ? (
-                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="w-3.5 h-3.5" />
-              )}
-              <span>Ask MEMORAG</span>
-            </button>
-          </form>
+        {/* Quick Product Specs Bar */}
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-dim pt-1">
+          <div className="flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-[#ea2804]" />
+            <span>Model: {runtimeStatus?.model || 'llama3.2:3b'}</span>
+          </div>
+          <span className="text-subtle hidden sm:inline">•</span>
+          <div className="flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 text-[#ea2804]" />
+            <span>Vault: AES-256-GCM</span>
+          </div>
+          <span className="text-subtle hidden sm:inline">•</span>
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Gjallarhorn Gate: Active</span>
+          </div>
         </div>
-      </FadeContent>
+      </section>
 
-      {/* 3. MEMORAG Prompt Chips */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {suggestions.map((suggestion, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => setInput(suggestion)}
-            className="px-3.5 py-1.5 rounded-full bg-[#f5f0e8]/80 dark:bg-[#252320] hover:bg-[#efe9de] dark:hover:bg-[#2d2b27] text-xs text-[#52504b] dark:text-[#c4c2bc] hover:text-[#141413] dark:hover:text-[#faf9f5] border border-[#e6dfd8] dark:border-[#33312c] transition-all duration-150 active:scale-98 flex items-center gap-1.5 cursor-pointer text-left"
+      {/* ====================================================================
+          2. COMPOSABLE 21ST.DEV CHAT INPUT COMPOSER
+          ==================================================================== */}
+      <section className="space-y-3">
+        <FadeContent blur duration={250} trigger="mount">
+          <ChatInput
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onSubmit={handleSubmit}
+            loading={isSending}
+            onStop={() => setIsSending(false)}
+            rows={2}
+            className="border-subtle hover:border-medium focus-within:border-[#ea2804] focus-within:ring-2 focus-within:ring-[#ea2804]/20 transition-[border-color,box-shadow] duration-150 shadow-xs"
           >
-            <Sparkles className="w-3 h-3 text-[#cc785c] shrink-0" />
-            <span>{suggestion}</span>
-          </button>
-        ))}
-      </div>
+            <ChatInputTextArea
+              placeholder="Ask MEMORAG a question, query encrypted memory, or initiate an autonomous task..."
+              className="text-main placeholder-faint"
+            />
+            <div className="flex items-center justify-between px-3.5 pb-3 pt-1 border-t border-subtle/50 text-xs">
+              <span className="text-[11px] text-faint font-mono hidden sm:inline">
+                Press <kbd className="px-1.5 py-0.5 rounded bg-elevated border border-subtle text-dim">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 rounded bg-elevated border border-subtle text-dim">Shift+Enter</kbd> for newline
+              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <ChatInputSubmit onSubmit={handleSubmit} loading={isSending} />
+              </div>
+            </div>
+          </ChatInput>
+        </FadeContent>
 
-      {/* 4. MEMORAG Decision & Verification Trace Block */}
-      <FadeContent blur duration={350} trigger="mount">
-        <div className="rounded-xl border border-[#e6dfd8] dark:border-[#33312c] bg-[#faf9f5] dark:bg-[#1c1b18] overflow-hidden text-xs">
+        {/* 3. Contextual Prompt Suggestions (Subtle Tactile Chips) */}
+        {messages.length <= 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            {suggestions.map((suggestion, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setInput(suggestion)}
+                className="px-3.5 py-1.5 rounded-full bg-elevated/70 hover:bg-elevated text-xs text-dim hover:text-main border border-subtle transition-colors duration-150 active:translate-y-px flex items-center gap-2 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent select-none"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ea2804]/70 shrink-0" aria-hidden="true" />
+                <span>{suggestion}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ====================================================================
+          3. HUMAN-IN-THE-LOOP APPROVAL CARD (Gjallarhorn Gatekeeper)
+          ==================================================================== */}
+      {pendingApproval && (
+        <FadeContent blur duration={300} trigger="mount">
+          <div className="rounded-2xl border border-[#ea2804]/40 bg-surface p-5 space-y-3.5 shadow-sm">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-[#ea2804]/10 text-[#ea2804] shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-base font-semibold text-main font-editorial-serif">
+                    Permission required for action
+                  </h3>
+                  <Badge variant="replicate">
+                    Risk: {pendingApproval.riskLevel.toUpperCase()}
+                  </Badge>
+                </div>
+                <p className="text-xs text-dim leading-relaxed">
+                  MEMORAG is proposing to execute{' '}
+                  <strong className="text-main font-medium">
+                    {pendingApproval.actionTitle}
+                  </strong>{' '}
+                  ({pendingApproval.toolName}). This modifies local workspace state.
+                </p>
+                {(pendingApproval.commandOrPayload || pendingApproval.rationale) && (
+                  <p className="text-[11px] text-faint font-mono pt-1">
+                    Payload details: {pendingApproval.commandOrPayload || pendingApproval.rationale}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-subtle flex items-center justify-end gap-2.5">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => resolveApproval(pendingApproval.id, 'rejected', 'Declined by user')}
+              >
+                Reject Action
+              </Button>
+              <Button
+                size="sm"
+                variant="chat"
+                icon={<CheckCircle2 className="w-3.5 h-3.5 mr-1" />}
+                onClick={() => resolveApproval(pendingApproval.id, 'approved')}
+              >
+                Authorize Execution
+              </Button>
+            </div>
+          </div>
+        </FadeContent>
+      )}
+
+      {/* ====================================================================
+          4. VERIFIABLE DECISION & REASONING TRACE DRAWER
+          ==================================================================== */}
+      <FadeContent blur duration={250} trigger="mount">
+        <div className="rounded-xl border border-subtle bg-surface overflow-hidden text-xs">
           <button
             type="button"
             onClick={() => setShowThinking(!showThinking)}
-            className="w-full px-4 py-2.5 flex items-center justify-between bg-[#f5f0e8]/50 dark:bg-[#22211d] text-[#6c6a64] dark:text-[#a09d96] hover:text-[#141413] dark:hover:text-[#faf9f5] transition-colors cursor-pointer"
+            className="w-full px-4 py-2.5 flex items-center justify-between text-dim hover:text-main bg-elevated/40 transition-colors cursor-pointer"
           >
             <span className="flex items-center gap-2 font-medium">
-              <span className="w-2 h-2 rounded-full bg-[#cc785c] animate-pulse" />
-              <span>MEMORAG Sovereign Decision Engine &amp; Verification</span>
-              {isSending && <span className="text-[11px] font-mono text-[#cc785c]">(thinking...)</span>}
+              <span className="w-2 h-2 rounded-full bg-[#ea2804] animate-pulse" />
+              <span className="font-mono text-xs">MEMORAG Sovereign Decision Engine &amp; Verification</span>
+              {isSending && <span className="text-[11px] font-mono text-[#ea2804]">(thinking...)</span>}
             </span>
             {showThinking ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {showThinking && (
-            <div className="p-4 space-y-2 font-mono text-[11px] text-[#52504b] dark:text-[#a09d96] bg-[#fdfcf9] dark:bg-[#181715] border-t border-[#e6dfd8] dark:border-[#33312c]">
-              <div className="flex items-center gap-2 text-[#cc785c]">
-                <span className="text-[#a9583e]">✦</span>
-                <span>Context Injection: query_relevant_context() dispatched to local memory matrix.</span>
+            <div className="p-4 space-y-2 font-mono text-[11px] text-dim bg-canvas border-t border-subtle leading-relaxed">
+              <div className="flex items-center gap-2 text-[#ea2804]">
+                <span>✦</span>
+                <span>Context Retrieval: query_relevant_context() executed against local encrypted SQLite runes.</span>
               </div>
               <div className="flex items-center gap-2 text-dim">
                 <span>↳</span>
-                <span>Synthesizing system prompt for local Ollama engine (gemma4:e2b) with AES-256-GCM verification.</span>
+                <span>Loopback Inference: Dispatched to local Ollama runtime ({runtimeStatus?.model || 'llama3.2:3b'}).</span>
               </div>
               <div className="flex items-center gap-2 text-dim">
                 <span>↳</span>
-                <span>Outbound egress barrier: 0 bytes leaves loopback interface. Default-deny active.</span>
+                <span>Sovereign Boundary Invariant: 0 outbound network bytes verified. Default-deny active.</span>
               </div>
             </div>
           )}
         </div>
       </FadeContent>
 
-      {/* 5. MEMORAG Attention / Approval Card */}
-      {pendingApproval && (
-        <FadeContent blur duration={300} trigger="mount">
-          <div className="rounded-2xl border border-[#cc785c]/40 bg-[#fbf6f3] dark:bg-[#25201d] p-5 space-y-3.5 shadow-sm">
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-[#cc785c]/15 text-[#cc785c] shrink-0">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-2.5">
-                  <h3 className="text-sm font-semibold text-[#141413] dark:text-[#faf9f5] [font-family:var(--memorag-serif)] text-base">
-                    Can I go ahead with this step?
-                  </h3>
-                  <Badge variant="memorag">Permission Required</Badge>
-                </div>
-                <p className="text-xs text-[#6c6a64] dark:text-[#a09d96] leading-relaxed">
-                  I am preparing to{' '}
-                  <strong className="text-[#141413] dark:text-[#faf9f5] font-medium">
-                    {pendingApproval.actionTitle.toLowerCase()}
-                  </strong>
-                  . This will execute local workspace operations with side effects.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-[#cc785c]/20 flex items-center justify-end gap-2.5">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => resolveApproval(pendingApproval.id, 'rejected', 'Declined by user')}
-              >
-                Don&apos;t allow
-              </Button>
-              <button
-                type="button"
-                onClick={() => resolveApproval(pendingApproval.id, 'approved')}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-full text-white bg-[#cc785c] hover:bg-[#a9583e] cursor-pointer shadow-xs active:scale-95 transition-all"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Allow Action</span>
-              </button>
-            </div>
-          </div>
-        </FadeContent>
-      )}
-
-      {/* 6. Recent Conversation Stream in Editorial Bubbles */}
+      {/* ====================================================================
+          5. CONVERSATION STREAM (Claude Ergonomics + Replicate Color Harmony)
+          ==================================================================== */}
       {messages.length > 1 && (
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6c6a64] dark:text-[#8e8b82] font-mono">
-              Conversation History
+        <section className="space-y-4 pt-2">
+          <div className="flex items-center justify-between border-b border-subtle pb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-dim font-mono">
+              Conversational Ledger
             </h3>
-            <span className="text-[11px] text-[#cc785c] font-mono">MEMORAG Conversational Ledger</span>
+            <span className="text-[11px] text-[#ea2804] font-mono">
+              AES-256 Verified
+            </span>
           </div>
 
-          <div className="space-y-3.5">
-            {messages.slice(-4).map((msg) => {
+          <div className="space-y-4">
+            {messages.map((msg) => {
               if (msg.role === 'system') return null;
               const isUser = msg.role === 'user';
+
               return (
                 <div
                   key={msg.id}
                   className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`p-4 rounded-2xl max-w-xl text-sm leading-relaxed transition-all ${
+                    className={`p-4 rounded-2xl max-w-xl text-sm leading-relaxed transition-colors duration-150 ${
                       isUser
-                        ? 'bg-[#f5f0e8] dark:bg-[#252320] text-[#141413] dark:text-[#faf9f5] border border-[#e6dfd8] dark:border-[#33312c] ml-auto rounded-tr-xs'
-                        : 'bg-surface dark:bg-[#1f1e1b] text-[#141413] dark:text-[#faf9f5] border border-[#e6dfd8] dark:border-[#33312c] shadow-xs rounded-tl-xs'
+                        ? 'bg-elevated text-main border border-subtle ml-auto rounded-tr-xs'
+                        : 'bg-surface text-main border border-subtle shadow-xs rounded-tl-xs'
                     }`}
                   >
                     {!isUser && (
-                      <div className="flex items-center gap-1.5 mb-1.5 text-[#cc785c] text-xs font-serif [font-family:var(--memorag-serif)]">
+                      <div className="flex items-center gap-1.5 mb-2 text-[#ea2804] text-xs font-editorial-serif">
                         <span>✻</span>
-                        <span className="font-medium">MEMORAG Assistant</span>
+                        <span className="font-medium tracking-tight">MEMORAG Assistant</span>
                       </div>
                     )}
                     <p className="whitespace-pre-wrap">{msg.content}</p>
+
+                    {/* Citations / Memory Rune Tags if present */}
+                    {msg.citedMemoryIds && msg.citedMemoryIds.length > 0 && (
+                      <div className="mt-2.5 pt-2 border-t border-subtle/50 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-faint">Memory runes:</span>
+                        {msg.citedMemoryIds.map((id) => (
+                          <span
+                            key={id}
+                            className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-elevated border border-subtle text-dim"
+                          >
+                            #{id}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     <span
                       suppressHydrationWarning
-                      className="block mt-2 text-[10px] text-[#8e8b82] dark:text-[#6c6a64] text-right font-mono"
+                      className="block mt-2 text-[10px] text-faint text-right font-mono"
                     >
                       {msg.timestamp}
                     </span>
@@ -239,19 +303,24 @@ export const UserHomeView: React.FC = () => {
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* 7. What I'm Working On (Simplified Task Overview) */}
-      <div className="space-y-3 pt-2">
+      {/* ====================================================================
+          6. ACTIVE MULTI-STEP TASKS OVERVIEW
+          ==================================================================== */}
+      <section className="space-y-3 pt-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6c6a64] dark:text-[#8e8b82] font-mono">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-dim font-mono">
             Active Multi-Step Tasks
           </h3>
-          <span className="text-xs text-[#6c6a64] dark:text-[#8e8b82] inline-flex items-center gap-1 font-mono">
-            <CountUp to={runningTasksCount} duration={0.6} />
-            <span>in progress</span>
-          </span>
+          <Link
+            href="/tasks"
+            className="text-xs text-[#ea2804] hover:underline flex items-center gap-1 font-mono cursor-pointer"
+          >
+            <span>View Task DAG</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
         <div className="space-y-2.5">
@@ -261,31 +330,34 @@ export const UserHomeView: React.FC = () => {
             const completedStepsCount = task.steps.filter((s) => s.status === 'completed').length;
 
             return (
-              <FadeContent key={task.id} blur duration={300} trigger="mount">
-                <div className="rounded-xl p-4 bg-surface dark:bg-[#1f1e1b] border border-[#e6dfd8] dark:border-[#33312c] hover:border-[#cc785c]/40 transition-colors">
+              <FadeContent key={task.id} blur duration={250} trigger="mount">
+                <Link
+                  href="/tasks"
+                  className="block rounded-xl p-4 bg-surface border border-subtle hover:border-[#ea2804]/40 transition-colors"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[#141413] dark:text-[#faf9f5]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-main">
                           {task.goal}
                         </span>
                         <Badge
                           variant={
-                            isDone ? 'emerald' : isWaiting ? 'amber' : 'memorag'
+                            isDone ? 'emerald' : isWaiting ? 'amber' : 'replicate'
                           }
                         >
                           {isDone
-                            ? 'Finished'
+                            ? 'Completed'
                             : isWaiting
-                            ? 'Needs permission'
-                            : 'Working on it'}
+                            ? 'Approval Required'
+                            : 'In Progress'}
                         </Badge>
                       </div>
 
-                      <div className="text-xs text-[#6c6a64] dark:text-[#a09d96] flex items-center gap-2 pt-0.5">
+                      <div className="text-xs text-dim flex items-center gap-2 pt-0.5 font-mono">
                         <span>{task.steps.length} steps planned</span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1 font-mono">
+                        <span className="inline-flex items-center gap-1">
                           <CountUp to={completedStepsCount} duration={0.5} />
                           <span>completed</span>
                         </span>
@@ -294,21 +366,21 @@ export const UserHomeView: React.FC = () => {
 
                     <span
                       suppressHydrationWarning
-                      className="text-xs text-[#8e8b82] dark:text-[#6c6a64] shrink-0 flex items-center gap-1 font-mono"
+                      className="text-xs text-faint shrink-0 flex items-center gap-1 font-mono"
                     >
-                      <Clock className="w-3 h-3 text-[#8e8b82]" />
+                      <Clock className="w-3 h-3" />
                       {new Date(task.createdAt).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
                     </span>
                   </div>
-                </div>
+                </Link>
               </FadeContent>
             );
           })}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

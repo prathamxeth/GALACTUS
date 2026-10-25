@@ -139,6 +139,7 @@ def record_semantic_memory(
 
 
 @router.get("/memory", response_model=List[MemoryRecord])
+@router.get("/memories", response_model=List[MemoryRecord])
 def list_and_search_memories(
     query: Optional[str] = Query(None, description="In-process deterministic keyword search query"),
     memory_type: Optional[MemoryType] = Query(None, description="Filter by episodic or semantic"),

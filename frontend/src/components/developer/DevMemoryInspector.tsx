@@ -27,7 +27,7 @@ import {
   SemanticCategory,
   CreateSemanticFactRequest,
 } from '@/lib/api/types';
-import { FadeContent, CountUp, StarBorder } from '@/components/reactbits';
+import { FadeContent, CountUp } from '@/components/reactbits';
 import { CopyField } from '@/components/bencho';
 
 export const DevMemoryInspector: React.FC = () => {
@@ -152,10 +152,10 @@ export const DevMemoryInspector: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-main flex items-center gap-2">
-            <Database className="w-5 h-5 text-[#ea2804]" />
+            <Database className="w-5 h-5 text-[#cc785c]" />
             Memory Inspector (Mimir &amp; Muninn FR1)
           </h2>
-          <p className="text-xs text-dim mt-0.5 font-mono">
+          <p className="text-xs text-dim mt-0.5 font-subheading">
             Vector embeddings, semantic facts, episodic saga traces, and encrypted storage
           </p>
         </div>
@@ -172,19 +172,17 @@ export const DevMemoryInspector: React.FC = () => {
             Export Memory Vault
           </Button>
 
-          <StarBorder
-            as="button"
+          <Button
+            size="sm"
+            variant="dev"
             onClick={() => {
               setCreateError(null);
               setIsCreateOpen(true);
             }}
-            color="#ea2804"
-            trailColor="rgba(234, 40, 4, 0.3)"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full text-white bg-[#ea2804] hover:bg-[#c01f00] cursor-pointer shadow-xs active:scale-98 transition-transform font-mono"
+            icon={<Plus className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Inscribe Semantic Fact</span>
-          </StarBorder>
+            Inscribe Semantic Fact
+          </Button>
         </div>
       </div>
 
@@ -226,13 +224,13 @@ export const DevMemoryInspector: React.FC = () => {
 
       {/* Filter Toolbar with Replicate Pill Groups & CountUp */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-1.5 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono tabular-nums">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
+            className={`px-3.5 py-1 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
               activeTab === 'all'
-                ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                 : 'text-dim hover:text-main'
             }`}
           >
@@ -241,9 +239,9 @@ export const DevMemoryInspector: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('episodic')}
-            className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
+            className={`px-3.5 py-1 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
               activeTab === 'episodic'
-                ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                 : 'text-dim hover:text-main'
             }`}
           >
@@ -252,9 +250,9 @@ export const DevMemoryInspector: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('semantic')}
-            className={`px-3.5 py-1 rounded-full cursor-pointer transition-all ${
+            className={`px-3.5 py-1 rounded-full cursor-pointer transition-colors duration-150 active:translate-y-px select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
               activeTab === 'semantic'
-                ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                 : 'text-dim hover:text-main'
             }`}
           >
@@ -271,7 +269,7 @@ export const DevMemoryInspector: React.FC = () => {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-2.5 py-0.5 rounded-full cursor-pointer capitalize text-[11px] transition-colors ${
                   categoryFilter === cat
-                    ? 'bg-[#ea2804] text-white font-semibold shadow-xs'
+                    ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
                     : 'text-dim hover:text-main'
                 }`}
               >
@@ -288,7 +286,7 @@ export const DevMemoryInspector: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search runes, tags, or subject keys..."
-            className="w-full pl-9 pr-8 py-1.5 rounded-full bg-surface/90 border border-subtle text-xs font-mono text-main placeholder-faint focus:border-[#ea2804] focus:outline-none transition-colors"
+            className="w-full pl-9 pr-8 py-1.5 rounded-full bg-surface/90 border border-subtle text-xs font-mono text-main placeholder-faint focus:border-[#cc785c] focus:outline-none transition-colors"
           />
           {search && (
             <button
@@ -362,6 +360,16 @@ export const DevMemoryInspector: React.FC = () => {
                         <span className="text-[10px] text-faint font-mono inline-flex items-center gap-1">
                           <CountUp to={sem.tokens} duration={0.3} />
                           <span>tokens</span>
+                        </span>
+                      )}
+
+                      {mem.isBackendRecord ? (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                          LIVE DB
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          PREVIEW
                         </span>
                       )}
                     </div>
@@ -540,7 +548,7 @@ export const DevMemoryInspector: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              variant="primary"
+              variant="dev"
               size="sm"
               loading={isCreatingFact}
               icon={<CheckCircle2 className="w-3.5 h-3.5" />}

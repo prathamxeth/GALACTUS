@@ -1,0 +1,21 @@
+[
+  {
+    "id": "chk-1792939411362-n7wp",
+    "timestamp": "2026-10-25T14:43:31.362Z",
+    "title": "Verified Passing Baseline",
+    "gitCommit": "93e38d9",
+    "gitBranch": "NEXUS",
+    "isHealthy": true,
+    "testResults": {
+      "total": 33,
+      "passed": 33,
+      "failed": 0
+    },
+    "dependencyFingerprint": "69c8c356b4e8",
+    "modifiedFilesCount": 0,
+    "evidenceSnapshot": {
+      "headCommit": "93e38d9",
+      "packageJsonHash": "69c8c356b4e8"
+    }
+  }
+]

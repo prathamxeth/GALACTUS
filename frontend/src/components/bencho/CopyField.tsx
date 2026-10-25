@@ -84,7 +84,7 @@ export function CopyField({
       <button
         type="button"
         aria-label={copied ? 'Copied' : 'Copy'}
-        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded transition-all ${
+        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
           copied
             ? 'bg-emerald-500/20 text-emerald-400'
             : 'text-text-muted group-hover:text-text-primary group-hover:bg-bg-surface'

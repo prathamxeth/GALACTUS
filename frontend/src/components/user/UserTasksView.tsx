@@ -17,7 +17,7 @@ import { Modal } from '../ui/Modal';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
 import { TaskGraph, TaskStep } from '@/lib/api/types';
 import { FadeContent, CountUp, StarBorder } from '@/components/reactbits';
-import { StepPlayer, CopyField } from '@/components/bencho';
+import { StepPlayer } from '@/components/bencho';
 
 export const UserTasksView: React.FC = () => {
   const {
@@ -94,7 +94,7 @@ export const UserTasksView: React.FC = () => {
               Live 3s polling
             </span>
           </div>
-          <p className="text-xs text-dim mt-0.5">
+          <p className="text-xs text-dim mt-0.5 font-subheading">
             Follow the progress of current requests step-by-step.
           </p>
         </div>
@@ -115,7 +115,6 @@ export const UserTasksView: React.FC = () => {
             variant="primary"
             onClick={() => setIsNewTaskOpen(true)}
             icon={<Plus className="w-3.5 h-3.5" />}
-            className="transition-transform active:scale-95"
           >
             Ask me to do something
           </Button>
@@ -126,19 +125,19 @@ export const UserTasksView: React.FC = () => {
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3 text-center space-y-0.5">
           <span className="text-[10px] text-faint uppercase tracking-wider block">Running Tasks</span>
-          <div className="text-lg font-semibold text-main font-mono">
+          <div className="text-lg font-semibold text-main font-mono tabular-nums">
             <CountUp to={runningCount} duration={0.5} />
           </div>
         </Card>
         <Card className="p-3 text-center space-y-0.5">
           <span className="text-[10px] text-faint uppercase tracking-wider block">Needs Permission</span>
-          <div className="text-lg font-semibold text-amber-600 dark:text-amber-400 font-mono">
+          <div className="text-lg font-semibold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
             <CountUp to={pendingGatesCount} duration={0.5} />
           </div>
         </Card>
         <Card className="p-3 text-center space-y-0.5">
           <span className="text-[10px] text-faint uppercase tracking-wider block">Finished Tasks</span>
-          <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
             <CountUp to={completedCount} duration={0.5} />
           </div>
         </Card>
@@ -224,7 +223,7 @@ export const UserTasksView: React.FC = () => {
             return (
               <FadeContent key={task.id} blur duration={300} trigger="mount">
                 <Card
-                  className={`p-5 space-y-4 transition-all ${
+                  className={`p-5 space-y-4 transition-[border-color,background-color] duration-150 ease-out ${
                     isWaiting
                       ? 'border-amber-500/50 bg-amber-500/5'
                       : 'hover:border-medium'
@@ -334,7 +333,7 @@ export const UserTasksView: React.FC = () => {
                           }
                           color="#10b981"
                           trailColor="rgba(16, 185, 129, 0.3)"
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:scale-98 transition-transform"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-500 cursor-pointer shadow-xs active:translate-y-px transition-[background-color,transform] duration-150 ease-out select-none"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>{isResolvingId === (pendingApproval?.id || task.id) ? 'Authorizing...' : 'Allow action'}</span>

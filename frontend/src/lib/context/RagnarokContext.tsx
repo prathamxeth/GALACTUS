@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
   ReactNode,
 } from 'react';
 import {
@@ -22,9 +23,12 @@ import {
   DiagnosticMetric,
   PrivacySettings,
   AgentRuntimeStatus,
+  TruthfulRuntimeState,
   CreateSemanticFactRequest,
   PermissionApprovalPayload,
   PermissionApprovalResponse,
+  RiskLevel,
+  TaskStatus,
 } from '../api/types';
 import {
   DEMO_APPROVALS,
@@ -59,11 +63,18 @@ interface RagnarokContextValue {
   settings: PrivacySettings;
   runtimeStatus: AgentRuntimeStatus | null;
 
-  // Backend Connection
+  // Truthful Runtime State
+  runtimeState: TruthfulRuntimeState;
   isBackendOnline: boolean;
   isCheckingBackend: boolean;
   backendError: string | null;
   probeBackend: () => Promise<void>;
+
+  // Data Source Flags (visibly identify live vs preview data)
+  isMemoriesLive: boolean;
+  isTasksLive: boolean;
+  isSkillsLive: boolean;
+  isApprovalsLive: boolean;
 
   // Memory Operations
   isLoadingMemories: boolean;
@@ -111,16 +122,138 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // 4. Backend Connectivity & State
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
+  const [hasProbedOnce, setHasProbedOnce] = useState<boolean>(false);
   const [isCheckingBackend, setIsCheckingBackend] = useState<boolean>(false);
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [recentlyCompletedTaskId, setRecentlyCompletedTaskId] = useState<string | null>(null);
 
-  // 5. Memory State
+  // 5. Data Live/Mock Separation Flags
+  const [isMemoriesLive, setIsMemoriesLive] = useState<boolean>(false);
+  const [isTasksLive, setIsTasksLive] = useState<boolean>(false);
+  const [isSkillsLive, setIsSkillsLive] = useState<boolean>(false);
+  const [isApprovalsLive, setIsApprovalsLive] = useState<boolean>(false);
+
+  // 6. Loading States
   const [isLoadingMemories, setIsLoadingMemories] = useState<boolean>(false);
   const [memoryError, setMemoryError] = useState<string | null>(null);
-
-  // 6. Task State
   const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(false);
   const [taskError, setTaskError] = useState<string | null>(null);
+
+  // SSE Subscriptions Reference: task_id -> cleanup()
+  const sseSubscribersRef = useRef<Map<string, () => void>>(new Map());
+
+  // Attach SSE listener to a task
+  const attachTaskSSE = useCallback((taskId: string) => {
+    if (!taskId || sseSubscribersRef.current.has(taskId)) return;
+
+    const cleanup = api.subscribeToTaskEvents(
+      taskId,
+      (evt) => {
+        // Log event in system trace
+        setEventLogs((prev) => [
+          {
+            id: `evt-sse-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: new Date().toISOString(),
+            severity: evt.event === 'task_failed' ? 'ERROR' : evt.event === 'approval_required' ? 'WARN' : 'INFO',
+            eventType: `SSE_${evt.event.toUpperCase()}`,
+            message: `Task ${taskId}: ${evt.event}`,
+            taskId,
+            details: evt.data,
+          },
+          ...prev,
+        ]);
+
+        if (evt.event === 'task_started' || evt.event === 'task_completed' || evt.event === 'task_failed') {
+          const newStatus: TaskStatus =
+            evt.event === 'task_completed'
+              ? 'completed'
+              : evt.event === 'task_failed'
+              ? 'failed'
+              : 'running';
+
+          if (newStatus === 'completed') {
+            setRecentlyCompletedTaskId(taskId);
+          }
+
+          setTasks((prev) =>
+            prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+          );
+        }
+
+        if (evt.event === 'approval_required') {
+          const apprData = evt.data as Record<string, unknown>;
+          const approvalId = String(apprData.approval_id || `appr-${taskId}`);
+
+          setApprovals((prev) => {
+            if (prev.some((a) => a.id === approvalId)) return prev;
+            return [
+              {
+                id: approvalId,
+                taskId,
+                stepId: String(apprData.step_id || ''),
+                taskGoal: String(apprData.title || 'Protected Operation'),
+                actionTitle: String(apprData.title || 'Protected Operation'),
+                toolName: String(apprData.action || 'system.execute'),
+                riskLevel: (String(apprData.risk_level || 'high').toLowerCase()) as RiskLevel,
+                rationale: 'High-risk operation halted at Gjallarhorn approval gate awaiting explicit human authorization.',
+                commandOrPayload: JSON.stringify(apprData.parameters || {}, null, 2),
+                parameters: (apprData.parameters as Record<string, unknown>) || {},
+                createdAt: new Date().toISOString(),
+                status: 'pending',
+              },
+              ...prev,
+            ];
+          });
+
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id !== taskId) return t;
+              return {
+                ...t,
+                status: 'awaiting_approval',
+                steps: t.steps.map((s) =>
+                  s.id === apprData.step_id || s.stepNumber === 1
+                    ? { ...s, status: 'awaiting_approval', approvalRequestId: approvalId }
+                    : s
+                ),
+              };
+            })
+          );
+        }
+
+        if (evt.event === 'step_completed') {
+          const stepData = evt.data as Record<string, unknown>;
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id !== taskId) return t;
+              return {
+                ...t,
+                steps: t.steps.map((s) =>
+                  s.id === stepData.step_id
+                    ? { ...s, status: 'completed', output: String(stepData.output || 'Step completed') }
+                    : s
+                ),
+              };
+            })
+          );
+        }
+      },
+      () => {
+        // SSE disconnected
+      }
+    );
+
+    sseSubscribersRef.current.set(taskId, cleanup);
+  }, []);
+
+  // Cleanup SSE subscriptions on unmount
+  useEffect(() => {
+    const subscribers = sseSubscribersRef.current;
+    return () => {
+      subscribers.forEach((cleanup) => cleanup());
+      subscribers.clear();
+    };
+  }, []);
 
   // Initialize Mode and Theme from LocalStorage / System
   useEffect(() => {
@@ -131,8 +264,9 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           setModeState(savedMode);
         }
 
-        const savedTheme = (localStorage.getItem('memorag_theme') || localStorage.getItem('ragnarok_theme')) as AppearancePreset | null;
-        if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        const savedTheme = (localStorage.getItem('memorag_preset') || localStorage.getItem('ragnarok_theme')) as AppearancePreset | null;
+        const validThemes: AppearancePreset[] = ['light', 'dark', 'oled-light', 'oled-dark'];
+        if (savedTheme && validThemes.includes(savedTheme)) {
           setPresetState(savedTheme);
           document.documentElement.setAttribute('data-theme', savedTheme);
         } else {
@@ -169,15 +303,57 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  // --- Fetch Incomplete Tasks (/api/tasks/incomplete) ---
+  // --- Derive Truthful Runtime State (8 distinct verified states) ---
+  const runtimeState: TruthfulRuntimeState = useMemo(() => {
+    if (!isBackendOnline) {
+      return hasProbedOnce ? 'Backend Disconnected' : 'Offline Preview';
+    }
+
+    // Backend is verified online: evaluate tasks & human approvals
+    const hasPendingApproval = approvals.some((a) => a.status === 'pending');
+    if (hasPendingApproval) {
+      return 'Approval Required';
+    }
+
+    const hasRunningTask = tasks.some((t) => t.status === 'running');
+    if (hasRunningTask) {
+      return 'Task Running';
+    }
+
+    const latestTask = tasks[0];
+    if (latestTask && latestTask.status === 'failed') {
+      return 'Task Failed';
+    }
+
+    if (recentlyCompletedTaskId && tasks.some((t) => t.id === recentlyCompletedTaskId && t.status === 'completed')) {
+      return 'Task Completed';
+    }
+
+    // Distinguish AI Model Ready vs Backend Connected (Backend health != Ollama inference ready)
+    if (runtimeStatus?.ollamaStatus === 'connected' && runtimeStatus?.activeModelLoaded) {
+      return 'AI Model Ready';
+    }
+
+    return 'Backend Connected';
+  }, [
+    isBackendOnline,
+    hasProbedOnce,
+    approvals,
+    tasks,
+    recentlyCompletedTaskId,
+    runtimeStatus?.ollamaStatus,
+    runtimeStatus?.activeModelLoaded,
+  ]);
+
+  // --- Fetch Incomplete Tasks (/api/tasks/incomplete & /api/tasks) ---
   const fetchIncompleteTasks = useCallback(async () => {
     setIsLoadingTasks(true);
     setTaskError(null);
     try {
       const res = await api.getIncompleteTasks();
       if (res.isLive) {
+        setIsTasksLive(true);
         setTasks((prev) => {
-          // Merge incomplete tasks with existing completed ones
           const incompleteIds = new Set(res.data.map((t) => t.id));
           const completedRetained = prev.filter(
             (t) => t.status === 'completed' && !incompleteIds.has(t.id)
@@ -185,34 +361,21 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           return [...res.data, ...completedRetained];
         });
 
-        // Extract any approval requests from tasks paused awaiting approval
-        const newApprovals: ApprovalRequest[] = [];
-        for (const t of res.data) {
-          if (t.status === 'awaiting_approval') {
-            for (const s of t.steps) {
-              if (s.status === 'awaiting_approval' || s.approvalRequestId) {
-                newApprovals.push({
-                  id: s.approvalRequestId || `appr-${t.id}`,
-                  taskId: t.id,
-                  stepId: s.id,
-                  taskGoal: t.goal,
-                  actionTitle: s.title,
-                  toolName: s.skillName,
-                  riskLevel: 'high',
-                  rationale: s.output || 'Protected operation halted by PAUSED_APPROVAL gate.',
-                  commandOrPayload: JSON.stringify(s.parameters, null, 2),
-                  parameters: s.parameters,
-                  createdAt: t.updatedAt,
-                  status: 'pending',
-                });
-              }
-            }
+        // Also fetch live approvals from /api/approvals
+        const apprRes = await api.getApprovals();
+        if (apprRes.isLive) {
+          setIsApprovalsLive(true);
+          setApprovals(apprRes.data);
+        }
+
+        // Attach SSE for any active tasks
+        res.data.forEach((task) => {
+          if (task.status === 'running' || task.status === 'awaiting_approval') {
+            attachTaskSSE(task.id);
           }
-        }
-        if (newApprovals.length > 0) {
-          setApprovals(newApprovals);
-        }
+        });
       } else if (res.error) {
+        setIsTasksLive(false);
         setTaskError(res.error);
       }
     } catch (err: unknown) {
@@ -220,31 +383,31 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     } finally {
       setIsLoadingTasks(false);
     }
-  }, []);
+  }, [attachTaskSSE]);
 
   // --- Load Memories (Episodic + Semantic) ---
   const loadMemories = useCallback(async (query?: string) => {
     setIsLoadingMemories(true);
     setMemoryError(null);
     try {
-      const [epiRes, semRes] = await Promise.all([
-        api.getEpisodicMemories(),
-        api.getSemanticMemories(query),
-      ]);
-
-      if (epiRes.isLive || semRes.isLive) {
-        setMemories([...epiRes.data, ...semRes.data]);
+      const res = await api.getMemories(undefined, query);
+      if (res.isLive) {
+        setIsMemoriesLive(true);
+        setMemories(res.data);
       } else {
-        // Backend offline or error
-        const errMsg = epiRes.error || semRes.error || 'FastAPI memory endpoints offline';
-        setMemoryError(errMsg);
+        setIsMemoriesLive(false);
+        if (!isBackendOnline) {
+          setMemories(DEMO_MEMORIES.map((m) => ({ ...m, isBackendRecord: false })));
+        } else {
+          setMemoryError(res.error || 'FastAPI memory endpoints offline');
+        }
       }
     } catch (err: unknown) {
       setMemoryError(err instanceof Error ? err.message : 'Error loading memories');
     } finally {
       setIsLoadingMemories(false);
     }
-  }, []);
+  }, [isBackendOnline]);
 
   // --- Probe Backend Health ---
   const probeBackend = useCallback(async () => {
@@ -253,17 +416,21 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const health = await api.checkHealth();
       setIsBackendOnline(health.online);
+      setHasProbedOnce(true);
 
       if (health.online) {
         setBackendError(null);
-        // Refresh live data concurrently
         const [statRes, skillRes] = await Promise.all([
           api.getRuntimeStatus(),
           api.getSkills(),
         ]);
         setRuntimeStatus(statRes.data);
         if (skillRes.isLive) {
+          setIsSkillsLive(true);
           setSkills(skillRes.data);
+        } else {
+          setIsSkillsLive(false);
+          setSkills(skillRes.data); // tagged with isMock: true
         }
         await Promise.all([fetchIncompleteTasks(), loadMemories()]);
       } else {
@@ -271,6 +438,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
     } catch (err: unknown) {
       setIsBackendOnline(false);
+      setHasProbedOnce(true);
       setBackendError(err instanceof Error ? err.message : 'Backend connection failed');
     } finally {
       setIsCheckingBackend(false);
@@ -331,7 +499,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     return { success: false, error: res.error || `Failed to delete memory ${strId}` };
   };
 
-  // --- Export Memories (GET /api/memory/export) ---
+  // --- Export Memories (GET /api/memory/export/all) ---
   const exportMemories = async (): Promise<{
     success: boolean;
     content?: string;
@@ -340,7 +508,6 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   }> => {
     const res = await api.exportMemories();
     if (res.isLive && res.data.content) {
-      // Trigger download in browser
       const blob = new Blob([res.data.content], { type: res.data.mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -374,7 +541,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
   };
 
-  // --- Submit Permission Approval (POST /api/permissions/approve) ---
+  // --- Submit Permission Approval (POST /api/permissions/approve & /api/approvals/{id}) ---
   const submitPermissionApproval = async (
     payload: PermissionApprovalPayload
   ): Promise<PermissionApprovalResponse> => {
@@ -389,8 +556,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       )
     );
 
-    // Note: Never assume returned authorization means underlying tool action completed!
-    // We update the step to reflect authorization status, keeping status running until backend confirms.
+    // Reflect decision in task steps
     setTasks((prev) =>
       prev.map((t) => {
         const matchesTask = t.id === payload.task_id;
@@ -431,6 +597,11 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       },
       ...prev,
     ]);
+
+    // Resync incomplete tasks
+    if (isBackendOnline) {
+      setTimeout(() => fetchIncompleteTasks(), 800);
+    }
 
     return res.data;
   };
@@ -473,6 +644,36 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const response = await api.sendPrompt(prompt, sendMode);
       setMessages((prev) => [...prev, response.data]);
+
+      // If backend created an active task, sync tasks and attach SSE
+      if (response.data.relatedTaskId) {
+        attachTaskSSE(response.data.relatedTaskId);
+        await fetchIncompleteTasks();
+      }
+
+      if (response.data.actionProposal) {
+        const ap = response.data.actionProposal;
+        setApprovals((prev) => {
+          if (prev.some((a) => a.id === ap.id)) return prev;
+          return [
+            {
+              id: ap.id,
+              taskId: response.data.relatedTaskId || `task-${Date.now()}`,
+              stepId: `step-${ap.id}`,
+              taskGoal: ap.actionTitle,
+              actionTitle: ap.actionTitle,
+              toolName: ap.toolName,
+              riskLevel: ap.riskLevel,
+              rationale: ap.description,
+              commandOrPayload: JSON.stringify(ap.payload, null, 2),
+              parameters: ap.payload,
+              createdAt: new Date().toISOString(),
+              status: 'pending',
+            },
+            ...prev,
+          ];
+        });
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -487,9 +688,30 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   // --- Create Task ---
-  const createTask = (goal: string, priority: 'low' | 'normal' | 'high' = 'normal') => {
+  const createTask = async (goal: string, priority: 'low' | 'normal' | 'high' = 'normal') => {
+    if (isBackendOnline) {
+      const res = await api.createTask(goal, priority);
+      if (res.isLive && res.data) {
+        setTasks((prev) => [res.data as TaskGraph, ...prev]);
+        attachTaskSSE(res.data.id);
+        setEventLogs((prev) => [
+          {
+            id: `evt-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            severity: 'INFO',
+            eventType: 'TASK_DISPATCH',
+            message: `New task graph initialized on backend: ${goal}`,
+            taskId: res.data!.id,
+          },
+          ...prev,
+        ]);
+        return;
+      }
+    }
+
+    // Staging Preview Task
     const newTask: TaskGraph = {
-      id: `task-${Date.now().toString().slice(-6)}`,
+      id: `task-prev-${Date.now().toString().slice(-6)}`,
       goal: goal.trim(),
       status: 'running',
       createdAt: new Date().toISOString(),
@@ -504,7 +726,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           skillName: 'workflow.planner',
           status: 'completed',
           parameters: { goal },
-          output: 'Plan generated with 3 sequential steps.',
+          output: '[Staged Preview] Plan generated with 3 sequential steps.',
           reflectionAttempt: 0,
         },
         {
@@ -536,7 +758,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
         timestamp: new Date().toISOString(),
         severity: 'INFO',
         eventType: 'TASK_DISPATCH',
-        message: `New task graph initialized: ${goal}`,
+        message: `[Preview] Staged task graph initialized: ${goal}`,
         taskId: newTask.id,
       },
       ...prev,
@@ -577,10 +799,15 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
         diagnosticMetrics,
         settings,
         runtimeStatus,
+        runtimeState,
         isBackendOnline,
         isCheckingBackend,
         backendError,
         probeBackend,
+        isMemoriesLive,
+        isTasksLive,
+        isSkillsLive,
+        isApprovalsLive,
         isLoadingMemories,
         memoryError,
         loadMemories,

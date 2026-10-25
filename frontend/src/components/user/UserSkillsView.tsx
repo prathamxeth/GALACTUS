@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {
-  Sparkles,
+  Brain,
   Mail,
   Code,
   FolderTree,
@@ -33,7 +33,7 @@ export const UserSkillsView: React.FC = () => {
     {
       title: 'Remembering preferences and context',
       description: 'I recall prior conversations, project rules, and deadlines so you never have to repeat yourself.',
-      icon: Sparkles,
+      icon: Brain,
       badge: 'Continuous memory',
     },
     {
@@ -52,7 +52,7 @@ export const UserSkillsView: React.FC = () => {
           <h2 className="text-xl sm:text-2xl font-semibold text-main">
             Things I can help with
           </h2>
-          <p className="text-xs text-dim mt-0.5">
+          <p className="text-xs text-dim mt-0.5 font-subheading">
             Core skills and tasks I can assist you with on this computer.
           </p>
         </div>
@@ -88,7 +88,7 @@ export const UserSkillsView: React.FC = () => {
             <Radio className="w-5 h-5 text-[#ea2804]" />
             Things I watch for
           </h2>
-          <p className="text-xs text-dim mt-0.5">
+          <p className="text-xs text-dim mt-0.5 font-subheading">
             Helpful background assistants that monitor files and deadlines without disturbing you.
           </p>
         </div>
@@ -122,7 +122,7 @@ export const UserSkillsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => toggleSentinel(sentinel.id)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-in-out focus:outline-none active:scale-95 ${
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 active:translate-y-px ${
                     sentinel.isActive ? 'bg-[#ea2804]' : 'bg-subtle'
                   }`}
                   aria-label="Toggle background watch"

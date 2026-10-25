@@ -3,6 +3,16 @@
  * Aligned with MEMORAG Research Proposal (FR1-FR4, NFR1-NFR4)
  */
 
+export type TruthfulRuntimeState =
+  | 'Offline Preview'
+  | 'Backend Disconnected'
+  | 'Backend Connected'
+  | 'AI Model Ready'
+  | 'Task Running'
+  | 'Approval Required'
+  | 'Task Failed'
+  | 'Task Completed';
+
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export type TaskStatus = 'queued' | 'running' | 'awaiting_approval' | 'completed' | 'failed';
@@ -19,7 +29,7 @@ export type TriggerType = 'file_watcher' | 'cron' | 'inbox_poll' | 'system_event
 
 export type AudienceMode = 'user' | 'developer';
 
-export type AppearancePreset = 'light' | 'dark';
+export type AppearancePreset = 'light' | 'dark' | 'oled-light' | 'oled-dark';
 
 export interface SystemEventLog {
   id: string;
@@ -65,6 +75,14 @@ export interface AgentRuntimeStatus {
   };
   activeSentinelsCount: number;
   pendingApprovalsCount: number;
+  activeModelLoaded?: boolean;
+  serviceName?: string;
+}
+
+export interface SSETaskEvent {
+  task_id: string;
+  event: string;
+  data: Record<string, unknown>;
 }
 
 // --- Chat & Command Center ---
@@ -313,3 +331,144 @@ export interface PrivacySettings {
   backgroundTriggersEnabled: boolean;
   fastApiBackendUrl: string;
 }
+
+// ============================================================================
+// MEMORAG Forge Diagnostics & Project Flight Recorder (Authoritative Contracts)
+// ============================================================================
+
+export type FindingCategory =
+  | 'syntax_error'
+  | 'dependency_mismatch'
+  | 'missing_toolchain'
+  | 'test_failure'
+  | 'build_failure'
+  | 'config_error'
+  | 'permission_violation'
+  | 'insufficient_evidence'
+  | 'environment_inspection'
+  | 'unknown';
+
+export type DiagnosticSourceType =
+  | 'command_output'
+  | 'git_diff'
+  | 'environment_inspection'
+  | 'static_check'
+  | 'memory_vault'
+  | 'toolchain_check'
+  | 'llm_hypothesis';
+
+export type FindingStatus = 'verified' | 'hypothesis' | 'disproved';
+
+export interface EvidenceFinding {
+  finding_id: string;
+  task_id: string;
+  category: FindingCategory;
+  summary: string;
+  evidence_refs: string[];
+  source_type: DiagnosticSourceType;
+  observed_at?: string;
+  confidence: number; // 0.0 to 1.0
+  status: FindingStatus;
+  limitations?: string | null;
+}
+
+export interface ProposedAction {
+  action_id?: string;
+  action_type: 'file_patch' | 'file_write' | 'install_package' | 'command' | string;
+  target_path?: string | null;
+  diff_patch?: string | null;
+  content?: string | null;
+  command?: string | null;
+  risk_level: RiskLevel;
+  requires_approval: boolean;
+}
+
+export interface RepairProposal {
+  proposal_id: string;
+  task_id: string;
+  summary: string;
+  explanation: string;
+  supporting_evidence_ids: string[];
+  files_to_modify: string[];
+  exact_patch?: string | null;
+  actions: ProposedAction[];
+  risk_level: RiskLevel;
+  requires_approval: boolean;
+  expected_verification_commands: string[];
+  limitations?: string | null;
+  recovery_checkpoint_id?: string | null;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'FAILED' | string;
+  approval_id?: string | null;
+}
+
+export interface RecoveryOption {
+  recovery_id: string;
+  task_id: string;
+  description: string;
+  checkpoint_id?: string | null;
+  backup_path?: string | null;
+  is_available: boolean;
+  recovery_command?: string | null;
+}
+
+export interface VerificationResult {
+  verification_id: string;
+  task_id: string;
+  proposal_id?: string | null;
+  passed: boolean;
+  commands_executed: string[];
+  exit_codes: Record<string, number>;
+  outputs: Record<string, string>;
+  summary: string;
+  executed_at?: string;
+}
+
+export type DiagnosticTaskStatus =
+  | 'IDLE'
+  | 'INSPECTING'
+  | 'DIAGNOSED'
+  | 'AWAITING_APPROVAL'
+  | 'REPAIRING'
+  | 'VERIFIED'
+  | 'FAILED'
+  | 'RECOVERED'
+  | 'OFFLINE'
+  | 'ERROR';
+
+export interface DiagnosticReport {
+  task_id: string;
+  project_root: string;
+  user_request: string;
+  observed_facts: EvidenceFinding[];
+  relevant_memory: Record<string, unknown>[];
+  hypotheses: EvidenceFinding[];
+  proposed_repair?: RepairProposal | null;
+  approval_requirements?: Record<string, unknown>;
+  verification_results?: VerificationResult | null;
+  recovery_options: RecoveryOption[];
+  status: DiagnosticTaskStatus | string;
+  diagnosed_at?: string;
+}
+
+export interface BackendFlightRecorderEvent {
+  event_id: string;
+  task_id: string;
+  event_type: string;
+  timestamp: string;
+  details: Record<string, unknown>;
+  evidence_refs: string[];
+  source: string;
+}
+
+export interface AnalyzeProjectRequest {
+  project_root: string;
+  user_request?: string;
+}
+
+export interface ResolveRepairRequest {
+  approval_id: string;
+  decision: 'approved' | 'rejected';
+  notes?: string | null;
+}
+
+export type SSEStreamStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
