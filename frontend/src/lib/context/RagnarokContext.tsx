@@ -578,6 +578,22 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
       )
     );
 
+    // Update actionProposal status in messages state
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.actionProposal &&
+        (m.actionProposal.id === payload.request_id || m.actionProposal.id === payload.requestId)
+          ? {
+              ...m,
+              actionProposal: {
+                ...m.actionProposal,
+                status: payload.decision === 'approved' ? 'approved' : 'rejected',
+              },
+            }
+          : m
+      )
+    );
+
     // Reflect decision in task steps
     setTasks((prev) =>
       prev.map((t) => {

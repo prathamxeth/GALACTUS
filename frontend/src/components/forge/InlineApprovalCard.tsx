@@ -9,7 +9,95 @@ import {
   Loader2,
   FileCode,
   Terminal,
+  Clock,
+  HelpCircle,
 } from 'lucide-react';
+
+export type ApprovalStatusCategory = 'pending' | 'approved' | 'rejected' | 'unknown';
+
+export interface ApprovalStatusMeta {
+  category: ApprovalStatusCategory;
+  label: 'Awaiting approval' | 'Approved' | 'Rejected' | 'Unknown';
+  badgeClass: string;
+  isActionable: boolean;
+}
+
+/**
+ * Explicit Approval Status Mapper
+ * 1. pending / awaiting approval -> 'Awaiting approval' (neutral/amber)
+ * 2. approved / authorized -> 'Approved' (green)
+ * 3. rejected -> 'Rejected' (red)
+ * 4. unknown -> 'Unknown' (never green, neutral/zinc)
+ * Strictly avoids inferring authorization from truthy objects or flags.
+ */
+export function mapApprovalStatus(rawStatus: unknown): ApprovalStatusMeta {
+  if (typeof rawStatus !== 'string') {
+    return {
+      category: 'unknown',
+      label: 'Unknown',
+      badgeClass: 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50',
+      isActionable: false,
+    };
+  }
+
+  const s = rawStatus.trim().toLowerCase();
+
+  // 1. Pending / awaiting approval
+  if (
+    s === 'pending' ||
+    s === 'awaiting_approval' ||
+    s === 'awaiting approval' ||
+    s === 'awaiting-approval' ||
+    s === 'paused_approval' ||
+    s === 'pending_approval' ||
+    s === 'paused'
+  ) {
+    return {
+      category: 'pending',
+      label: 'Awaiting approval',
+      badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+      isActionable: true,
+    };
+  }
+
+  // 2. Approved / authorized
+  if (
+    s === 'approved' ||
+    s === 'authorized' ||
+    s === 'verified' ||
+    s === 'executed'
+  ) {
+    return {
+      category: 'approved',
+      label: 'Approved',
+      badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      isActionable: false,
+    };
+  }
+
+  // 3. Rejected
+  if (
+    s === 'rejected' ||
+    s === 'denied' ||
+    s === 'cancelled' ||
+    s === 'canceled'
+  ) {
+    return {
+      category: 'rejected',
+      label: 'Rejected',
+      badgeClass: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+      isActionable: false,
+    };
+  }
+
+  // 4. Unknown (Never Green)
+  return {
+    category: 'unknown',
+    label: 'Unknown',
+    badgeClass: 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50',
+    isActionable: false,
+  };
+}
 
 export interface InlineApprovalCardProps {
   approvalId: string;
@@ -17,6 +105,7 @@ export interface InlineApprovalCardProps {
   toolName?: string;
   riskLevel?: 'low' | 'medium' | 'high' | 'critical' | string;
   description?: string | null;
+  filesToModify?: string[];
   command?: string | null;
   payload?: Record<string, unknown> | string | null;
   diff?: string | null;
@@ -45,9 +134,7 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
   onOpenFile,
   className = '',
 }) => {
-  const isPending = status === 'pending';
-  const isApproved = status === 'approved';
-  const isRejected = status === 'rejected' || status === 'denied';
+  const statusMeta = mapApprovalStatus(status);
 
   const normalizedRisk = riskLevel.toLowerCase();
   const riskBadgeStyles =
@@ -63,8 +150,12 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
       aria-label={`Approval Gate: ${actionTitle}`}
       data-approval-id={approvalId}
       className={`rounded-xl border transition-colors select-text ${
-        isPending
+        statusMeta.category === 'pending'
           ? 'border-forge-accent/50 bg-forge-panel shadow-lg'
+          : statusMeta.category === 'approved'
+          ? 'border-emerald-500/30 bg-forge-panel'
+          : statusMeta.category === 'rejected'
+          ? 'border-rose-500/30 bg-forge-panel'
           : 'border-forge bg-forge-elevated/60'
       } p-4 space-y-3 font-sans ${className}`}
     >
@@ -101,26 +192,20 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
           </div>
         </div>
 
-        {/* Resolved Indicator (if not pending) */}
-        {!isPending && (
-          <div className="shrink-0">
-            {isApproved ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Authorized</span>
-              </span>
-            ) : isRejected ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                <XCircle className="w-3.5 h-3.5" />
-                <span>Rejected</span>
-              </span>
-            ) : (
-              <span className="text-[11px] font-mono text-forge-muted">
-                {status}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Explicit Status Badge */}
+        <div className="shrink-0">
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium border ${statusMeta.badgeClass}`}
+            data-testid="approval-status-badge"
+            data-status={statusMeta.category}
+          >
+            {statusMeta.category === 'approved' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+            {statusMeta.category === 'rejected' && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+            {statusMeta.category === 'pending' && <Clock className="w-3.5 h-3.5 text-amber-400" />}
+            {statusMeta.category === 'unknown' && <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />}
+            <span>{statusMeta.label}</span>
+          </span>
+        </div>
       </div>
 
       {/* Target Files List */}
@@ -177,8 +262,8 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
         <span>Gjallarhorn Gate: Local mutations require explicit operator authorization.</span>
       </div>
 
-      {/* Action Buttons (when pending) */}
-      {isPending && (
+      {/* Action Buttons (when pending / awaiting approval) */}
+      {statusMeta.isActionable && (
         <div className="pt-2 border-t border-forge flex items-center justify-end gap-2">
           <button
             type="button"

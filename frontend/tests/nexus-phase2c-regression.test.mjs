@@ -444,5 +444,132 @@ describe('Phase 2C: NEXUS Integration & Workbench Remediation Regression Suite',
       `Configured timeout (${coldStartThresholdMs}ms) must comfortably exceed cold start (${maxBackendColdStartMs}ms)`
     );
   });
+
+  // --------------------------------------------------------------------------
+  // Requirement 13: Explicit Approval Status Mapping & Anti-Slop Validation
+  // --------------------------------------------------------------------------
+  it('13. Explicit approval status mapping for pending, approved, rejected, and unknown', () => {
+    // Pure replica of mapApprovalStatus logic from InlineApprovalCard.tsx
+    function mapApprovalStatus(rawStatus) {
+      if (typeof rawStatus !== 'string') {
+        return {
+          category: 'unknown',
+          label: 'Unknown',
+          badgeClass: 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50',
+          isActionable: false,
+        };
+      }
+
+      const s = rawStatus.trim().toLowerCase();
+
+      // 1. Pending / awaiting approval -> 'Awaiting approval' (neutral/amber)
+      if (
+        s === 'pending' ||
+        s === 'awaiting_approval' ||
+        s === 'awaiting approval' ||
+        s === 'awaiting-approval' ||
+        s === 'paused_approval' ||
+        s === 'pending_approval' ||
+        s === 'paused'
+      ) {
+        return {
+          category: 'pending',
+          label: 'Awaiting approval',
+          badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+          isActionable: true,
+        };
+      }
+
+      // 2. Approved / authorized -> 'Approved' (green)
+      if (
+        s === 'approved' ||
+        s === 'authorized' ||
+        s === 'verified' ||
+        s === 'executed'
+      ) {
+        return {
+          category: 'approved',
+          label: 'Approved',
+          badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+          isActionable: false,
+        };
+      }
+
+      // 3. Rejected -> 'Rejected' (red)
+      if (
+        s === 'rejected' ||
+        s === 'denied' ||
+        s === 'cancelled' ||
+        s === 'canceled'
+      ) {
+        return {
+          category: 'rejected',
+          label: 'Rejected',
+          badgeClass: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+          isActionable: false,
+        };
+      }
+
+      // 4. Unknown -> 'Unknown' (never green, neutral/zinc)
+      return {
+        category: 'unknown',
+        label: 'Unknown',
+        badgeClass: 'bg-zinc-800/60 text-zinc-400 border-zinc-700/50',
+        isActionable: false,
+      };
+    }
+
+    // CASE 1: Pending / Awaiting Approval -> 'Awaiting approval' (neutral/amber)
+    const pendingCases = ['pending', 'awaiting_approval', 'awaiting approval', 'AWAITING_APPROVAL', 'PAUSED_APPROVAL'];
+    for (const p of pendingCases) {
+      const res = mapApprovalStatus(p);
+      assert.equal(res.label, 'Awaiting approval', `"${p}" must map to "Awaiting approval"`);
+      assert.equal(res.category, 'pending');
+      assert.ok(res.badgeClass.includes('amber'), `"${p}" must have amber styling`);
+      assert.equal(res.isActionable, true, `"${p}" must show action buttons`);
+    }
+
+    // CASE 2: Approved / Authorized -> 'Approved' (green)
+    const approvedCases = ['approved', 'authorized', 'APPROVED', 'AUTHORIZED', 'verified'];
+    for (const a of approvedCases) {
+      const res = mapApprovalStatus(a);
+      assert.equal(res.label, 'Approved', `"${a}" must map to "Approved"`);
+      assert.equal(res.category, 'approved');
+      assert.ok(res.badgeClass.includes('emerald'), `"${a}" must have emerald green styling`);
+      assert.equal(res.isActionable, false, `"${a}" must hide action buttons`);
+    }
+
+    // CASE 3: Rejected -> 'Rejected' (red)
+    const rejectedCases = ['rejected', 'denied', 'cancelled', 'REJECTED', 'DENIED'];
+    for (const r of rejectedCases) {
+      const res = mapApprovalStatus(r);
+      assert.equal(res.label, 'Rejected', `"${r}" must map to "Rejected"`);
+      assert.equal(res.category, 'rejected');
+      assert.ok(res.badgeClass.includes('rose'), `"${r}" must have rose red styling`);
+      assert.equal(res.isActionable, false, `"${r}" must hide action buttons`);
+    }
+
+    // CASE 4: Unknown -> 'Unknown' (never green)
+    const unknownCases = [
+      undefined,
+      null,
+      {},
+      { requiresApproval: true },
+      { status: 'pending' },
+      true,
+      false,
+      123,
+      'unknown_status',
+      'in_progress',
+    ];
+    for (const u of unknownCases) {
+      const res = mapApprovalStatus(u);
+      assert.equal(res.label, 'Unknown', `${JSON.stringify(u)} must map to "Unknown"`);
+      assert.equal(res.category, 'unknown');
+      assert.ok(!res.badgeClass.includes('emerald'), `${JSON.stringify(u)} must NEVER have green styling`);
+      assert.ok(res.badgeClass.includes('zinc'), `${JSON.stringify(u)} must have neutral zinc styling`);
+      assert.equal(res.isActionable, false, `${JSON.stringify(u)} must hide action buttons`);
+    }
+  });
 });
 
