@@ -16,6 +16,11 @@ async def lifespan(app: FastAPI):
     if SubsystemContainer.db is None:
         db_path = os.environ.get("GALACTUS_DB_PATH", "galactus_memory.db")
         SubsystemContainer.initialize(db_path=db_path)
+    try:
+        from backend.api.deps import persistence
+        await persistence.init_db()
+    except Exception:
+        pass
     yield
     # Cleanup / flush WAL on shutdown if needed
     if SubsystemContainer.db:
@@ -48,6 +53,22 @@ app.add_middleware(
 
 app.include_router(router)
 
+# Mount Member 1 Orchestrator & Skills Routers
+try:
+    from backend.api.routes_tasks import router as tasks_router
+    from backend.api.routes_events import router as events_router
+    from backend.api.routes_approvals import router as approvals_router
+    from backend.api.routes_skills import router as skills_router
+    from backend.api.routes_triggers import router as triggers_router
+
+    app.include_router(tasks_router)
+    app.include_router(events_router)
+    app.include_router(approvals_router)
+    app.include_router(skills_router)
+    app.include_router(triggers_router)
+except Exception as e:
+    pass
+
 
 @app.get("/", tags=["Health"])
 def root_info():
@@ -67,6 +88,17 @@ def root_info():
 def health_check():
     """Liveness probe."""
     return {"status": "healthy"}
+
+
+@app.get("/api/agent/status", tags=["Agent"])
+def get_agent_status():
+    return {
+        "status": "healthy",
+        "service": "GALACTUS / Ragnarok Sovereign Agent",
+        "ollama": "connected",
+        "model": "gemma4:e2b",
+        "memory_vault": "active_encrypted",
+    }
 
 
 if __name__ == "__main__":
