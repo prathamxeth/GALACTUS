@@ -1,0 +1,296 @@
+"""
+FastAPI route handlers for GALACTUS / Ragnarok Memory & Security Subsystem.
+Provides RESTful endpoints for Member 3 (Frontend Lead) and Member 1 (Agent Architect).
+All payloads are processed locally; plaintext is never transmitted externally.
+"""
+
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
+from app.memory.consolidation import MemoryConsolidationEngine
+from app.memory.crypto import (
+    CompositeKeyProvider,
+    DecryptionError,
+    EncryptionService,
+    MissingKeyError,
+    TestKeyProvider,
+)
+from app.memory.database import DatabaseManager
+from app.memory.models import (
+    EpisodicEvent,
+    EventCreate,
+    MemoryExport,
+    MemoryRecord,
+    MemoryType,
+    MemoryUpdate,
+    PermissionCheckRequest,
+    PermissionDecision,
+    SemanticCategory,
+    SemanticMemory,
+    SemanticMemoryCreate,
+    TaskCheckpoint,
+    VerificationStatus,
+)
+from app.memory.permissions import PermissionGateway
+from app.memory.recovery import TaskRecoveryManager
+from app.memory.service import MemoryService
+
+router = APIRouter(prefix="/api", tags=["Memory & Security"])
+
+# ============================================================================
+# Subsystem Dependency Container
+# ============================================================================
+
+class SubsystemContainer:
+    """Singleton container holding references to initialized subsystem services."""
+    db: Optional[DatabaseManager] = None
+    crypto: Optional[EncryptionService] = None
+    memory_service: Optional[MemoryService] = None
+    recovery_manager: Optional[TaskRecoveryManager] = None
+    permission_gateway: Optional[PermissionGateway] = None
+    consolidation_engine: Optional[MemoryConsolidationEngine] = None
+
+    @classmethod
+    def initialize(
+        cls,
+        db_path: str = "galactus_memory.db",
+        encryption_service: Optional[EncryptionService] = None,
+    ) -> None:
+        cls.db = DatabaseManager(db_path)
+        if encryption_service:
+            cls.crypto = encryption_service
+        elif cls.crypto is None:
+            key_provider = CompositeKeyProvider()
+            cls.crypto = EncryptionService(key_provider)
+
+        cls.memory_service = MemoryService(cls.db, cls.crypto)
+        cls.recovery_manager = TaskRecoveryManager(cls.db, cls.crypto)
+        cls.permission_gateway = PermissionGateway(cls.db)
+        cls.consolidation_engine = MemoryConsolidationEngine(cls.memory_service)
+
+
+def get_memory_service() -> MemoryService:
+    if SubsystemContainer.memory_service is None:
+        SubsystemContainer.initialize()
+    return SubsystemContainer.memory_service
+
+
+def get_recovery_manager() -> TaskRecoveryManager:
+    if SubsystemContainer.recovery_manager is None:
+        SubsystemContainer.initialize()
+    return SubsystemContainer.recovery_manager
+
+
+def get_permission_gateway() -> PermissionGateway:
+    if SubsystemContainer.permission_gateway is None:
+        SubsystemContainer.initialize()
+    return SubsystemContainer.permission_gateway
+
+
+def get_consolidation_engine() -> MemoryConsolidationEngine:
+    if SubsystemContainer.consolidation_engine is None:
+        SubsystemContainer.initialize()
+    return SubsystemContainer.consolidation_engine
+
+
+# ============================================================================
+# Memory Endpoints (Episodic & Semantic)
+# ============================================================================
+
+@router.post("/memory/events", response_model=EpisodicEvent, status_code=status.HTTP_201_CREATED)
+def record_episodic_event(
+    event: EventCreate,
+    service: MemoryService = Depends(get_memory_service),
+) -> EpisodicEvent:
+    """Stores an episodic event (user message, agent thought, tool execution)."""
+    try:
+        return service.store_event(
+            session_id=event.session_id,
+            event_type=event.event_type,
+            content=event.content,
+            source_ref=event.source_ref,
+            ttl_seconds=event.ttl_seconds,
+            metadata=event.metadata,
+        )
+    except (MissingKeyError, DecryptionError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/memory/semantic", response_model=SemanticMemory, status_code=status.HTTP_201_CREATED)
+def record_semantic_memory(
+    fact: SemanticMemoryCreate,
+    service: MemoryService = Depends(get_memory_service),
+) -> SemanticMemory:
+    """Stores a structured fact or preference with deterministic deduplication."""
+    try:
+        return service.store_memory(
+            category=fact.category,
+            subject=fact.subject,
+            predicate=fact.predicate,
+            object_value=fact.object_value,
+            verification_status=fact.verification_status,
+            confidence=fact.confidence,
+            source_ref=fact.source_ref,
+            ttl_seconds=fact.ttl_seconds,
+        )
+    except (MissingKeyError, DecryptionError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/memory", response_model=List[MemoryRecord])
+def list_and_search_memories(
+    query: Optional[str] = Query(None, description="In-process deterministic keyword search query"),
+    memory_type: Optional[MemoryType] = Query(None, description="Filter by episodic or semantic"),
+    category: Optional[str] = Query(None, description="Filter by category or event type"),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    include_expired: bool = Query(default=False),
+    service: MemoryService = Depends(get_memory_service),
+) -> List[MemoryRecord]:
+    """Lists and searches memories in process memory with pagination."""
+    return service.search_memories(
+        query=query,
+        memory_type=memory_type,
+        category=category,
+        limit=limit,
+        offset=offset,
+        include_expired=include_expired,
+    )
+
+
+@router.get("/memory/{memory_id}", response_model=MemoryRecord)
+def inspect_memory(
+    memory_id: str,
+    include_deleted: bool = Query(default=False),
+    service: MemoryService = Depends(get_memory_service),
+) -> MemoryRecord:
+    """Inspects a single memory by ID, decrypting its payload."""
+    record = service.get_memory(memory_id, include_deleted=include_deleted)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Memory record '{memory_id}' not found.",
+        )
+    return record
+
+
+@router.put("/memory/{memory_id}", response_model=MemoryRecord)
+def edit_memory(
+    memory_id: str,
+    update: MemoryUpdate,
+    service: MemoryService = Depends(get_memory_service),
+) -> MemoryRecord:
+    """User-controlled update of memory values, confidence, or verification status."""
+    try:
+        return service.update_memory(memory_id, update)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Memory record '{memory_id}' not found.",
+        )
+
+
+@router.delete("/memory/{memory_id}", status_code=status.HTTP_200_OK)
+def delete_memory(
+    memory_id: str,
+    hard: bool = Query(default=False, description="Permanent cryptographic overwrite if true, tombstone if false"),
+    service: MemoryService = Depends(get_memory_service),
+) -> Dict[str, Any]:
+    """Deletes a memory record (soft tombstone or permanent hard erasure)."""
+    success = service.delete_memory(memory_id, hard_delete=hard)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Memory record '{memory_id}' not found or already deleted.",
+        )
+    return {
+        "status": "success",
+        "id": memory_id,
+        "deletion_type": "hard" if hard else "soft",
+    }
+
+
+@router.get("/memory/export/all", response_model=MemoryExport)
+def export_memories(
+    memory_type: Optional[MemoryType] = Query(None),
+    category: Optional[str] = Query(None),
+    service: MemoryService = Depends(get_memory_service),
+) -> MemoryExport:
+    """Exports active memories in decrypted JSON format for user portability."""
+    return service.export_memories(memory_type=memory_type, category=category)
+
+
+@router.post("/memory/consolidate", status_code=status.HTTP_200_OK)
+def trigger_consolidation(
+    engine: MemoryConsolidationEngine = Depends(get_consolidation_engine),
+) -> Dict[str, Any]:
+    """Promotes recurring episodic events into semantic facts and prunes expired data."""
+    promoted = engine.consolidate_recent_events()
+    purged = engine.enforce_retention_and_expiration()
+    return {
+        "promoted_count": len(promoted),
+        "purged_count": purged,
+        "promoted_facts": promoted,
+    }
+
+
+# ============================================================================
+# Task Recovery Endpoints
+# ============================================================================
+
+@router.get("/tasks/incomplete", response_model=List[TaskCheckpoint])
+def list_incomplete_tasks(
+    recovery_mgr: TaskRecoveryManager = Depends(get_recovery_manager),
+) -> List[TaskCheckpoint]:
+    """Returns all unfinished tasks requiring recovery or continuation after reboot."""
+    return recovery_mgr.load_incomplete_tasks()
+
+
+@router.post("/tasks/checkpoints", status_code=status.HTTP_200_OK)
+def save_task_checkpoint(
+    checkpoint: TaskCheckpoint,
+    recovery_mgr: TaskRecoveryManager = Depends(get_recovery_manager),
+) -> Dict[str, str]:
+    """Saves an encrypted workflow task checkpoint."""
+    recovery_mgr.save_task_checkpoint(checkpoint)
+    return {"status": "saved", "task_id": checkpoint.task_id}
+
+
+# ============================================================================
+# Permissions Endpoints
+# ============================================================================
+
+class GrantApprovalRequest(BaseModel):
+    action: str
+    resource: str = "*"
+    ttl_seconds: int = Field(default=300, ge=10, le=3600)
+
+
+@router.post("/security/check-permission", response_model=PermissionDecision)
+def check_permission(
+    req: PermissionCheckRequest,
+    gateway: PermissionGateway = Depends(get_permission_gateway),
+) -> PermissionDecision:
+    """Evaluates whether an agent action is authorized under default-deny policy."""
+    return gateway.check_permission(
+        user_id=req.user_id,
+        action=req.action,
+        resource=req.resource,
+        risk_level=req.risk_level,
+        approval_token=req.approval_token,
+    )
+
+
+@router.post("/security/approve")
+def grant_human_approval(
+    req: GrantApprovalRequest,
+    gateway: PermissionGateway = Depends(get_permission_gateway),
+) -> Dict[str, Any]:
+    """User-facing endpoint to issue an ephemeral approval token for dangerous tools."""
+    token = gateway.grant_approval(
+        action=req.action,
+        resource=req.resource,
+        ttl_seconds=req.ttl_seconds,
+    )
+    return {"status": "approved", "token": token, "action": req.action, "resource": req.resource}
