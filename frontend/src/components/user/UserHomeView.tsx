@@ -8,10 +8,7 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  Shield,
-  Cpu,
   ArrowRight,
-  Database,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -61,14 +58,12 @@ export const UserHomeView: React.FC = () => {
           1. PRODUCT HERO (Restrained, Product-Focused, Local-First Invariant)
           ==================================================================== */}
       <section className="text-center space-y-4 pt-2 pb-1">
-        {/* Real Local Runtime Invariant Seal */}
+        {/* Local Runtime Indicator */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-elevated border border-subtle text-xs font-mono text-dim">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span className="text-main font-semibold">Local-First AI Agent</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          <span className="text-main font-semibold">Local AI</span>
           <span className="text-faint">•</span>
-          <span>100% Loopback ({runtimeStatus?.ollamaEndpoint ? '127.0.0.1:11434' : 'Ollama'})</span>
-          <span className="text-faint">•</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">0 Bytes Egress</span>
+          <span>{runtimeStatus?.model || 'gemma4:e2b'}</span>
         </div>
 
         {/* Distinctive Editorial Typographic Composition (Newsreader Serif + Replicate Ink) */}
@@ -79,24 +74,6 @@ export const UserHomeView: React.FC = () => {
         <p className="text-sm sm:text-base text-dim max-w-xl mx-auto leading-relaxed font-subheading">
           MEMORAG plans and executes multi-step workflows with persistent cryptographic memory. Sensitive file writes and commands only run with your explicit authorization.
         </p>
-
-        {/* Quick Product Specs Bar */}
-        <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-dim pt-1">
-          <div className="flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-[#ea2804]" />
-            <span>Model: {runtimeStatus?.model || 'llama3.2:3b'}</span>
-          </div>
-          <span className="text-subtle hidden sm:inline">•</span>
-          <div className="flex items-center gap-1.5">
-            <Database className="w-3.5 h-3.5 text-[#ea2804]" />
-            <span>Vault: AES-256-GCM</span>
-          </div>
-          <span className="text-subtle hidden sm:inline">•</span>
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Gjallarhorn Gate: Active</span>
-          </div>
-        </div>
       </section>
 
       {/* ====================================================================
@@ -114,14 +91,11 @@ export const UserHomeView: React.FC = () => {
             className="border-subtle hover:border-medium focus-within:border-[#ea2804] focus-within:ring-2 focus-within:ring-[#ea2804]/20 transition-[border-color,box-shadow] duration-150 shadow-xs"
           >
             <ChatInputTextArea
-              placeholder="Ask MEMORAG a question, query encrypted memory, or initiate an autonomous task..."
-              className="text-main placeholder-faint"
+              placeholder="Ask a question, search saved notes, or request a task..."
+              className="text-main placeholder-faint text-sm leading-relaxed"
             />
-            <div className="flex items-center justify-between px-3.5 pb-3 pt-1 border-t border-subtle/50 text-xs">
-              <span className="text-[11px] text-faint font-mono hidden sm:inline">
-                Press <kbd className="px-1.5 py-0.5 rounded bg-elevated border border-subtle text-dim">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 rounded bg-elevated border border-subtle text-dim">Shift+Enter</kbd> for newline
-              </span>
-              <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center justify-end px-3.5 pb-3 pt-1 border-t border-subtle/50 text-xs">
+              <div className="flex items-center gap-2">
                 <ChatInputSubmit onSubmit={handleSubmit} loading={isSending} />
               </div>
             </div>
@@ -135,7 +109,16 @@ export const UserHomeView: React.FC = () => {
               <button
                 key={idx}
                 type="button"
-                onClick={() => setInput(suggestion)}
+                onClick={() => {
+                  setInput(suggestion);
+                  setTimeout(() => {
+                    const textarea = document.querySelector('textarea') as HTMLTextAreaElement | null;
+                    if (textarea) {
+                      textarea.focus();
+                      textarea.setSelectionRange(suggestion.length, suggestion.length);
+                    }
+                  }, 50);
+                }}
                 className="px-3.5 py-1.5 rounded-full bg-elevated/70 hover:bg-elevated text-xs text-dim hover:text-main border border-subtle transition-colors duration-150 active:translate-y-px flex items-center gap-2 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent select-none"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#ea2804]/70 shrink-0" aria-hidden="true" />
@@ -169,7 +152,7 @@ export const UserHomeView: React.FC = () => {
                   </Badge>
                 </div>
                 <p className="text-xs text-dim leading-relaxed">
-                  MEMORAG is proposing to execute{' '}
+                  The agent is proposing to execute{' '}
                   <strong className="text-main font-medium">
                     {pendingApproval.actionTitle}
                   </strong>{' '}
@@ -216,7 +199,7 @@ export const UserHomeView: React.FC = () => {
           >
             <span className="flex items-center gap-2 font-medium">
               <span className="w-2 h-2 rounded-full bg-[#ea2804] animate-pulse" />
-              <span className="font-mono text-xs">MEMORAG Sovereign Decision Engine &amp; Verification</span>
+              <span className="font-mono text-xs">Reasoning &amp; Verification Trace</span>
               {isSending && <span className="text-[11px] font-mono text-[#ea2804]">(thinking...)</span>}
             </span>
             {showThinking ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -226,15 +209,15 @@ export const UserHomeView: React.FC = () => {
             <div className="p-4 space-y-2 font-mono text-[11px] text-dim bg-canvas border-t border-subtle leading-relaxed">
               <div className="flex items-center gap-2 text-[#ea2804]">
                 <span>✦</span>
-                <span>Context Retrieval: query_relevant_context() executed against local encrypted SQLite runes.</span>
+                <span>Context Retrieval: query_relevant_context() executed against local encrypted storage.</span>
               </div>
               <div className="flex items-center gap-2 text-dim">
                 <span>↳</span>
-                <span>Loopback Inference: Dispatched to local Ollama runtime ({runtimeStatus?.model || 'llama3.2:3b'}).</span>
+                <span>Inference: Dispatched to model runtime ({runtimeStatus?.model || 'gemma4:e2b'}).</span>
               </div>
               <div className="flex items-center gap-2 text-dim">
                 <span>↳</span>
-                <span>Sovereign Boundary Invariant: 0 outbound network bytes verified. Default-deny active.</span>
+                <span>Privacy: Local execution with 0 outbound network bytes.</span>
               </div>
             </div>
           )}
@@ -248,7 +231,7 @@ export const UserHomeView: React.FC = () => {
         <section className="space-y-4 pt-2">
           <div className="flex items-center justify-between border-b border-subtle pb-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-dim font-mono">
-              Conversational Ledger
+              Recent Conversation
             </h3>
             <span className="text-[11px] text-[#ea2804] font-mono">
               AES-256 Verified
@@ -275,15 +258,15 @@ export const UserHomeView: React.FC = () => {
                     {!isUser && (
                       <div className="flex items-center gap-1.5 mb-2 text-[#ea2804] text-xs font-editorial-serif">
                         <span>✻</span>
-                        <span className="font-medium tracking-tight">MEMORAG Assistant</span>
+                        <span className="font-medium tracking-tight">Assistant</span>
                       </div>
                     )}
                     <p className="whitespace-pre-wrap">{msg.content}</p>
 
-                    {/* Citations / Memory Rune Tags if present */}
+                    {/* Citations / Memory Tags if present */}
                     {msg.citedMemoryIds && msg.citedMemoryIds.length > 0 && (
                       <div className="mt-2.5 pt-2 border-t border-subtle/50 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-faint">Memory runes:</span>
+                        <span className="text-[10px] font-mono text-faint">Saved context:</span>
                         {msg.citedMemoryIds.map((id) => (
                           <span
                             key={id}

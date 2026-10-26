@@ -59,50 +59,57 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
 
   const pendingApprovalsCount = approvals.filter((a) => a.status === 'pending').length;
   const runningCount = tasks.filter((t) => t.status === 'running').length;
+  const completedCount = tasks.filter((t) => t.status === 'completed').length;
 
   return (
-    <div className="max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-5">
       {/* Top Header & Filter Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold text-main flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[#cc785c]" />
-              Live Execution &amp; Task Graph (FR3)
+              <Activity className="w-5 h-5 text-accent" />
+              Task Execution &amp; Pipeline
             </h2>
-            <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-mono bg-[#cc785c]/10 text-[#cc785c] border border-[#cc785c]/25">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#cc785c] animate-pulse" />
-              POLL /api/tasks/incomplete (3s)
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live (3s)
             </span>
           </div>
           <p className="text-xs text-dim mt-0.5 font-subheading">
-            Sub-task decomposition, step dependencies, and self-correction loops
+            Track multi-step execution graphs, step dependencies, and approval states.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Status Filter (Replicate Pill Group) */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-elevated/90 p-1 rounded-full border border-subtle text-xs font-mono">
-            {(['all', 'running', 'awaiting_approval', 'completed', 'failed'] as const).map(
-              (f) => {
-                const count = f === 'all' ? tasks.length : tasks.filter((t) => t.status === f).length;
-                const isActive = filter === f;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setFilter(f)}
-                    className={`px-3 py-1 rounded-full cursor-pointer capitalize transition-colors duration-150 active:translate-y-px select-none tabular-nums ${
-                      isActive
-                        ? 'bg-[#cc785c] text-white font-semibold shadow-xs'
-                        : 'text-dim hover:text-main'
-                    }`}
-                  >
-                    {f === 'awaiting_approval' ? 'PAUSED' : f} ({count})
-                  </button>
-                );
-              }
-            )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status Filter Pill Group */}
+          <div className="flex flex-wrap items-center gap-1 bg-elevated p-1 rounded-lg border border-subtle text-xs font-mono">
+            {(
+              [
+                { id: 'all', label: 'All' },
+                { id: 'running', label: 'Running' },
+                { id: 'awaiting_approval', label: 'Needs Approval' },
+                { id: 'completed', label: 'Completed' },
+                { id: 'failed', label: 'Failed' },
+              ] as const
+            ).map(({ id, label }) => {
+              const count = id === 'all' ? tasks.length : tasks.filter((t) => t.status === id).length;
+              const isActive = filter === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFilter(id)}
+                  className={`px-2.5 py-1 rounded-md cursor-pointer transition-all duration-150 active:translate-y-px select-none text-[11px] tabular-nums ${
+                    isActive
+                      ? 'bg-accent text-white font-semibold shadow-xs'
+                      : 'text-dim hover:text-main hover:bg-surface'
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              );
+            })}
           </div>
 
           <Button
@@ -112,7 +119,7 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
             loading={isLoadingTasks}
             icon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Poll Now
+            Refresh
           </Button>
 
           <Button
@@ -121,17 +128,45 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
             onClick={() => setIsModalOpen(true)}
             icon={<Plus className="w-4 h-4" />}
           >
-            Dispatch DAG
+            New Task
           </Button>
+        </div>
+      </div>
+
+      {/* Summary KPI Cards Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3 rounded-xl bg-surface border border-subtle text-center space-y-0.5">
+          <span className="text-[10px] text-dim uppercase tracking-wider block font-mono">Running</span>
+          <div className="text-lg font-semibold text-main font-mono tabular-nums">
+            <CountUp to={runningCount} duration={0.4} />
+          </div>
+        </div>
+        <div className="p-3 rounded-xl bg-surface border border-subtle text-center space-y-0.5">
+          <span className="text-[10px] text-amber-500 uppercase tracking-wider block font-mono">Needs Approval</span>
+          <div className="text-lg font-semibold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+            <CountUp to={pendingApprovalsCount} duration={0.4} />
+          </div>
+        </div>
+        <div className="p-3 rounded-xl bg-surface border border-subtle text-center space-y-0.5">
+          <span className="text-[10px] text-emerald-500 uppercase tracking-wider block font-mono">Completed</span>
+          <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            <CountUp to={completedCount} duration={0.4} />
+          </div>
+        </div>
+        <div className="p-3 rounded-xl bg-surface border border-subtle text-center space-y-0.5">
+          <span className="text-[10px] text-dim uppercase tracking-wider block font-mono">Total Tasks</span>
+          <div className="text-lg font-semibold text-main font-mono tabular-nums">
+            <CountUp to={tasks.length} duration={0.4} />
+          </div>
         </div>
       </div>
 
       {/* Backend Status Warning */}
       {!isBackendOnline && (
-        <div className="p-3.5 rounded-lg bg-surface border border-subtle flex items-center justify-between text-xs font-mono">
+        <div className="p-3 rounded-xl bg-surface border border-subtle flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-2 text-dim">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>FastAPI service offline at http://127.0.0.1:8000. Displaying local staging queue.</span>
+            <span>Backend service offline. Displaying locally staged tasks.</span>
           </div>
           <Button size="sm" variant="ghost" onClick={() => fetchIncompleteTasks()}>
             Retry
@@ -141,7 +176,7 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
 
       {/* Error Banner */}
       {taskError && (
-        <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs font-mono text-rose-800 dark:text-rose-200">
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs font-mono text-rose-800 dark:text-rose-200">
           <span>{taskError}</span>
           <Button size="sm" variant="outline" onClick={() => fetchIncompleteTasks()}>
             Retry
@@ -149,30 +184,18 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
         </div>
       )}
 
-      {/* DAG Dependency Status Notice with CountUp */}
-      <div className="p-3.5 rounded-lg bg-surface border border-subtle flex items-center justify-between text-xs font-mono">
-        <div className="flex items-center gap-2 text-dim">
-          <Layers className="w-4 h-4 text-sky-500" />
-          <span>Execution Graph Topology: Linear &amp; Multi-Hop Sequential Pipeline Active</span>
-        </div>
-        <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
-          <CountUp to={runningCount} duration={0.4} />
-          <span>Active Processes</span>
-        </span>
-      </div>
-
-      {/* Pending Approval Gate Warning */}
+      {/* Pending Approval Gate Alert */}
       {pendingApprovalsCount > 0 && (
         <FadeContent blur duration={300} trigger="mount">
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4 text-xs font-mono">
-            <div className="flex items-center gap-3">
-              <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-              <div>
-                <span className="font-semibold text-main block">
-                  {pendingApprovalsCount} Action Step Blocked at PAUSED_APPROVAL (POST /api/permissions/approve)
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="truncate">
+                <span className="font-semibold text-main block truncate">
+                  {pendingApprovalsCount} action step{pendingApprovalsCount > 1 ? 's' : ''} awaiting authorization
                 </span>
-                <span className="text-dim">
-                  High-risk skill invoked. Execution halted until cryptographic user authorization is submitted.
+                <span className="text-dim text-[11px] block truncate">
+                  High-risk action invoked. Execution paused at security gate.
                 </span>
               </div>
             </div>
@@ -184,9 +207,9 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
                 const pending = approvals.find((a) => a.status === 'pending');
                 if (pending) onOpenApproval(pending.id);
               }}
-              className="border-amber-500/40 text-amber-900 dark:text-amber-200 shrink-0 font-mono"
+              className="border-amber-500/40 text-amber-900 dark:text-amber-200 shrink-0 font-mono text-xs"
             >
-              Open Security Gate
+              Authorize
             </Button>
           </div>
         </FadeContent>
@@ -212,25 +235,25 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
         )}
       </div>
 
-      {/* Dispatch DAG Modal */}
+      {/* Create Task Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Dispatch Autonomous Task (DAG Graph)"
-        description="Submit a goal to the autonomous planning engine. The model will decompose the goal into sequential sub-tasks."
+        title="New Task Request"
+        description="Submit a goal to be planned and executed step-by-step."
       >
         <form onSubmit={handleCreate} className="space-y-4 font-mono text-xs">
           <div>
             <label className="text-main font-medium block mb-1">
-              Autonomous Objective / Goal:
+              Task Goal or Request:
             </label>
             <textarea
               value={newGoal}
               onChange={(e) => setNewGoal(e.target.value)}
-              placeholder="e.g. Audit codebase for OWASP vulnerabilities and draft patch plan..."
+              placeholder="e.g. Audit codebase for security vulnerabilities and draft patch plan..."
               rows={3}
               required
-              className="w-full rounded-lg bg-surface border border-subtle p-2.5 text-main placeholder-faint focus:outline-none focus:border-sky-500"
+              className="w-full rounded-lg bg-surface border border-subtle p-2.5 text-main placeholder-faint focus:outline-none focus:border-accent"
               autoFocus
             />
           </div>
@@ -244,11 +267,11 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
               onChange={(e) =>
                 setNewPriority(e.target.value as 'low' | 'normal' | 'high')
               }
-              className="w-full rounded-lg bg-surface border border-subtle p-2 text-main focus:outline-none focus:border-sky-500"
+              className="w-full rounded-lg bg-surface border border-subtle p-2 text-main focus:outline-none focus:border-accent"
             >
-              <option value="low">Low Priority (Background Co-routine)</option>
-              <option value="normal">Normal Priority (Interactive Pipeline)</option>
-              <option value="high">High Priority (Immediate Preemption)</option>
+              <option value="low">Low Priority</option>
+              <option value="normal">Normal Priority</option>
+              <option value="high">High Priority</option>
             </select>
           </div>
 
@@ -268,7 +291,7 @@ export const DevExecutionView: React.FC<{ onOpenApproval: (reqId: string) => voi
               disabled={!newGoal.trim()}
               icon={<Plus className="w-3.5 h-3.5" />}
             >
-              Enqueue DAG Graph
+              Create Task
             </Button>
           </div>
         </form>

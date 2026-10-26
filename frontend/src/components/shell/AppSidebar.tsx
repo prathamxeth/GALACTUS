@@ -39,7 +39,7 @@ export const AppSidebar: React.FC = () => {
   // Mode-Specific Navigation Items
   const userNavItems: NavItem[] = [
     {
-      name: 'Forge IDE',
+      name: 'Workbench',
       href: '/',
       icon: Laptop,
     },
@@ -49,24 +49,24 @@ export const AppSidebar: React.FC = () => {
       icon: Bot,
     },
     {
-      name: "What I'm Working On",
+      name: 'Tasks & Activity',
       href: '/tasks',
       icon: CheckCircle2,
-      badge: pendingCount > 0 ? `${pendingCount} need attention` : undefined,
+      badge: pendingCount > 0 ? `${pendingCount} pending` : undefined,
       badgeVariant: 'amber',
     },
     {
-      name: 'Things I Remember',
+      name: 'Memory',
       href: '/memory',
       icon: Brain,
     },
     {
-      name: 'Things I Can Do',
+      name: 'Skills',
       href: '/skills',
       icon: Wrench,
     },
     {
-      name: 'Privacy & Device',
+      name: 'Settings',
       href: '/settings',
       icon: ShieldCheck,
     },
@@ -74,39 +74,39 @@ export const AppSidebar: React.FC = () => {
 
   const devNavItems: NavItem[] = [
     {
-      name: 'Forge IDE',
+      name: 'Workbench',
       href: '/',
       icon: Laptop,
     },
     {
-      name: 'Overview Dashboard',
+      name: 'Dashboard',
       href: '/dashboard',
       icon: Terminal,
     },
     {
-      name: 'Live Execution & DAG',
+      name: 'Tasks & Activity',
       href: '/tasks',
       icon: Activity,
-      badge: pendingCount > 0 ? `${pendingCount} gate` : undefined,
+      badge: pendingCount > 0 ? `${pendingCount} pending` : undefined,
       badgeVariant: 'amber',
     },
     {
-      name: 'Memory Inspector',
+      name: 'Memory',
       href: '/memory',
       icon: Database,
     },
     {
-      name: 'Skill Registry',
+      name: 'Skills',
       href: '/skills',
       icon: SlidersHorizontal,
     },
     {
-      name: 'Diagnostics & Sentinels',
+      name: 'Diagnostics',
       href: '/diagnostics',
       icon: Radio,
     },
     {
-      name: 'Permissions & Settings',
+      name: 'Settings',
       href: '/settings',
       icon: ShieldCheck,
     },
@@ -227,10 +227,10 @@ export const AppSidebar: React.FC = () => {
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-mono text-dim uppercase tracking-wider flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-emerald-500 animate-pulse" />
-                Local Sentinel
+                System Status
               </span>
               <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                LOOPBACK
+                READY
               </span>
             </div>
 

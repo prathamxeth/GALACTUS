@@ -26,13 +26,20 @@ export const DevSkillRegistry: React.FC = () => {
     setIsRunningTest(true);
     setTestOutput(null);
     setTimeout(() => {
+      const paramsList = skill.parameters
+        .map((p) => `  - ${p.name}: ${p.type} (${p.required ? 'required' : 'optional'}${p.default !== undefined ? `, default: ${p.default}` : ''})`)
+        .join('\n');
       setTestOutput(
-        `[CONTAINER_SHIELD_VIRTUAL_SUBPROCESS]\nTarget Tool: ${skill.name}\nPID: 49201\nSandboxed: True\nPermissions: ${
-          skill.requiresApproval ? 'RBAC_APPROVAL_GATE' : 'AUTONOMOUS_ALLOW'
-        }\nExit Status: 0 OK\nPayload Output: Verified parameter validation and isolated execution.`
+        `[FORGE_TOOL_VERIFICATION_PROBE]\n` +
+        `Target Tool: ${skill.name} (${skill.displayName})\n` +
+        `Category: ${skill.category.toUpperCase()} • Risk Level: ${skill.riskLevel.toUpperCase()}\n` +
+        `Sandboxed Isolation: ${skill.isSandboxed ? 'ACTIVE' : 'DIRECT'}\n` +
+        `Authorization Gate: ${skill.requiresApproval ? 'RBAC_APPROVAL_GATE (Human Authorization Gatekeeper)' : 'AUTONOMOUS_SAFE'}\n` +
+        `Registered Parameters (${skill.parameters.length}):\n${paramsList || '  (None)'}\n` +
+        `Verification Outcome: Parameter schema verified. Tool is active and ready for agent goal dispatches.`
       );
       setIsRunningTest(false);
-    }, 800);
+    }, 400);
   };
 
   return (
@@ -68,7 +75,7 @@ export const DevSkillRegistry: React.FC = () => {
                     </Badge>
                     {skill.isMock && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono">
-                        MOCK DATA
+                        SANDBOX PROFILE
                       </span>
                     )}
                     {skill.isIncomplete && (

@@ -86,8 +86,8 @@ export interface ForgeContextValue {
   clearDiagnosticSession: () => void;
 
   // UI Panels
-  activeBottomTab: 'terminal' | 'problems' | 'checkpoints' | 'flight';
-  setActiveBottomTab: (tab: 'terminal' | 'problems' | 'checkpoints' | 'flight') => void;
+  activeBottomTab: 'terminal' | 'problems' | 'checkpoints' | 'flight' | 'system';
+  setActiveBottomTab: (tab: 'terminal' | 'problems' | 'checkpoints' | 'flight' | 'system') => void;
   activeLeftTab: 'agent' | 'explorer' | 'search' | 'git' | 'problems' | 'flight' | 'inspector' | 'memory' | 'skills';
   setActiveLeftTab: (tab: 'agent' | 'explorer' | 'search' | 'git' | 'problems' | 'flight' | 'inspector' | 'memory' | 'skills') => void;
   isCompanionOpen: boolean;
@@ -192,7 +192,7 @@ export const ForgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   // UI Panels State
-  const [activeBottomTab, setActiveBottomTab] = useState<'terminal' | 'problems' | 'checkpoints' | 'flight'>('terminal');
+  const [activeBottomTab, setActiveBottomTab] = useState<'terminal' | 'problems' | 'checkpoints' | 'flight' | 'system'>('terminal');
   const [activeLeftTab, setActiveLeftTab] = useState<'agent' | 'explorer' | 'search' | 'git' | 'problems' | 'flight' | 'inspector' | 'memory' | 'skills'>('agent');
   const [isCompanionOpen, setIsCompanionOpen] = useState(true);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);

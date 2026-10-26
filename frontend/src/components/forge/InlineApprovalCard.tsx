@@ -211,7 +211,7 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
       {/* Target Files List */}
       {filesToModify && filesToModify.length > 0 && (
         <div className="space-y-1 pt-1">
-          <span className="text-[10px] font-mono uppercase text-forge-muted block">
+          <span className="text-xs font-mono uppercase tracking-wider text-forge-muted block">
             Target Files:
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -220,10 +220,10 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => onOpenFile && onOpenFile(file)}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono bg-forge-elevated border border-forge text-forge-secondary hover:text-forge-primary hover:border-forge-accent transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono bg-forge-elevated border border-forge text-forge-secondary hover:text-forge-primary hover:border-forge-accent transition-colors cursor-pointer"
                 title={`Open ${file} in editor`}
               >
-                <FileCode className="w-3 h-3 text-forge-accent" />
+                <FileCode className="w-3.5 h-3.5 text-forge-accent" />
                 <span>{file}</span>
               </button>
             ))}
@@ -234,11 +234,11 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
       {/* Command / Payload Preview */}
       {(command || payload) && (
         <div className="space-y-1 pt-1">
-          <span className="text-[10px] font-mono uppercase text-forge-muted block flex items-center gap-1">
-            <Terminal className="w-3 h-3 text-forge-muted" />
+          <span className="text-xs font-mono uppercase tracking-wider text-forge-muted block flex items-center gap-1">
+            <Terminal className="w-3.5 h-3.5 text-forge-muted" />
             <span>Command / Payload:</span>
           </span>
-          <code className="block p-2 rounded bg-forge-canvas border border-forge text-[11px] font-mono text-forge-primary break-all whitespace-pre-wrap">
+          <code className="block p-2.5 rounded-lg bg-forge-canvas border border-forge text-xs font-mono text-forge-primary break-all whitespace-pre-wrap leading-relaxed">
             {command || (typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2))}
           </code>
         </div>
@@ -247,19 +247,19 @@ export const InlineApprovalCard: React.FC<InlineApprovalCardProps> = ({
       {/* Proposed Diff Preview */}
       {diff && (
         <div className="space-y-1 pt-1">
-          <span className="text-[10px] font-mono uppercase text-forge-muted block">
+          <span className="text-xs font-mono uppercase tracking-wider text-forge-muted block">
             Proposed Diff:
           </span>
-          <pre className="p-2.5 rounded-lg bg-forge-canvas border border-forge text-[10px] font-mono text-forge-secondary max-h-36 overflow-y-auto whitespace-pre custom-scrollbar">
+          <pre className="p-3 rounded-lg bg-forge-canvas border border-forge text-xs font-mono text-forge-secondary max-h-40 overflow-y-auto whitespace-pre custom-scrollbar leading-relaxed">
             {diff}
           </pre>
         </div>
       )}
 
       {/* Protected Loopback Invariant Note */}
-      <div className="flex items-center gap-1.5 text-[10px] text-forge-muted font-mono pt-1">
+      <div className="flex items-center gap-2 text-xs text-forge-muted font-mono pt-1">
         <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-        <span>Gjallarhorn Gate: Local mutations require explicit operator authorization.</span>
+        <span>Security Gate: Local mutations require explicit operator authorization.</span>
       </div>
 
       {/* Action Buttons (when pending / awaiting approval) */}

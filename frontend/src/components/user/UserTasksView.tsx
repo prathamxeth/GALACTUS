@@ -87,11 +87,11 @@ export const UserTasksView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-semibold text-main">
-              What I&apos;m working on
+              Active Requests &amp; Tasks
             </h2>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium font-mono">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium font-mono border border-emerald-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live 3s polling
+              Live (3s)
             </span>
           </div>
           <p className="text-xs text-dim mt-0.5 font-subheading">
@@ -107,7 +107,7 @@ export const UserTasksView: React.FC = () => {
             loading={isLoadingTasks}
             icon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Check status
+            Refresh
           </Button>
 
           <Button
@@ -116,29 +116,35 @@ export const UserTasksView: React.FC = () => {
             onClick={() => setIsNewTaskOpen(true)}
             icon={<Plus className="w-3.5 h-3.5" />}
           >
-            Ask me to do something
+            New Task
           </Button>
         </div>
       </div>
 
       {/* Summary KPI Strip with CountUp */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3 text-center space-y-0.5">
-          <span className="text-[10px] text-faint uppercase tracking-wider block">Running Tasks</span>
+          <span className="text-[10px] text-faint uppercase tracking-wider block font-mono">Running</span>
           <div className="text-lg font-semibold text-main font-mono tabular-nums">
-            <CountUp to={runningCount} duration={0.5} />
+            <CountUp to={runningCount} duration={0.4} />
           </div>
         </Card>
         <Card className="p-3 text-center space-y-0.5">
-          <span className="text-[10px] text-faint uppercase tracking-wider block">Needs Permission</span>
+          <span className="text-[10px] text-amber-500 uppercase tracking-wider block font-mono">Needs Approval</span>
           <div className="text-lg font-semibold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
-            <CountUp to={pendingGatesCount} duration={0.5} />
+            <CountUp to={pendingGatesCount} duration={0.4} />
           </div>
         </Card>
         <Card className="p-3 text-center space-y-0.5">
-          <span className="text-[10px] text-faint uppercase tracking-wider block">Finished Tasks</span>
+          <span className="text-[10px] text-emerald-500 uppercase tracking-wider block font-mono">Completed</span>
           <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-            <CountUp to={completedCount} duration={0.5} />
+            <CountUp to={completedCount} duration={0.4} />
+          </div>
+        </Card>
+        <Card className="p-3 text-center space-y-0.5">
+          <span className="text-[10px] text-faint uppercase tracking-wider block font-mono">Total Tasks</span>
+          <div className="text-lg font-semibold text-main font-mono tabular-nums">
+            <CountUp to={tasks.length} duration={0.4} />
           </div>
         </Card>
       </div>

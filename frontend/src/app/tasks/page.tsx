@@ -35,12 +35,8 @@ export default function TasksPage() {
         />
 
         <AppHeader
-          title={mode === 'developer' ? 'Execution Engine & Task Graphs' : "What I'm working on"}
-          subtitle={
-            mode === 'developer'
-              ? 'Multi-step DAG execution traces, step parameters, and runtime gating'
-              : 'Current requests, step-by-step progress, and required approvals'
-          }
+          title="Active Requests & Tasks"
+          subtitle="Multi-step execution progress, step dependencies, and authorization states"
         />
 
         <main className="flex-1 overflow-y-auto">

@@ -3,9 +3,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   ArrowDown,
-  RotateCcw,
+  Plus,
   ShieldCheck,
   Bot,
+  Sparkles,
 } from 'lucide-react';
 import { ChatMessage, DiagnosticReport, MessageAttachment } from '@/lib/api/types';
 import { MessageItem } from './MessageItem';
@@ -30,6 +31,7 @@ export interface ThreadProps {
   isDev?: boolean;
   isBackendOnline?: boolean;
   gitBranch?: string;
+  modelName?: string;
 }
 
 export const Thread: React.FC<ThreadProps> = ({
@@ -50,6 +52,7 @@ export const Thread: React.FC<ThreadProps> = ({
   isDev = true,
   isBackendOnline = true,
   gitBranch,
+  modelName = 'gemma4:e2b',
 }) => {
   const [prompt, setPrompt] = useState('');
   const [lastFailedDraft, setLastFailedDraft] = useState<string | null>(null);
@@ -58,6 +61,22 @@ export const Thread: React.FC<ThreadProps> = ({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Focus composer textarea helper
+  const focusComposer = useCallback(() => {
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea[aria-label="Message prompt"]') as HTMLTextAreaElement | null;
+      textarea?.focus();
+    }, 50);
+  }, []);
+
+  // Functional New Request Handler
+  const handleNewRequest = useCallback(() => {
+    if (onClearThread) {
+      onClearThread();
+    }
+    focusComposer();
+  }, [onClearThread, focusComposer]);
 
   // Check if user is scrolled near the bottom (within 100px)
   const handleScroll = useCallback(() => {
@@ -121,14 +140,14 @@ export const Thread: React.FC<ThreadProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-medium text-forge-primary">
             <span className="w-1.5 h-1.5 rounded-full bg-forge-accent" />
-            <span className="text-[11px] font-mono tracking-tight">workspace: GALACTUS</span>
+            <span className="text-xs font-mono tracking-tight font-medium">GALACTUS</span>
           </div>
 
           {isDev && (
             <>
               <span className="text-forge-muted/40">•</span>
-              <span className="text-[11px] font-mono text-forge-secondary">
-                package: <span className="text-forge-primary">frontend</span>
+              <span className="text-xs font-mono text-forge-secondary">
+                frontend
               </span>
             </>
           )}
@@ -136,49 +155,46 @@ export const Thread: React.FC<ThreadProps> = ({
           {isDev && gitBranch && (
             <>
               <span className="text-forge-muted/40">•</span>
-              <span className="text-[11px] font-mono text-forge-secondary">
-                branch: <span className="text-emerald-400">{gitBranch}</span>
+              <span className="text-xs font-mono text-emerald-400">
+                {gitBranch}
               </span>
             </>
           )}
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] font-mono text-forge-muted">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            <span className="text-forge-secondary hidden sm:inline">loopback: 127.0.0.1</span>
-          </span>
-
-          <span className="text-forge-muted/40">•</span>
-
-          <span className="text-forge-secondary">
-            {isBackendOnline ? 'gemma4:e2b' : 'offline'}
+        <div className="flex items-center gap-3 text-xs font-mono text-forge-muted">
+          <span className="flex items-center gap-1.5 text-forge-secondary">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                !isBackendOnline
+                  ? 'bg-rose-500'
+                  : 'bg-emerald-400'
+              }`}
+            />
+            <span>{isBackendOnline ? modelName : 'offline'}</span>
           </span>
 
           {onClearThread && (
-            <>
-              <span className="text-forge-muted/40">•</span>
-              <button
-                type="button"
-                onClick={onClearThread}
-                className="px-2 py-0.5 rounded text-[11px] font-mono text-forge-secondary hover:text-forge-primary hover:bg-forge-elevated border border-forge transition-colors flex items-center gap-1 cursor-pointer"
-                title="Start a fresh conversation"
-              >
-                <RotateCcw className="w-3 h-3 text-forge-muted" />
-                <span>New Chat</span>
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleNewRequest}
+              className="px-2.5 py-1 rounded-md text-xs font-medium text-forge-secondary hover:text-forge-primary hover:bg-forge-elevated border border-forge transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-2xs active:translate-y-px ml-1"
+              title="Start a new request"
+            >
+              <Plus className="w-3.5 h-3.5 text-forge-accent" />
+              <span>New Request</span>
+            </button>
           )}
         </div>
       </div>
 
-      {/* 2. Scrollable Messages Viewport */}
+      {/* 2. Scrollable Messages Viewport (assistant-ui inspired clean centered stream) */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4 custom-scrollbar relative"
       >
-        <div className="max-w-4xl mx-auto space-y-4">
+        <div className="max-w-3xl sm:max-w-4xl mx-auto space-y-5">
           {/* Render All Messages in Chronological Order */}
           {messages.map((msg) => (
             <MessageItem
@@ -221,18 +237,19 @@ export const Thread: React.FC<ThreadProps> = ({
             </div>
           )}
 
-          {/* Active Generation Pending Indicator */}
+          {/* Active Generation Pending Indicator (assistant-ui thinking state) */}
           {isSubmitting && (
             <div
               role="status"
               aria-live="polite"
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-forge-panel border border-forge text-xs text-forge-secondary animate-pulse max-w-md"
+              className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-forge-panel border border-forge text-xs text-forge-secondary shadow-xs animate-in fade-in-50 duration-200"
             >
-              <div className="w-4 h-4 rounded-full bg-forge-accent/20 border border-forge-accent/40 flex items-center justify-center text-forge-accent shrink-0">
-                <Bot className="w-2.5 h-2.5 animate-spin" />
-              </div>
-              <span className="font-mono text-[11px]">
-                Reasoning with local gemma4:e2b &amp; Mimir memory...
+              <Sparkles className="w-3.5 h-3.5 text-forge-accent animate-pulse" />
+              <span className="font-mono text-xs text-forge-primary font-medium">Thinking</span>
+              <span className="flex gap-1 items-center">
+                <span className="w-1 h-1 rounded-full bg-forge-accent animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-1 h-1 rounded-full bg-forge-accent animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-1 h-1 rounded-full bg-forge-accent animate-bounce" />
               </span>
             </div>
           )}
@@ -245,18 +262,18 @@ export const Thread: React.FC<ThreadProps> = ({
           <button
             type="button"
             onClick={() => scrollToBottom(true)}
-            className="sticky bottom-4 left-1/2 -translate-x-1/2 p-2 rounded-full bg-forge-elevated border border-forge text-forge-primary shadow-xl hover:bg-forge-panel transition-all duration-150 cursor-pointer flex items-center gap-1.5 text-xs font-mono z-30"
+            className="sticky bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-forge-panel/95 backdrop-blur-md border border-forge text-forge-primary shadow-xl hover:bg-forge-elevated transition-all duration-150 cursor-pointer flex items-center gap-1.5 text-xs font-mono z-30"
             title="Scroll to latest message"
           >
             <ArrowDown className="w-3.5 h-3.5 text-forge-accent" />
-            <span className="text-[11px] pr-1">Latest</span>
+            <span className="text-xs">Latest</span>
           </button>
         )}
       </div>
 
       {/* 3. Docked Sticky Composer Area */}
       <div className="p-4 border-t border-forge bg-forge-canvas/90 backdrop-blur-xs shrink-0">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl sm:max-w-4xl mx-auto">
           <ForgeComposer
             value={prompt}
             onChange={setPrompt}

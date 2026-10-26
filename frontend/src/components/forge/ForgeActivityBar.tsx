@@ -57,7 +57,7 @@ export const ForgeActivityBar: React.FC<ForgeActivityBarProps> = ({
     ? [
         {
           id: 'agent' as const,
-          label: 'Agent Sessions',
+          label: 'Requests & Chat',
           icon: <BrainCircuit className="w-4 h-4" />,
           badge: isAgentActive ? 'active' : null,
           badgeColor: 'bg-forge-accent',
@@ -86,12 +86,12 @@ export const ForgeActivityBar: React.FC<ForgeActivityBarProps> = ({
         },
         {
           id: 'flight' as const,
-          label: 'Flight Recorder & Sentinel',
+          label: 'Activity History',
           icon: <History className="w-4 h-4" />,
         },
         {
           id: 'inspector' as const,
-          label: 'Environment Inspector',
+          label: 'System Environment Check',
           icon: <Activity className="w-4 h-4" />,
         },
       ]

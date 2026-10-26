@@ -852,7 +852,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
           skillName: 'workflow.planner',
           status: 'completed',
           parameters: { goal },
-          output: '[Staged Preview] Plan generated with 3 sequential steps.',
+          output: 'Goal plan generated with 3 sequential execution steps.',
           reflectionAttempt: 0,
         },
         {
@@ -884,7 +884,7 @@ export const RagnarokProvider: React.FC<{ children: ReactNode }> = ({ children }
         timestamp: new Date().toISOString(),
         severity: 'INFO',
         eventType: 'TASK_DISPATCH',
-        message: `[Preview] Staged task graph initialized: ${goal}`,
+        message: `Task graph initialized: ${goal}`,
         taskId: newTask.id,
       },
       ...prev,

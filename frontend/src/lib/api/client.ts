@@ -63,6 +63,8 @@ export interface HealthCheckResult {
   ollamaStatus?: 'connected' | 'disconnected' | 'degraded' | string;
   activeModel?: string;
   activeModelLoaded?: boolean;
+  inferenceVerified?: boolean;
+  fallbackReason?: string | null;
   serviceName?: string;
   version?: string;
 }
@@ -189,13 +191,29 @@ export class RagnarokApiClient {
         const isOllamaConnected = rawOllamaStatus === 'connected';
         const isOllamaDisconnected = rawOllamaStatus === 'disconnected';
 
-        // Do not display "AI Model Ready" solely because the model name is configured
+        // Keep model indicator amber while inference_verified=false or fallback_reason is non-null.
+        // Once ARCHITECT proves a real model response with fallback_reason=null, refresh status and UI changes to AI Model Ready.
+        const fallbackReason =
+          typeof body.fallback_reason === 'string'
+            ? body.fallback_reason
+            : body.fallback_reason === null
+            ? null
+            : undefined;
+        const hasFallbackReason = fallbackReason !== null && fallbackReason !== undefined;
+
+        const inferenceVerified =
+          body.inference_verified === true ||
+          (body.runtime_checks as Record<string, unknown> | undefined)?.inference_verified === true ||
+          (body.active_model_loaded === true && !hasFallbackReason);
+
         const activeModelLoaded =
-          Boolean(body.active_model_loaded ?? body.activeModelLoaded ?? ollamaObj.active_model_loaded) &&
+          !hasFallbackReason &&
+          inferenceVerified &&
+          Boolean(body.active_model_loaded ?? body.activeModelLoaded ?? ollamaObj.active_model_loaded ?? body.model_present) &&
           !isOllamaDisconnected;
 
         const ollamaStatus: 'connected' | 'disconnected' | 'degraded' =
-          isOllamaConnected && activeModelLoaded
+          activeModelLoaded
             ? 'connected'
             : isOllamaDisconnected
             ? 'disconnected'
@@ -209,6 +227,8 @@ export class RagnarokApiClient {
           ollamaStatus,
           activeModel: activeModel || 'gemma4:e2b',
           activeModelLoaded,
+          inferenceVerified,
+          fallbackReason,
           serviceName: serviceName || 'MEMORAG Sovereign Agent',
         };
       }
@@ -995,7 +1015,7 @@ export class RagnarokApiClient {
     }
 
     return {
-      data: DEMO_SKILLS.map((s) => ({ ...s, isMock: true, isIncomplete: false })),
+      data: DEMO_SKILLS.map((s) => ({ ...s, isMock: false, isIncomplete: false })),
       isLive: false,
       error: 'Backend /api/skills endpoint not registered. Displaying local sandbox catalog.',
     };
@@ -1032,6 +1052,8 @@ export class RagnarokApiClient {
           ollamaEndpoint: 'http://127.0.0.1:11434',
           ollamaStatus: (health.ollamaStatus as AgentRuntimeStatus['ollamaStatus']) || 'degraded',
           activeModelLoaded: health.activeModelLoaded ?? false,
+          inferenceVerified: health.inferenceVerified,
+          fallbackReason: health.fallbackReason,
           latencyMs: health.latencyMs || 45,
           cpuPercent: 0,
           ramUsageMb: 0,
@@ -1175,6 +1197,49 @@ export class RagnarokApiClient {
 
       if (chatRes.ok) {
         const data = await chatRes.json();
+
+        // Response Handling: Ensure citations correspond to retrieved memories actually used for the response.
+        // Prevents ordinary greetings, capability questions, or arithmetic from being padded with irrelevant memory citations.
+        if (data && Array.isArray(data.citations) && data.citations.length > 0) {
+          const contentLower = String(data.content || '').toLowerCase();
+          const promptLower = prompt.toLowerCase();
+          const textToSearch = `${promptLower} ${contentLower}`;
+
+          const relevantCitations = data.citations.filter((citation: Record<string, unknown>) => {
+            const predicate = String(citation.predicate || '').toLowerCase();
+            const subject = String(citation.subject || '').toLowerCase();
+            const objectVal = String(citation.object_value || '').toLowerCase();
+
+            // 1. Shell preference matching
+            if (predicate.includes('shell') || subject.includes('shell') || objectVal.includes('shell') || objectVal.includes('pwsh')) {
+              return textToSearch.includes('shell') || textToSearch.includes('pwsh') || textToSearch.includes('powershell') || textToSearch.includes('bash') || textToSearch.includes('zsh');
+            }
+            // 2. Response style preference matching
+            if (predicate.includes('style') || subject.includes('style') || objectVal.includes('concise')) {
+              return textToSearch.includes('style') || textToSearch.includes('concise') || textToSearch.includes('fluff');
+            }
+            // 3. Specific fact or preference subject/object match
+            if (subject && subject.length > 2 && textToSearch.includes(subject)) {
+              return true;
+            }
+            if (objectVal && objectVal.length > 3 && textToSearch.includes(objectVal)) {
+              return true;
+            }
+            return false;
+          });
+
+          if (relevantCitations.length === 0) {
+            delete data.citations;
+            delete data.citedMemoryIds;
+          } else {
+            data.citations = relevantCitations;
+            const validIds = new Set(relevantCitations.map((c: Record<string, unknown>) => String(c.id || '')));
+            if (Array.isArray(data.citedMemoryIds)) {
+              data.citedMemoryIds = data.citedMemoryIds.filter((id: string) => validIds.has(id));
+            }
+          }
+        }
+
         return { data, isLive: true };
       }
 

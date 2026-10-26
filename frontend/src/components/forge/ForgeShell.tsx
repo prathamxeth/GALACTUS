@@ -5,6 +5,7 @@ import {
   Terminal,
   AlertCircle,
   History,
+  Activity,
   ChevronUp,
   ChevronDown,
   Maximize2,
@@ -19,6 +20,7 @@ import { ForgeWorkbench } from './ForgeWorkbench';
 import { TerminalPanel } from './TerminalPanel';
 import { ProblemsPanel } from './ProblemsPanel';
 import { FlightRecorderPanel } from './FlightRecorderPanel';
+import { EnvironmentInspectorPanel } from './EnvironmentInspectorPanel';
 import { ForgeCompanion } from './ForgeCompanion';
 import { ForgeStatusBar } from './ForgeStatusBar';
 import { CommandPalette } from './CommandPalette';
@@ -43,6 +45,72 @@ export const ForgeShell: React.FC = () => {
   const [bottomPanelHeight, setBottomPanelHeight] = useState(256);
   const [isPanelMaximized, setIsPanelMaximized] = useState(false);
   const isDraggingRef = useRef(false);
+
+  // Resizable sidebar with persistent width (default 380px)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('forge_sidebar_width');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 280 && parsed <= 800) {
+          return parsed;
+        }
+      }
+    }
+    return 380;
+  });
+  const isSidebarDraggingRef = useRef(false);
+
+  const handleSidebarMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isSidebarDraggingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isSidebarDraggingRef.current) return;
+      // 48px is the width of the left ForgeActivityBar
+      const newWidth = Math.max(280, Math.min(750, moveEvent.clientX - 48));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      isSidebarDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      setSidebarWidth((curr) => {
+        try {
+          localStorage.setItem('forge_sidebar_width', String(curr));
+        } catch (_) {}
+        return curr;
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  const handleToggleSidebarWidth = useCallback(() => {
+    setSidebarWidth((curr) => {
+      const next = curr > 440 ? 360 : 540;
+      try {
+        localStorage.setItem('forge_sidebar_width', String(next));
+      } catch (_) {}
+      return next;
+    });
+  }, []);
+
+  const handleOpenBottomPanel = useCallback(
+    (tab?: 'terminal' | 'problems' | 'checkpoints' | 'flight' | 'system') => {
+      setDevBottomPanelOpen(true);
+      if (tab) {
+        setActiveBottomTab(tab);
+      }
+    },
+    [setActiveBottomTab]
+  );
 
   const isBottomPanelOpen = isDev && devBottomPanelOpen;
   const toggleBottomPanel = useCallback(() => {
@@ -116,7 +184,14 @@ export const ForgeShell: React.FC = () => {
         />
 
         {/* Primary Sidebar (Contextual Drawer) */}
-        {isSidebarOpen && <ForgeSidebar />}
+        {isSidebarOpen && (
+          <ForgeSidebar
+            width={sidebarWidth}
+            onResizeMouseDown={handleSidebarMouseDown}
+            onToggleWidth={handleToggleSidebarWidth}
+            onOpenBottomPanel={handleOpenBottomPanel}
+          />
+        )}
 
         {/* Center Workbench (Editor / Agent / Split View) + Bottom Panel */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-forge-panel">
@@ -151,6 +226,23 @@ export const ForgeShell: React.FC = () => {
               {/* Bottom Panel Tab Header */}
               <div className="h-8 px-3 bg-forge-canvas border-b border-forge flex items-center justify-between text-xs text-forge-muted select-none shrink-0">
                 <div className="flex items-center gap-1">
+                  {/* System Environment Check Tab */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveBottomTab('system');
+                      setDevBottomPanelOpen(true);
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                      activeBottomTab === 'system' && isBottomPanelOpen
+                        ? 'bg-forge-elevated font-semibold text-forge-primary border-t-2 border-t-emerald-400'
+                        : 'hover:text-forge-secondary'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>System Environment Check</span>
+                  </button>
+
                   {/* Terminal Tab */}
                   <button
                     type="button"
@@ -158,7 +250,7 @@ export const ForgeShell: React.FC = () => {
                       setActiveBottomTab('terminal');
                       setDevBottomPanelOpen(true);
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                       activeBottomTab === 'terminal' && isBottomPanelOpen
                         ? 'bg-forge-elevated font-semibold text-forge-primary border-t-2 border-t-forge-accent'
                         : 'hover:text-forge-secondary'
@@ -175,7 +267,7 @@ export const ForgeShell: React.FC = () => {
                       setActiveBottomTab('problems');
                       setDevBottomPanelOpen(true);
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                       activeBottomTab === 'problems' && isBottomPanelOpen
                         ? 'bg-forge-elevated font-semibold text-forge-primary border-t-2 border-t-[#ea580c]'
                         : 'hover:text-forge-secondary'
@@ -184,34 +276,34 @@ export const ForgeShell: React.FC = () => {
                     <AlertCircle className="w-3.5 h-3.5 text-[#ea580c]" />
                     <span>Problems</span>
                     {errorCount > 0 && (
-                      <span className="px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 text-[9px] font-bold">
+                      <span className="px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 text-[10px] font-bold">
                         {errorCount}
                       </span>
                     )}
                     {warnCount > 0 && errorCount === 0 && (
-                      <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 text-[9px] font-bold">
+                      <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
                         {warnCount}
                       </span>
                     )}
                   </button>
 
-                  {/* Flight Recorder Tab */}
+                  {/* Activity Log / Flight Recorder Tab */}
                   <button
                     type="button"
                     onClick={() => {
                       setActiveBottomTab('flight');
                       setDevBottomPanelOpen(true);
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                       activeBottomTab === 'flight' && isBottomPanelOpen
                         ? 'bg-forge-elevated font-semibold text-forge-primary border-t-2 border-t-forge-accent'
                         : 'hover:text-forge-secondary'
                     }`}
                   >
                     <History className="w-3.5 h-3.5 text-forge-accent" />
-                    <span>Flight Recorder</span>
+                    <span>Activity History</span>
                     {flightEvents.length > 0 && (
-                      <span className="px-1 py-0.2 rounded bg-forge-canvas text-forge-secondary text-[9px] font-mono">
+                      <span className="px-1 py-0.2 rounded bg-forge-canvas text-forge-secondary text-[10px] font-mono">
                         {flightEvents.length}
                       </span>
                     )}
@@ -256,6 +348,7 @@ export const ForgeShell: React.FC = () => {
               {/* Bottom Panel Content */}
               {isBottomPanelOpen && (
                 <div className="flex-1 flex overflow-hidden">
+                  {activeBottomTab === 'system' && <EnvironmentInspectorPanel />}
                   {activeBottomTab === 'terminal' && <TerminalPanel />}
                   {activeBottomTab === 'problems' && <ProblemsPanel />}
                   {activeBottomTab === 'flight' && <FlightRecorderPanel />}

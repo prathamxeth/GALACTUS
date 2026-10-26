@@ -35,6 +35,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
     openFile,
     checkpoints,
     setActiveBottomTab,
+    clearDiagnosticSession,
   } = useForge();
 
   const {
@@ -47,6 +48,8 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
     probeBackend,
     mode,
     resolveApproval,
+    runtimeStatus,
+    modelStatus,
   } = useRagnarok();
 
   const isDev = mode === 'developer';
@@ -109,7 +112,15 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
       setActiveBottomTab('flight');
       await analyzeWhatChanged();
     } else if (action === 'feature') {
-      setPrompt('Implement a feature: ');
+      const text = 'Implement a feature: ';
+      setPrompt(text);
+      setTimeout(() => {
+        const textarea = document.querySelector('textarea[aria-label="Message prompt"]') as HTMLTextAreaElement | null;
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(text.length, text.length);
+        }
+      }, 50);
     } else if (action === 'memory') {
       await sendMessage('List current verified project rules and context', 'chat');
     } else if (action === 'review_fix') {
@@ -158,6 +169,11 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
   const handleClearThread = () => {
     clearConversation();
     abortSendMessage();
+    clearDiagnosticSession();
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea[aria-label="Message prompt"]') as HTMLTextAreaElement | null;
+      textarea?.focus();
+    }, 50);
   };
 
   // =========================================================================
@@ -183,6 +199,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
         isDev={isDev}
         isBackendOnline={isBackendOnline}
         gitBranch={preflightReport?.git?.branch}
+        modelName={runtimeStatus?.model || 'gemma4:e2b'}
       />
     );
   }
@@ -201,14 +218,14 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-medium text-forge-primary">
             <span className="w-1.5 h-1.5 rounded-full bg-forge-accent" />
-            <span className="text-[11px] font-mono tracking-tight">workspace: GALACTUS</span>
+            <span className="text-xs font-mono tracking-tight font-medium">GALACTUS</span>
           </div>
 
           {isDev && (
             <>
               <span className="text-forge-muted/40">•</span>
-              <span className="text-[11px] font-mono text-forge-secondary">
-                package: <span className="text-forge-primary">frontend</span>
+              <span className="text-xs font-mono text-forge-secondary">
+                frontend
               </span>
             </>
           )}
@@ -216,33 +233,26 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
           {isDev && preflightReport?.git && (
             <>
               <span className="text-forge-muted/40">•</span>
-              <span className="text-[11px] font-mono text-forge-secondary">
-                branch: <span className="text-emerald-400">{preflightReport.git.branch}</span>
+              <span className="text-xs font-mono text-emerald-400">
+                {preflightReport.git.branch}
               </span>
             </>
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] font-mono text-forge-muted">
-          {isDev ? (
-            <>
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                <span className="text-forge-secondary">loopback: 127.0.0.1</span>
-              </span>
-              <span className="text-forge-muted/40">|</span>
-              <span className="text-forge-secondary">
-                model: {isBackendOnline ? 'gemma4:e2b' : 'offline'}
-              </span>
-            </>
-          ) : (
-            <span className="flex items-center gap-1.5 text-forge-secondary">
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${isBackendOnline ? 'bg-emerald-400' : 'bg-rose-500'}`}
-              />
-              <span>{isBackendOnline ? 'Ready to help' : 'Offline'}</span>
-            </span>
-          )}
+        <div className="flex items-center gap-2 text-xs font-mono text-forge-muted">
+          <span className="flex items-center gap-1.5 text-forge-secondary">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                !isBackendOnline
+                  ? 'bg-rose-500'
+                  : runtimeStatus?.activeModelLoaded
+                  ? 'bg-emerald-400'
+                  : 'bg-amber-400'
+              }`}
+            />
+            <span>{isBackendOnline ? (runtimeStatus?.model || 'gemma4:e2b') : 'offline'}</span>
+          </span>
         </div>
       </div>
 
@@ -314,7 +324,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <span>{isDev ? 'Investigate failure' : 'Fix an issue'}</span>
                     <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-forge-accent transition-transform duration-150 group-hover:translate-x-0.5" />
                   </span>
-                  <p className="text-[10px] text-forge-muted leading-relaxed">
+                  <p className="text-xs text-forge-muted leading-relaxed">
                     {isDev
                       ? 'Run live diagnostics on current build, test, and exit codes.'
                       : 'Find and fix issues or errors in your files.'}
@@ -336,7 +346,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <span>{isDev ? 'Recent changes' : 'Review recent changes'}</span>
                     <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-purple-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                   </span>
-                  <p className="text-[10px] text-forge-muted leading-relaxed">
+                  <p className="text-xs text-forge-muted leading-relaxed">
                     {isDev
                       ? 'Inspect file differences since the last passing build.'
                       : 'See what was updated or edited in your files.'}
@@ -358,7 +368,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <span>{isDev ? 'Implement feature' : 'Create something new'}</span>
                     <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-amber-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                   </span>
-                  <p className="text-[10px] text-forge-muted leading-relaxed">
+                  <p className="text-xs text-forge-muted leading-relaxed">
                     {isDev
                       ? 'Plan and write code changes across multiple files.'
                       : 'Describe an idea or feature to add to your project.'}
@@ -380,7 +390,7 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <span>{isDev ? 'Review proposed fix' : 'Review suggestions'}</span>
                     <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-emerald-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                   </span>
-                  <p className="text-[10px] text-forge-muted leading-relaxed">
+                  <p className="text-xs text-forge-muted leading-relaxed">
                     {isDev
                       ? 'Evaluate active patch proposals, diffs, and verification.'
                       : 'Check suggested updates before applying them to your files.'}
@@ -402,9 +412,9 @@ export const AgentWorkspace: React.FC<AgentWorkspaceProps> = ({ onOpenFile }) =>
                     <span>{isDev ? 'Project memory' : 'Project notes & rules'}</span>
                     <ArrowRight className="w-3 h-3 text-forge-muted group-hover:text-blue-400 transition-transform duration-150 group-hover:translate-x-0.5" />
                   </span>
-                  <p className="text-[10px] text-forge-muted leading-relaxed">
+                  <p className="text-xs text-forge-muted leading-relaxed">
                     {isDev
-                      ? 'Access verified patterns and preferences from Mimir.'
+                      ? 'Access verified patterns and saved preferences from encrypted memory.'
                       : 'View saved preferences, notes, and rules for this project.'}
                   </p>
                 </div>

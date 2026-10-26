@@ -145,7 +145,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ title, subtitle }) => {
             className="text-[11px] font-mono"
           >
             <Server className="w-3 h-3 mr-0.5" />
-            {runtimeState}
+            {runtimeState === 'AI Model Ready' ? 'Ready' : runtimeState}
           </Badge>
 
           <Button

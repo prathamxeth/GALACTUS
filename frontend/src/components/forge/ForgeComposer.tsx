@@ -136,27 +136,13 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
 
   const defaultPlaceholder = compact
     ? isDev
-      ? 'Ask follow-up, request fix, or instruct agent...'
+      ? 'Ask a question, describe a change, or instruct the agent...'
       : 'Describe what you would like to do next...'
     : isDev
-    ? 'Ask MEMORAG to investigate test failures, review proposed fixes, or build features...'
+    ? 'Ask a question, investigate build failures, review proposed changes, or build features...'
     : 'Describe what you want to create, fix, or change...';
 
   const activeModel = runtimeStatus?.model || availableModels[0] || 'gemma4:e2b';
-
-  // Truthful model status display
-  const modelStatusLabel =
-    modelStatus === 'ready'
-      ? 'AI Model Ready'
-      : modelStatus === 'connecting'
-      ? 'Connecting...'
-      : modelStatus === 'degraded'
-      ? 'Degraded: Deterministic Mode'
-      : modelStatus === 'unavailable'
-      ? 'Model Unavailable'
-      : modelStatus === 'offline'
-      ? 'Offline'
-      : 'Error';
 
   const modelStatusDotColor =
     modelStatus === 'ready'
@@ -179,7 +165,7 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
       {(errorMessage || attachmentError) && (
         <div
           role="alert"
-          className="p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs text-rose-400 flex items-center justify-between gap-2 animate-in fade-in duration-150"
+          className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs text-rose-400 flex items-center justify-between gap-2 animate-in fade-in duration-150 shadow-xs"
         >
           <div className="flex items-center gap-2 min-w-0">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
@@ -190,7 +176,7 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
               type="button"
               onClick={onRetry}
               disabled={isSubmitting}
-              className="px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+              className="px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Retry</span>
@@ -209,23 +195,23 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
         </div>
       )}
 
-      {/* Main Composer Box */}
+      {/* Main Composer Box (assistant-ui inspired rounded card) */}
       <div
-        className={`rounded-xl border bg-forge-panel transition-[border-color,box-shadow] duration-150 relative ${
-          compact ? 'p-2.5' : 'p-3.5 shadow-xl'
-        } border-forge focus-within:border-forge-accent/60 focus-within:ring-1 focus-within:ring-forge-accent/20`}
+        className={`rounded-2xl border bg-forge-panel/95 backdrop-blur-md transition-all duration-150 relative ${
+          compact ? 'p-3' : 'p-4 shadow-xl'
+        } border-forge focus-within:border-forge-accent/60 focus-within:ring-2 focus-within:ring-forge-accent/20 shadow-md`}
       >
         {/* Attached Files Chips Bar */}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-forge/50 mb-2">
+          <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-forge/50 mb-2.5">
             {attachments.map((att, idx) => (
               <div
                 key={idx}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-forge-elevated border border-forge text-[11px] font-mono text-forge-secondary animate-in fade-in duration-100"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-forge-elevated border border-forge text-xs font-mono text-forge-secondary animate-in fade-in duration-100"
               >
-                <FileText className="w-3 h-3 text-forge-accent shrink-0" />
+                <FileText className="w-3.5 h-3.5 text-forge-accent shrink-0" />
                 <span className="font-medium truncate max-w-[160px]">{att.name}</span>
-                <span className="text-[10px] text-forge-muted tabular-nums">
+                <span className="text-[11px] text-forge-muted tabular-nums">
                   {Math.max(1, Math.round(att.size / 1024))}KB
                 </span>
                 <button
@@ -235,7 +221,7 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                   title="Remove attachment"
                   aria-label={`Remove ${att.name}`}
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
@@ -258,27 +244,22 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
             rows={compact ? 1 : 2}
             aria-label="Message prompt"
             placeholder={placeholder || defaultPlaceholder}
-            className="w-full bg-transparent text-xs sm:text-[13px] text-forge-primary placeholder:text-forge-muted focus:outline-hidden resize-none leading-relaxed font-sans custom-scrollbar select-text"
+            className="w-full bg-transparent text-[13.5px] sm:text-[14px] text-forge-primary placeholder:text-forge-muted/70 focus:outline-hidden resize-none leading-relaxed font-sans custom-scrollbar select-text min-h-[38px] max-h-[220px]"
           />
 
           {/* Action Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-forge/50 text-[11px] font-mono text-forge-muted">
-            <div className="flex items-center gap-2">
-              <span className="px-1.5 py-0.2 rounded bg-forge-elevated border border-forge text-forge-secondary text-[10px]">
-                @workspace
-              </span>
-
+          <div className="flex items-center justify-between pt-2.5 border-t border-forge/50 text-xs font-mono text-forge-muted">
+            <div className="flex items-center gap-1.5">
               {/* Attach File Button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled || isSubmitting}
-                className="p-1 rounded text-forge-muted hover:text-forge-primary hover:bg-forge-elevated transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-40"
-                title="Attach text or code file (<1MB)"
+                className="p-1.5 rounded-lg text-forge-muted hover:text-forge-primary hover:bg-forge-elevated transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40"
+                title="Attach file (<1MB)"
                 aria-label="Attach file"
               >
-                <Paperclip className="w-3.5 h-3.5" />
-                <span className="text-[10px] hidden sm:inline">Attach</span>
+                <Paperclip className="w-4 h-4" />
               </button>
               <input
                 ref={fileInputRef}
@@ -290,21 +271,18 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                 tabIndex={-1}
               />
 
-              <span className="text-forge-muted/40 hidden sm:inline">•</span>
-
-              {/* Functional Truthful Model Selector Popover */}
+              {/* Functional Model Selector Popover */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsModelMenuOpen((prev) => !prev)}
-                  className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-forge-elevated transition-colors cursor-pointer text-[11px]"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-forge-elevated transition-colors cursor-pointer text-xs"
                   title="View model status & configured runtime"
                   aria-haspopup="dialog"
                   aria-expanded={isModelMenuOpen}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${modelStatusDotColor}`} />
                   <span className="text-forge-secondary font-medium">{activeModel}</span>
-                  <span className="text-[10px] text-forge-muted hidden sm:inline">({modelStatusLabel})</span>
                   <ChevronDown className="w-3 h-3 text-forge-muted" />
                 </button>
 
@@ -312,9 +290,9 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                   <div
                     role="dialog"
                     aria-label="Model Configuration"
-                    className="absolute bottom-full left-0 mb-2 w-64 p-3 rounded-xl bg-forge-elevated border border-forge shadow-2xl space-y-2.5 z-40 text-xs font-sans animate-in fade-in slide-in-from-bottom-2 duration-150"
+                    className="absolute bottom-full left-0 mb-2 w-72 p-3.5 rounded-2xl bg-forge-elevated border border-forge shadow-2xl space-y-3 z-40 text-xs font-sans animate-in fade-in slide-in-from-bottom-2 duration-150"
                   >
-                    <div className="flex items-center justify-between pb-1.5 border-b border-forge font-mono text-[11px]">
+                    <div className="flex items-center justify-between pb-2 border-b border-forge font-mono text-xs">
                       <div className="flex items-center gap-1.5 font-semibold text-forge-primary">
                         <Cpu className="w-3.5 h-3.5 text-forge-accent" />
                         <span>Configured Model</span>
@@ -329,17 +307,17 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                       </button>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <div className="text-[10px] font-mono text-forge-muted uppercase tracking-wider">
                         Active Local Engine
                       </div>
-                      <div className="p-2 rounded-lg bg-forge-panel border border-forge flex items-center justify-between">
+                      <div className="p-2.5 rounded-xl bg-forge-panel border border-forge flex items-center justify-between">
                         <div className="space-y-0.5">
                           <div className="font-mono text-xs font-semibold text-forge-primary flex items-center gap-1.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${modelStatusDotColor}`} />
                             <span>{activeModel}</span>
                           </div>
-                          <div className="text-[10px] font-mono text-forge-muted">
+                          <div className="text-[11px] font-mono text-forge-muted">
                             {isBackendOnline ? (runtimeStatus?.ollamaEndpoint || 'http://127.0.0.1:11434') : 'Offline (http://127.0.0.1:8000)'}
                           </div>
                         </div>
@@ -347,22 +325,19 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                       </div>
                     </div>
 
-                    <div className="p-2 rounded bg-forge-panel/70 border border-forge text-[11px] leading-relaxed text-forge-muted">
-                      <span className="font-medium text-forge-secondary">Runtime status: </span>
+                    <div className="p-2.5 rounded-xl bg-forge-panel/70 border border-forge text-xs leading-relaxed text-forge-muted">
+                      <span className="font-medium text-forge-secondary">Status: </span>
                       {modelStatus === 'ready'
-                        ? 'Active neural model verified loaded in local VRAM with zero outbound telemetry.'
+                        ? 'Model loaded and ready.'
+                        : modelStatus === 'connecting'
+                        ? 'Connecting to runtime...'
                         : modelStatus === 'degraded'
-                        ? 'Sovereign deterministic fallback active. Memory handshake, task planning, and approval gates are fully operational.'
-                        : 'Neural engine unavailable. Local Ollama daemon not responding on http://127.0.0.1:11434.'}
+                        ? 'Fallback mode active.'
+                        : 'Runtime service unavailable.'}
                     </div>
                   </div>
                 )}
               </div>
-
-              <span className="text-forge-muted/40 hidden sm:inline">•</span>
-              <span className="text-[10px] hidden sm:inline">
-                Enter to send • Shift+Enter for newline
-              </span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -371,7 +346,7 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                 <button
                   type="button"
                   onClick={onStop}
-                  className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors cursor-pointer"
                   title="Cancel active generation"
                 >
                   <Square className="w-3 h-3 fill-current" />
@@ -384,8 +359,8 @@ export const ForgeComposer: React.FC<ForgeComposerProps> = ({
                 type="submit"
                 disabled={!canSubmit}
                 aria-label="Send message"
-                className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-forge-accent hover:bg-forge-accent/90 text-white transition-colors duration-150 active:translate-y-px cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs ${
-                  compact ? 'h-7' : 'h-8'
+                className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-forge-accent hover:bg-forge-accent/90 text-white transition-all duration-150 active:translate-y-px cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs ${
+                  compact ? 'h-8' : 'h-8.5'
                 }`}
               >
                 {isSubmitting ? (

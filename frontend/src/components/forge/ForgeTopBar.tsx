@@ -62,7 +62,7 @@ export const ForgeTopBar: React.FC<ForgeTopBarProps> = ({
             MEMORAG
           </span>
           <span className="px-1.5 py-0.2 rounded text-[10px] uppercase font-mono bg-forge-panel border border-forge text-forge-muted">
-            Forge
+            Studio
           </span>
         </div>
 

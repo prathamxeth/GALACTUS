@@ -17,5 +17,25 @@
       "headCommit": "93e38d9",
       "packageJsonHash": "69c8c356b4e8"
     }
+  },
+  {
+    "id": "chk-1792986818264-fs8p",
+    "timestamp": "2026-10-26T03:53:38.264Z",
+    "title": "Verified Checkpoint",
+    "gitCommit": "7beea42",
+    "gitBranch": "NEXUS",
+    "isHealthy": false,
+    "testResults": {
+      "total": 0,
+      "passed": 0,
+      "failed": 1
+    },
+    "dependencyFingerprint": "69c8c356b4e8",
+    "modifiedFilesCount": 0,
+    "evidenceSnapshot": {
+      "testsExitCode": 1,
+      "headCommit": "7beea42",
+      "packageJsonHash": "69c8c356b4e8"
+    }
   }
 ]

@@ -97,58 +97,9 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({
     );
   }
 
-  // State 4: AI Model Ready
-  if (runtimeState === 'AI Model Ready') {
-    return (
-      <div className="w-full bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>
-            {isDev ? (
-              <>
-                Connected to Sovereign Backend at{' '}
-                <code className="font-mono text-emerald-800 dark:text-emerald-200">
-                  {backendUrl}
-                </code>{' '}
-                • AI Model Ready ({runtimeStatus?.model || 'gemma4:e2b'})
-              </>
-            ) : (
-              'Connected to AI service running on this device • Model Ready'
-            )}
-          </span>
-        </div>
-        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 opacity-90">
-          {isDev ? 'Local Loopback Active (0 Outbound Bytes)' : 'Running locally'}
-        </span>
-      </div>
-    );
-  }
-
-  // State 5: Backend Connected (Ollama not ready / model not loaded)
-  if (runtimeState === 'Backend Connected' || isLive) {
-    return (
-      <div className="w-full bg-sky-500/10 border-b border-sky-500/20 px-4 py-2 flex items-center justify-between text-xs text-sky-800 dark:text-sky-300">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-          <span>
-            {isDev ? (
-              <>
-                FastAPI Backend Online at{' '}
-                <code className="font-mono text-sky-900 dark:text-sky-200">
-                  {backendUrl}
-                </code>{' '}
-                (Inference engine in standby • Model {runtimeStatus?.model || 'gemma4:e2b'})
-              </>
-            ) : (
-              'Connected to local system service • Ready for requests'
-            )}
-          </span>
-        </div>
-        <span className="text-[11px] text-sky-700 dark:text-sky-400 opacity-90">
-          {isDev ? 'Backend Connected' : 'System Ready'}
-        </span>
-      </div>
-    );
+  // State 4 & 5: Online & Ready (no distracting top banner needed)
+  if (runtimeState === 'AI Model Ready' || runtimeState === 'Backend Connected' || isLive) {
+    return null;
   }
 
   // State 6 & 7: Backend Disconnected & Offline Preview
@@ -186,8 +137,8 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({
           </span>
           <span className="text-dim text-[11px] block sm:inline">
             {isDev
-              ? '(Showing isolated test fixtures. No real actions dispatched.)'
-              : '(Showing demonstration items so you can explore the interface safely.)'}
+              ? '(Local workspace tools & buffer modifications remain fully active.)'
+              : '(Local workspace and preferences remain active on this device.)'}
           </span>
         </div>
       </div>

@@ -116,42 +116,42 @@ export const ForgeStatusBar: React.FC = () => {
       </div>
 
       {/* Center: Status State */}
-      <div className="flex items-center gap-2 text-[10px]">
+      <div className="flex items-center gap-2 text-xs font-mono">
         {diagnosticReport ? (
-          <span className="flex items-center gap-1 text-forge-accent font-semibold">
+          <span className="flex items-center gap-1.5 text-forge-accent font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-forge-accent animate-pulse" />
             <span>{isDev ? `Agent: ${diagnosticStatus}` : 'Working on your request...'}</span>
           </span>
         ) : modelStatus === 'ready' ? (
-          <span className="text-forge-muted flex items-center gap-1">
+          <span className="text-forge-muted flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>{isDev ? 'Agent: Ready' : 'Ready'}</span>
+            <span>Ready</span>
           </span>
         ) : modelStatus === 'connecting' ? (
-          <span className="text-amber-400 flex items-center gap-1">
+          <span className="text-amber-400 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            <span>Agent: Connecting...</span>
+            <span>Connecting...</span>
           </span>
         ) : modelStatus === 'degraded' ? (
-          <span className="text-amber-400 flex items-center gap-1">
+          <span className="text-amber-400 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>{isDev ? 'Agent: Degraded (Deterministic Mode)' : 'Deterministic Mode'}</span>
+            <span>Standby</span>
           </span>
         ) : modelStatus === 'unavailable' ? (
-          <span className="text-amber-500 flex items-center gap-1">
+          <span className="text-amber-500 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            <span>Agent: Model Unavailable</span>
+            <span>Standby</span>
           </span>
         ) : (
-          <span className="text-rose-400 flex items-center gap-1">
+          <span className="text-rose-400 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            <span>Agent: Offline</span>
+            <span>Offline</span>
           </span>
         )}
       </div>
 
       {/* Right Region */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 text-xs">
         {/* Dev Mode Only: Active file line/col and loopback info */}
         {isDev ? (
           <>
@@ -159,14 +159,14 @@ export const ForgeStatusBar: React.FC = () => {
               <div className="flex items-center gap-2 text-forge-secondary">
                 <span>Ln {activeFile.cursorLine || 1}, Col {activeFile.cursorCol || 1}</span>
                 <span className="text-forge-muted/30">|</span>
-                <span className="uppercase text-[10px]">{activeFile.language}</span>
+                <span className="uppercase text-[11px]">{activeFile.language}</span>
                 <span className="text-forge-muted/30">|</span>
                 <span>UTF-8</span>
               </div>
             )}
 
             {/* Backend Connectivity */}
-            <div className="flex items-center gap-1 text-forge-secondary">
+            <div className="flex items-center gap-1.5 text-forge-secondary">
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
                   isBackendOnline ? 'bg-emerald-400' : 'bg-rose-500'
@@ -176,13 +176,13 @@ export const ForgeStatusBar: React.FC = () => {
             </div>
 
             {/* Theme Preset Badge */}
-            <span className="text-[9px] uppercase px-1 rounded bg-forge-panel text-forge-secondary border border-forge">
+            <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-forge-panel text-forge-secondary border border-forge">
               {themeLabel}
             </span>
           </>
         ) : (
           /* User Mode: Clean and peaceful */
-          <div className="flex items-center gap-2 text-forge-secondary text-[10px]">
+          <div className="flex items-center gap-2 text-forge-secondary text-xs">
             <span className="flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-forge-accent" />
               <span>User Mode</span>

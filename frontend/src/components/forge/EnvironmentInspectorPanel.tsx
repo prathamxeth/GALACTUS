@@ -29,11 +29,11 @@ export const EnvironmentInspectorPanel: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col bg-surface overflow-hidden text-xs select-text">
       {/* Inspector Header */}
-      <div className="h-8 px-3 bg-canvas border-b border-subtle flex items-center justify-between text-muted select-none shrink-0">
+      <div className="h-8.5 px-3.5 bg-canvas border-b border-subtle flex items-center justify-between text-muted select-none shrink-0">
         <div className="flex items-center gap-2">
-          <Activity className="w-3.5 h-3.5 text-[#cc785c]" />
-          <span className="text-main font-semibold text-[11px]">On-Device Environment Inspector</span>
-          <span className="text-[10px] text-muted font-mono">
+          <Activity className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-main font-semibold text-xs">System Environment Check</span>
+          <span className="text-xs text-muted font-mono">
             Collected: {new Date(preflightReport.timestamp).toLocaleTimeString()}
           </span>
         </div>
@@ -41,37 +41,37 @@ export const EnvironmentInspectorPanel: React.FC = () => {
         <button
           onClick={refreshPreflight}
           disabled={isPreflightLoading}
-          className="p-1 rounded text-muted hover:text-main hover:bg-elevated transition-colors"
+          className="p-1 rounded-md text-muted hover:text-main hover:bg-elevated transition-colors cursor-pointer"
           title="Resample all local telemetry"
         >
-          <RefreshCw className={`w-3 h-3 ${isPreflightLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isPreflightLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       {/* Cards Grid */}
-      <div className="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
+      <div className="flex-1 p-3.5 overflow-y-auto space-y-3 custom-scrollbar">
         {/* Hardware & System */}
-        <div className="p-3 rounded-lg border border-subtle bg-canvas space-y-2">
-          <div className="flex items-center gap-1.5 text-main font-semibold text-xs">
+        <div className="p-3.5 rounded-xl border border-subtle bg-canvas space-y-2.5">
+          <div className="flex items-center gap-2 text-main font-semibold text-xs">
             <Cpu className="w-3.5 h-3.5 text-blue-400" />
-            <span>Host Hardware & Kernel</span>
+            <span>Host Hardware &amp; Kernel</span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 font-mono text-[11px]">
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">Platform</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 font-mono text-xs">
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Platform</span>
               <span className="text-secondary font-bold">{os.platform} ({os.arch})</span>
             </div>
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">Kernel</span>
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Kernel</span>
               <span className="text-secondary font-bold truncate">{os.release}</span>
             </div>
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">CPU Cores</span>
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">CPU Cores</span>
               <span className="text-secondary font-bold">{os.cpus} Cores</span>
             </div>
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">System Memory</span>
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">System Memory</span>
               <span className="text-secondary font-bold">
                 {resources.freeRamMb}MB free / {resources.totalRamMb}MB
               </span>
@@ -80,40 +80,40 @@ export const EnvironmentInspectorPanel: React.FC = () => {
         </div>
 
         {/* Local Toolchains */}
-        <div className="p-3 rounded-lg border border-subtle bg-canvas space-y-2">
-          <div className="flex items-center gap-1.5 text-main font-semibold text-xs">
+        <div className="p-3.5 rounded-xl border border-subtle bg-canvas space-y-2.5">
+          <div className="flex items-center gap-2 text-main font-semibold text-xs">
             <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Developer Toolchains & Compilers</span>
+            <span>Developer Toolchains &amp; Compilers</span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 font-mono text-[11px]">
-            <div className="p-2 rounded bg-surface border border-subtle flex items-center justify-between">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 font-mono text-xs">
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle flex items-center justify-between">
               <div>
-                <span className="block text-[9px] text-muted uppercase">Node.js</span>
+                <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Node.js</span>
                 <span className="text-secondary font-bold">{toolchains.node.version}</span>
               </div>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             </div>
 
-            <div className="p-2 rounded bg-surface border border-subtle flex items-center justify-between">
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle flex items-center justify-between">
               <div>
-                <span className="block text-[9px] text-muted uppercase">npm</span>
+                <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">npm</span>
                 <span className="text-secondary font-bold">{toolchains.npm.version}</span>
               </div>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             </div>
 
-            <div className="p-2 rounded bg-surface border border-subtle flex items-center justify-between">
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle flex items-center justify-between">
               <div>
-                <span className="block text-[9px] text-muted uppercase">Python</span>
+                <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Python</span>
                 <span className="text-secondary font-bold">{toolchains.python.version}</span>
               </div>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             </div>
 
-            <div className="p-2 rounded bg-surface border border-subtle flex items-center justify-between">
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle flex items-center justify-between">
               <div>
-                <span className="block text-[9px] text-muted uppercase">Git</span>
+                <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Git</span>
                 <span className="text-secondary font-bold">{toolchains.git.version}</span>
               </div>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
@@ -122,18 +122,18 @@ export const EnvironmentInspectorPanel: React.FC = () => {
         </div>
 
         {/* Git Working Tree */}
-        <div className="p-3 rounded-lg border border-subtle bg-canvas space-y-2">
+        <div className="p-3.5 rounded-xl border border-subtle bg-canvas space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-main font-semibold text-xs">
+            <div className="flex items-center gap-2 text-main font-semibold text-xs">
               <GitBranch className="w-3.5 h-3.5 text-[#cc785c]" />
               <span>Git Repository State</span>
             </div>
-            <span className="font-mono text-[10px] text-muted">
+            <span className="font-mono text-xs text-muted">
               Commit: <code className="text-secondary">{git.commit}</code>
             </span>
           </div>
 
-          <div className="p-2 rounded bg-surface border border-subtle font-mono text-[11px] space-y-1">
+          <div className="p-2.5 rounded-lg bg-surface border border-subtle font-mono text-xs space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-muted">Active Branch:</span>
               <span className="text-main font-bold">{git.branch}</span>
@@ -150,8 +150,8 @@ export const EnvironmentInspectorPanel: React.FC = () => {
             </div>
 
             {git.modifiedFiles.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-subtle text-[10px] text-muted space-y-0.5">
-                <span className="block uppercase text-[9px] text-muted">Uncommitted Files:</span>
+              <div className="mt-2 pt-2 border-t border-subtle text-xs text-muted space-y-0.5">
+                <span className="block uppercase text-[10px] text-muted font-semibold tracking-wider">Uncommitted Files:</span>
                 {git.modifiedFiles.slice(0, 5).map((f, i) => (
                   <div key={i} className="text-secondary truncate">
                     • {f}
@@ -163,41 +163,41 @@ export const EnvironmentInspectorPanel: React.FC = () => {
         </div>
 
         {/* FastAPI & Ollama Inference Connectivity */}
-        <div className="p-3 rounded-lg border border-subtle bg-canvas space-y-2">
+        <div className="p-3.5 rounded-xl border border-subtle bg-canvas space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-main font-semibold text-xs">
+            <div className="flex items-center gap-2 text-main font-semibold text-xs">
               <Activity className="w-3.5 h-3.5 text-indigo-400" />
-              <span>FastAPI Backend & Sovereign Model</span>
+              <span>FastAPI Backend &amp; Local Model</span>
             </div>
-            <span className="text-[10px] font-mono text-muted">{backend.url}</span>
+            <span className="text-xs font-mono text-muted">{backend.url}</span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">HTTP Reachability</span>
-              <span className="flex items-center gap-1 text-emerald-500 font-bold">
-                <CheckCircle2 className="w-3 h-3" />
+          <div className="grid grid-cols-3 gap-2.5 font-mono text-xs">
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">HTTP Reachability</span>
+              <span className="flex items-center gap-1.5 text-emerald-500 font-bold">
+                <CheckCircle2 className="w-3.5 h-3.5" />
                 {backend.reachable ? 'Connected' : 'Unreachable'}
               </span>
             </div>
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">Latency</span>
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Latency</span>
               <span className="text-secondary font-bold">{backend.latencyMs}ms</span>
             </div>
-            <div className="p-2 rounded bg-surface border border-subtle">
-              <span className="block text-[9px] text-muted uppercase">Active Model</span>
+            <div className="p-2.5 rounded-lg bg-surface border border-subtle">
+              <span className="block text-[10px] text-muted uppercase tracking-wider font-semibold">Active Model</span>
               <span className="text-main font-bold truncate">{backend.model}</span>
             </div>
           </div>
         </div>
 
         {/* Security Boundary Enforcement */}
-        <div className="p-3 rounded-lg border border-subtle bg-canvas space-y-1.5">
-          <div className="flex items-center gap-1.5 text-main font-semibold text-xs">
+        <div className="p-3.5 rounded-xl border border-subtle bg-canvas space-y-2">
+          <div className="flex items-center gap-2 text-main font-semibold text-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span>Local Execution Boundary Policy</span>
           </div>
-          <div className="text-[11px] text-muted space-y-1 font-mono">
+          <div className="text-xs text-muted space-y-1.5 font-mono leading-relaxed">
             <div>• <strong className="text-secondary">Project Root:</strong> {security.projectRoot}</div>
             <div>• <strong className="text-secondary">Isolation Mode:</strong> {security.isolationMode} (Node.js Route Handlers on loopback 127.0.0.1)</div>
             <div>• <strong className="text-secondary">Path Traversal Defense:</strong> Enforced (rejects <code className="text-[#ea2804]">..</code> outside workspace root)</div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   BrainCircuit,
   Plus,
@@ -13,6 +13,8 @@ import {
   XCircle,
   ArrowRight,
   RotateCcw,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { useForge } from '@/lib/forge/ForgeContext';
 import { useRagnarok } from '@/lib/context/RagnarokContext';
@@ -20,7 +22,19 @@ import { FileExplorer } from './FileExplorer';
 import { FlightRecorderPanel } from './FlightRecorderPanel';
 import { EnvironmentInspectorPanel } from './EnvironmentInspectorPanel';
 
-export const ForgeSidebar: React.FC = () => {
+export interface ForgeSidebarProps {
+  width?: number;
+  onResizeMouseDown?: (e: React.MouseEvent) => void;
+  onToggleWidth?: () => void;
+  onOpenBottomPanel?: (tab?: 'terminal' | 'problems' | 'checkpoints' | 'flight' | 'system') => void;
+}
+
+export const ForgeSidebar: React.FC<ForgeSidebarProps> = ({
+  width = 380,
+  onResizeMouseDown,
+  onToggleWidth,
+  onOpenBottomPanel,
+}) => {
   const {
     activeLeftTab,
     setActiveTabId,
@@ -35,8 +49,21 @@ export const ForgeSidebar: React.FC = () => {
     fileTree,
   } = useForge();
 
-  const { mode } = useRagnarok();
+  const { mode, clearConversation, abortSendMessage } = useRagnarok();
   const isDev = mode === 'developer';
+
+  const handleNewRequest = useCallback(() => {
+    clearConversation();
+    abortSendMessage();
+    clearDiagnosticSession();
+    setActiveTabId('');
+    setTimeout(() => {
+      const textarea = document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message prompt"]');
+      if (textarea) {
+        textarea.focus();
+      }
+    }, 50);
+  }, [clearConversation, abortSendMessage, clearDiagnosticSession, setActiveTabId]);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -67,7 +94,10 @@ export const ForgeSidebar: React.FC = () => {
   const warningCount = problems.filter((p) => p.severity === 'warning').length;
 
   return (
-    <div className="w-64 border-r border-forge bg-forge-panel flex flex-col h-full shrink-0 select-none overflow-hidden transition-colors duration-150">
+    <aside
+      style={{ width: `${width}px` }}
+      className="relative border-r border-forge bg-forge-panel flex flex-col h-full shrink-0 select-none overflow-hidden transition-[width] duration-75"
+    >
       {/* =====================================================================
           1. DRAWER: AGENT SESSIONS
           ===================================================================== */}
@@ -75,20 +105,17 @@ export const ForgeSidebar: React.FC = () => {
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Header */}
           <div className="h-9 px-3 border-b border-forge bg-forge-canvas flex items-center justify-between text-xs shrink-0">
-            <span className="font-mono text-[11px] font-bold tracking-wider text-forge-secondary uppercase flex items-center gap-1.5">
+            <span className="font-mono text-xs font-bold tracking-wider text-forge-secondary uppercase flex items-center gap-1.5">
               <BrainCircuit className="w-3.5 h-3.5 text-forge-accent" />
-              <span>{isDev ? 'Agent Sessions' : 'Recent Work'}</span>
+              <span>{isDev ? 'Recent Requests' : 'Recent Work'}</span>
             </span>
             <button
               type="button"
-              onClick={() => {
-                clearDiagnosticSession();
-                setActiveTabId(null as unknown as string);
-              }}
-              className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-forge-elevated hover:bg-forge-hover text-forge-primary border border-forge hover:border-forge-accent/40 transition-colors flex items-center gap-1 cursor-pointer"
+              onClick={handleNewRequest}
+              className="px-2.5 py-1 rounded text-xs font-mono font-medium bg-forge-elevated hover:bg-forge-hover text-forge-primary border border-forge hover:border-forge-accent/40 transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
               title="Start a new request"
             >
-              <Plus className="w-3 h-3 text-forge-accent" />
+              <Plus className="w-3.5 h-3.5 text-forge-accent" />
               <span>{isDev ? 'New Task' : 'New Request'}</span>
             </button>
           </div>
@@ -102,33 +129,34 @@ export const ForgeSidebar: React.FC = () => {
                 className="p-3 rounded-xl border border-forge-accent/40 bg-forge-elevated space-y-2 cursor-pointer hover:border-forge-accent transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-forge-accent">
+                  <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-forge-accent">
                     <span className="w-1.5 h-1.5 rounded-full bg-forge-accent animate-pulse" />
                     <span>{isDev ? 'ACTIVE SESSION' : 'IN PROGRESS'}</span>
                   </span>
-                  <span className="text-[10px] font-mono text-forge-muted">
+                  <span className="text-xs font-mono text-forge-muted">
                     {isDev ? diagnosticStatus : 'Working'}
                   </span>
                 </div>
                 <div className="text-xs font-semibold text-forge-primary line-clamp-2">
-                  {diagnosticReport.user_request || (isDev ? 'Diagnostic & Verified Repair' : 'Working on request...')}
+                  {diagnosticReport.user_request || (isDev ? 'System Diagnostic & Verification' : 'Working on request...')}
                 </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-forge-secondary">
+                <div className="flex items-center justify-between text-xs font-mono text-forge-secondary">
                   <span>{isDev ? `${diagnosticReport.observed_facts?.length || 0} facts collected` : 'Active request'}</span>
                   <ArrowRight className="w-3 h-3 text-forge-accent" />
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-xl border border-dashed border-forge text-center space-y-2 my-2">
+              <div className="p-3.5 rounded-xl border border-dashed border-forge text-center space-y-2.5 my-2">
                 <span className="text-xs text-forge-muted block">
-                  {isDev ? 'No active task running' : 'Ready to start'}
+                  {isDev ? 'No active task running' : 'Ready for your instruction'}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setActiveTabId(null as unknown as string)}
-                  className="px-2.5 py-1 rounded text-xs font-mono font-medium text-forge-accent bg-forge-accent/10 hover:bg-forge-accent/20 border border-forge-accent/30 transition-colors cursor-pointer"
+                  onClick={handleNewRequest}
+                  className="px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-forge-accent bg-forge-accent/10 hover:bg-forge-accent/20 border border-forge-accent/30 transition-colors cursor-pointer flex items-center gap-1.5 mx-auto active:scale-95"
                 >
-                  {isDev ? 'Open Composer' : 'New Request'}
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isDev ? 'New Task' : 'New Request'}</span>
                 </button>
               </div>
             )}
@@ -136,8 +164,8 @@ export const ForgeSidebar: React.FC = () => {
             {/* Recent Sessions History */}
             {agentSessions.length > 0 && (
               <div className="pt-2 space-y-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-forge-muted px-1 block">
-                  {isDev ? 'Recent Tasks' : 'Recent History'}
+                <span className="text-xs font-mono uppercase tracking-wider text-forge-muted px-1 block">
+                  {isDev ? 'Task History' : 'Recent History'}
                 </span>
                 {agentSessions.map((session) => (
                   <div
@@ -339,12 +367,30 @@ export const ForgeSidebar: React.FC = () => {
       {/* =====================================================================
           6. DRAWER: FLIGHT RECORDER & SENTINEL
           ===================================================================== */}
-      {activeLeftTab === 'flight' && <FlightRecorderPanel />}
+      {activeLeftTab === 'flight' && (
+        <FlightRecorderPanel
+          onExpandToBottom={() => onOpenBottomPanel?.('flight')}
+          onToggleWide={onToggleWidth}
+          isWide={width > 440}
+        />
+      )}
 
       {/* =====================================================================
           7. DRAWER: ENVIRONMENT INSPECTOR (Only accessible explicitly in Dev Mode)
           ===================================================================== */}
       {activeLeftTab === 'inspector' && <EnvironmentInspectorPanel />}
-    </div>
+
+      {/* Vertical Drag Resize Splitter Handle */}
+      {onResizeMouseDown && (
+        <div
+          onMouseDown={onResizeMouseDown}
+          onDoubleClick={onToggleWidth}
+          className="absolute top-0 right-0 bottom-0 w-2 cursor-col-resize z-30 hover:bg-forge-accent/40 active:bg-forge-accent transition-colors flex items-center justify-center group"
+          title="Drag to resize sidebar (Double click to toggle wide view)"
+        >
+          <div className="w-0.5 h-8 bg-forge-muted/30 group-hover:bg-forge-accent rounded-full transition-colors" />
+        </div>
+      )}
+    </aside>
   );
 };

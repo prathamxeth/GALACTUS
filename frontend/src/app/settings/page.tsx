@@ -28,20 +28,16 @@ export default function SettingsPage() {
         />
 
         <AppHeader
-          title={mode === 'developer' ? 'Diagnostics, Events & Runtime Health' : 'Privacy & Appearance'}
+          title={mode === 'developer' ? 'Workspace & Runtime Settings' : 'Privacy & Appearance'}
           subtitle={
             mode === 'developer'
-              ? 'Real measured latency benchmarks, filterable event traces, and socket bindings'
+              ? 'Appearance profiles, sovereign boundary policies, and encrypted storage configurations'
               : 'Choose your visual style, quiet hours, and manage local memory storage'
           }
         />
 
         <main className="flex-1 overflow-y-auto">
-          {mode === 'developer' ? (
-            <DevDiagnosticsView />
-          ) : (
-            <UserSettingsView />
-          )}
+          <UserSettingsView />
         </main>
       </div>
     </div>

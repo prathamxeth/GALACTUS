@@ -76,6 +76,8 @@ export interface AgentRuntimeStatus {
   activeSentinelsCount: number;
   pendingApprovalsCount: number;
   activeModelLoaded?: boolean;
+  inferenceVerified?: boolean;
+  fallbackReason?: string | null;
   serviceName?: string;
 }
 
