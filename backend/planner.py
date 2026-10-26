@@ -278,7 +278,8 @@ CRITICAL PLANNING RULES:
             "create file", "write file", "save to file", "modify file",
             "delete file", "remove file", "execute shell", "run command",
             "execute command", "format file", "clean cache", "run script",
-            "terminal.run", "deploy",
+            "terminal.run", "deploy", "backup", "wipe", "danger", "purge",
+            "execute", "destroy", "kill", "remove", "delete",
         ]
         has_explicit_action = any(act in goal_lower for act in action_keywords)
 

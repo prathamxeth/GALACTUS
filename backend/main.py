@@ -34,7 +34,10 @@ class LoopbackExecutionGuardMiddleware(BaseHTTPMiddleware):
         )
 
         if is_execution_route:
-            allow_remote = os.environ.get("FORGE_ALLOW_REMOTE_EXECUTION", "false").lower() == "true"
+            allow_remote = os.environ.get(
+                "FORGE_ALLOW_REMOTE_EXECUTION",
+                os.environ.get("MEMORAG_ALLOW_REMOTE_EXECUTION", os.environ.get("ALLOW_REMOTE_EXECUTION", "false")),
+            ).lower() in ("true", "1", "yes")
             if not allow_remote:
                 client_host = request.client.host if request.client else ""
                 forwarded_for = request.headers.get("x-forwarded-for", "")

@@ -26,11 +26,11 @@ Returns quick health check for connection probing.
 ```json
 {
   "status": "healthy",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "ollama": {
     "status": "connected",
     "endpoint": "http://127.0.0.1:11434",
-    "active_model": "llama3.2:3b-instruct-q8_0"
+    "active_model": "gemma4:e2b"
   }
 }
 ```
@@ -42,7 +42,7 @@ Returns live system metrics and sovereign privacy statistics.
 ```json
 {
   "online": true,
-  "model": "llama3.2:3b-instruct-q8_0",
+  "model": "gemma4:e2b",
   "ollamaEndpoint": "http://127.0.0.1:11434",
   "ollamaStatus": "connected",
   "latencyMs": 142,
@@ -50,7 +50,7 @@ Returns live system metrics and sovereign privacy statistics.
   "ramUsageMb": 2480,
   "encryptedDatabase": {
     "status": "unlocked",
-    "algorithm": "AES-256-GCM / SQLCipher",
+    "algorithm": "Fernet Authenticated Encryption (AES-128-CBC + HMAC-SHA256)",
     "totalRecords": 1428,
     "sizeKb": 8420
   },
