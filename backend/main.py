@@ -659,13 +659,18 @@ async def agent_chat(req: ChatPromptRequest):
     # Intent Classification:
     # 1. Negative constraints ("do not run commands") MUST NEVER execute tasks
     has_neg_constraint = is_negative_constraint(user_goal)
-    # 2. Conversational inquiries (greetings, questions, status checks, explanations)
-    is_inquiry = is_conversational_inquiry(user_goal)
-    # 3. Explicit action requests
-    is_action = is_explicit_action_request(user_goal) and not has_neg_constraint
+    # 2. Capability queries ("what can you do", "capabilities", "what do you do")
+    p_lower = user_goal.lower()
+    is_capability_query = any(kw in p_lower for kw in [
+        "what can you do", "capabilities", "what do you do", "what are your capabilities", "your skills"
+    ])
+    # 3. Conversational inquiries (greetings, questions, status checks, explanations, capabilities)
+    is_inquiry = is_conversational_inquiry(user_goal) or is_capability_query
+    # 4. Explicit action requests
+    is_action = is_explicit_action_request(user_goal) and not has_neg_constraint and not is_capability_query
 
     # Create task plans ONLY for requests that genuinely require multi-step work or explicit action
-    should_create_task = (is_action or (req.mode == "task" and not is_inquiry)) and not has_neg_constraint
+    should_create_task = (is_action or (req.mode == "task" and not is_inquiry)) and not has_neg_constraint and not is_capability_query
 
     if should_create_task:
         dag = task_planner.generate_dag(user_goal)
@@ -699,6 +704,7 @@ async def agent_chat(req: ChatPromptRequest):
             prompt=user_goal,
             context=context,
             history=history,
+            is_capability_query=is_capability_query,
         )
 
         if fallback_reason is None:

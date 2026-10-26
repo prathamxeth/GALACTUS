@@ -806,3 +806,23 @@ def test_negative_constraints_never_execute_commands(remediation_environment):
     assert len(r_approvals.json()) == 0
 
 
+def test_capability_query_lists_five_registered_tools(remediation_environment):
+    """
+    Requirement 7:
+    For prompt 'what can you do?', the backend must recognize capability inquiries,
+    never spawn an execution task, and return a direct list of the 5 registered operational tools.
+    """
+    client, _, _, _ = remediation_environment
+
+    r = client.post("/api/agent/chat", json={"prompt": "what can you do?", "mode": "chat"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["role"] == "agent"
+    assert "relatedTaskId" not in data or data.get("relatedTaskId") is None
+
+    content = data["content"].lower()
+    for tool_kw in ("filesystem", "terminal.sandboxed_exec", "memory", "email", "git"):
+        assert tool_kw in content, f"Expected '{tool_kw}' in capability response, got: {data['content']}"
+
+
+

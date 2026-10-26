@@ -592,6 +592,7 @@ CRITICAL PLANNING & SECURITY RULES:
         prompt: str,
         context: Dict[str, Any],
         history: Optional[List[Dict[str, Any]]] = None,
+        is_capability_query: bool = False,
     ) -> Tuple[str, Optional[str], float, str]:
         """
         Executes actual natural language inference using Ollama gemma4:e2b.
@@ -605,21 +606,43 @@ CRITICAL PLANNING & SECURITY RULES:
         # Format durable memory context
         formatted_context = context.get("formatted_context", "No specific prior preferences or verified constraints found.")
 
-        # Truthful system prompt
-        system_prompt = (
-            f"You are MEMORAG's Sovereign Personal Assistant (Ragnarok Hackathon Architecture).\n"
-            f"Active Local Model: {self.model}\n"
-            f"Security Policy: Local loopback execution only (127.0.0.1). Zero outbound telemetry.\n\n"
-            f"=== VERIFIED DURABLE MEMORY CONTEXT ===\n"
-            f"{formatted_context}\n"
-            f"=======================================\n\n"
-            f"GUIDELINES:\n"
-            f"1. Respond directly, naturally, and concisely to the operator's prompt.\n"
-            f"2. Clearly identify as MEMORAG when describing your operating policy or system identity.\n"
-            f"3. Use the durable memory context above when relevant. Do NOT fabricate, pretend to remember, or hallucinate facts that are not present in the context.\n"
-            f"4. Never claim that an operation, script, or side-effect succeeded if it has not been executed.\n"
-            f"5. If a negative constraint is given (e.g. 'do not run commands'), confirm that no commands will be run and that backend authorization remains authoritative.\n"
+        # Check for capability query
+        p_lower = prompt.lower()
+        capability_keywords = (
+            "what can you do", "capabilities", "what do you do", "what are your capabilities",
+            "your skills", "what tools", "list your capabilities", "what features do you have"
         )
+        is_capability = is_capability_query or any(kw in p_lower for kw in capability_keywords)
+
+        if is_capability:
+            system_prompt = (
+                f"You are MEMORAG's Sovereign Personal Assistant (Ragnarok Hackathon Architecture).\n"
+                f"Active Local Model: {self.model}\n\n"
+                f"OPERATIONAL INSTRUCTION:\n"
+                f"When asked what you can do or about your capabilities, provide a direct, concise bulleted list of your 5 registered operational tools:\n"
+                f"- filesystem.operations: Inspect directories, read and write files within sandbox boundaries.\n"
+                f"- terminal.sandboxed_exec: Execute privileged toolchain commands with human approval gates.\n"
+                f"- memory.recall_and_weave: Recall encrypted semantic knowledge, preferences, and episodic memory.\n"
+                f"- communication.email_triage: Triage local threads and stage response drafts.\n"
+                f"- developer.git_flow: Inspect repository status, stage branches, and coordinate release packages.\n"
+                f"Do not explain abstract security policies or internal system architectures; present the 5 operational capabilities directly."
+            )
+        else:
+            # Truthful system prompt
+            system_prompt = (
+                f"You are MEMORAG's Sovereign Personal Assistant (Ragnarok Hackathon Architecture).\n"
+                f"Active Local Model: {self.model}\n"
+                f"Security Policy: Local loopback execution only (127.0.0.1). Zero outbound telemetry.\n\n"
+                f"=== VERIFIED DURABLE MEMORY CONTEXT ===\n"
+                f"{formatted_context}\n"
+                f"=======================================\n\n"
+                f"GUIDELINES:\n"
+                f"1. Respond directly, naturally, and concisely to the operator's prompt.\n"
+                f"2. Clearly identify as MEMORAG when describing your operating policy or system identity.\n"
+                f"3. Use the durable memory context above when relevant. Do NOT fabricate, pretend to remember, or hallucinate facts that are not present in the context.\n"
+                f"4. Never claim that an operation, script, or side-effect succeeded if it has not been executed.\n"
+                f"5. If a negative constraint is given (e.g. 'do not run commands'), confirm that no commands will be run and that backend authorization remains authoritative.\n"
+            )
 
         messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
         if history:
@@ -696,10 +719,20 @@ CRITICAL PLANNING & SECURITY RULES:
         # Model is unavailable or timed out: return a truthful, useful fallback.
         # NEVER fabricate model output or claim an operation succeeded.
         thought_trace = f"Local model inference unavailable: {fallback_reason}. Truthful fallback engaged. Zero outbound telemetry."
-        fallback_content = (
-            f"[Inference Fallback] Local model '{self.model}' is currently unavailable ({fallback_reason}). "
-            f"The MEMORAG agent runtime is active, durable memory and security boundaries are intact, "
-            f"but live LLM text generation did not complete."
-        )
+        if is_capability:
+            fallback_content = (
+                f"MEMORAG Sovereign Agent operational capabilities:\n"
+                f"- filesystem.operations: Inspect directories, read and write files within sandbox boundaries.\n"
+                f"- terminal.sandboxed_exec: Execute privileged toolchain commands with human approval gates.\n"
+                f"- memory.recall_and_weave: Recall encrypted semantic knowledge, preferences, and episodic memory.\n"
+                f"- communication.email_triage: Triage local threads and stage response drafts.\n"
+                f"- developer.git_flow: Inspect repository status, stage branches, and coordinate release packages."
+            )
+        else:
+            fallback_content = (
+                f"[Inference Fallback] Local model '{self.model}' is currently unavailable ({fallback_reason}). "
+                f"The MEMORAG agent runtime is active, durable memory and security boundaries are intact, "
+                f"but live LLM text generation did not complete."
+            )
         return fallback_content, fallback_reason, latency_ms, thought_trace
 

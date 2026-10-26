@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { RagnarokProvider } from '@/lib/context/RagnarokContext';
+import { ForgeProvider } from '@/lib/forge/ForgeContext';
 
 export const metadata: Metadata = {
-  title: 'Ragnarok | Sovereign AI Command Center',
+  title: 'MEMORAG Forge | Sovereign Local-First AI IDE',
   description:
-    'A sovereign, always-on personal AI agent running on local Ollama stack with persistent memory, multi-step task execution, registered skills, and privacy controls.',
+    'A sovereign, local-first AI-native development environment with persistent project memory, on-device inspector, flight recorder, and approval-gated recovery.',
 };
 
 export default function RootLayout({
@@ -13,10 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#090b0e] text-zinc-100 antialiased min-h-screen">
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body className="bg-canvas text-main antialiased min-h-screen selection:bg-[#ea2804]/20 selection:text-main">
+        <RagnarokProvider>
+          <ForgeProvider>{children}</ForgeProvider>
+        </RagnarokProvider>
       </body>
     </html>
   );
 }
+

@@ -1,7 +1,17 @@
 /**
- * Ragnarok Sovereign AI Agent - Type Definitions
- * Aligned with Ragnarok Research Proposal (FR1-FR4, NFR1-NFR4)
+ * MEMORAG Sovereign AI Agent - Type Definitions
+ * Aligned with MEMORAG Research Proposal (FR1-FR4, NFR1-NFR4)
  */
+
+export type TruthfulRuntimeState =
+  | 'Offline Preview'
+  | 'Backend Disconnected'
+  | 'Backend Connected'
+  | 'AI Model Ready'
+  | 'Task Running'
+  | 'Approval Required'
+  | 'Task Failed'
+  | 'Task Completed';
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -66,7 +76,15 @@ export interface AgentRuntimeStatus {
   activeSentinelsCount: number;
   pendingApprovalsCount: number;
   activeModelLoaded?: boolean;
-  inference_verified?: boolean;
+  inferenceVerified?: boolean;
+  fallbackReason?: string | null;
+  serviceName?: string;
+}
+
+export interface SSETaskEvent {
+  task_id: string;
+  event: string;
+  data: Record<string, unknown>;
 }
 
 // --- Chat & Command Center ---
@@ -81,15 +99,44 @@ export interface ActionProposal {
   status: 'pending' | 'approved' | 'rejected' | 'executed';
 }
 
+export type TruthfulModelStatus = 'ready' | 'connecting' | 'degraded' | 'unavailable' | 'offline' | 'error';
+
+export interface MessageAttachment {
+  name: string;
+  path?: string;
+  size: number;
+  content: string;
+  type?: string;
+}
+
+export type ChatMessageType =
+  | 'conversational'
+  | 'status_report'
+  | 'task_plan'
+  | 'tool_result'
+  | 'approval_request'
+  | 'failure';
+
+export interface TaskResultSummary {
+  taskId: string;
+  status: string;
+  stepsCount: number;
+  completedStepsCount: number;
+  output?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'agent' | 'system';
   content: string;
   timestamp: string;
-  thoughtTrace?: string; // Seer's telling / chain of thought (NFR4.1)
+  thoughtTrace?: string | string[]; // Seer's telling / chain of thought (NFR4.1)
   citedMemoryIds?: string[]; // Referenced memories from Mimir's well
   actionProposal?: ActionProposal; // Embedded approval gate
   relatedTaskId?: string;
+  attachments?: MessageAttachment[];
+  messageType?: ChatMessageType;
+  taskResult?: TaskResultSummary;
 }
 
 // --- Autonomous Workflow & Task Execution ---
@@ -133,12 +180,64 @@ export interface ApprovalRequest {
   commandOrPayload: string;
   parameters: Record<string, unknown>;
   createdAt: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'denied' | 'expired';
   resolvedAt?: string;
   resolvedBy?: string;
 }
 
-// --- Memory Vault (FR1.1, FR1.2, FR1.3, NFR4.2) ---
+export interface PermissionApprovalPayload {
+  request_id: string;
+  requestId?: string;
+  task_id?: string;
+  approved: boolean;
+  decision: 'approved' | 'denied';
+  notes?: string;
+}
+
+export interface PermissionApprovalResponse {
+  success: boolean;
+  status: 'approved' | 'denied' | 'pending';
+  message?: string;
+}
+
+// --- Memory Vault Backend Contracts (FR1) ---
+export interface BackendEpisodicMemory {
+  id: string | number;
+  timestamp?: string;
+  created_at?: string;
+  title?: string;
+  event_type?: string;
+  content?: string;
+  description?: string;
+  source_event?: string;
+  source?: string;
+  importance_score?: number;
+  importanceScore?: number;
+  tags?: string[];
+  pinned?: boolean;
+}
+
+export interface BackendSemanticMemory {
+  id: string | number;
+  category: string;
+  fact_key: string;
+  fact_content: string;
+  is_verified?: boolean;
+  tokens?: number;
+  created_at?: string;
+  updated_at?: string;
+  subject?: string;
+  statement?: string;
+}
+
+export interface CreateSemanticFactRequest {
+  category: string;
+  fact_key: string;
+  fact_content: string;
+  is_verified: boolean;
+  tokens: number;
+}
+
 export interface EpisodicMemory {
   id: string;
   type: 'episodic';
@@ -149,6 +248,7 @@ export interface EpisodicMemory {
   importanceScore: number; // 0.0 to 1.0
   tags: string[];
   pinned?: boolean;
+  isBackendRecord?: boolean;
 }
 
 export interface SemanticMemory {
@@ -162,9 +262,54 @@ export interface SemanticMemory {
   accessCount: number;
   decayFactor: number; // 0.0 to 1.0 (forgetting mechanism FR1.3)
   embeddingDim?: number;
+  factKey?: string;
+  isVerified?: boolean;
+  tokens?: number;
+  isBackendRecord?: boolean;
 }
 
 export type MemoryRecord = EpisodicMemory | SemanticMemory;
+
+// --- Task & Action Details Backend Contracts (FR3 / FR4) ---
+export type BackendTaskStatus =
+  | 'PAUSED_APPROVAL'
+  | 'awaiting_approval'
+  | 'running'
+  | 'queued'
+  | 'pending'
+  | 'failed'
+  | 'completed';
+
+export interface BackendTaskActionDetails {
+  tool_name?: string;
+  toolName?: string;
+  action_title?: string;
+  actionTitle?: string;
+  description?: string;
+  rationale?: string;
+  parameters?: Record<string, unknown>;
+  risk_level?: RiskLevel;
+  riskLevel?: RiskLevel;
+  command?: string;
+}
+
+export interface BackendIncompleteTask {
+  id: string;
+  goal: string;
+  status: BackendTaskStatus | string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+  steps?: TaskStep[];
+  action_details?: BackendTaskActionDetails;
+  actionDetails?: BackendTaskActionDetails;
+  approval_request_id?: string;
+  approvalRequestId?: string;
+  priority?: 'low' | 'normal' | 'high';
+  error_message?: string;
+  errorMessage?: string;
+}
 
 // --- Registered Skills & Dwarves' Forge (FR2) ---
 export interface SkillParameter {
@@ -188,6 +333,8 @@ export interface SkillDefinition {
   executionCount: number;
   lastExecutedAt?: string;
   enabled: boolean;
+  isMock?: boolean;
+  isIncomplete?: boolean;
 }
 
 // --- Background Sentinel Triggers (FR4.1) ---
@@ -215,3 +362,144 @@ export interface PrivacySettings {
   backgroundTriggersEnabled: boolean;
   fastApiBackendUrl: string;
 }
+
+// ============================================================================
+// MEMORAG Forge Diagnostics & Project Flight Recorder (Authoritative Contracts)
+// ============================================================================
+
+export type FindingCategory =
+  | 'syntax_error'
+  | 'dependency_mismatch'
+  | 'missing_toolchain'
+  | 'test_failure'
+  | 'build_failure'
+  | 'config_error'
+  | 'permission_violation'
+  | 'insufficient_evidence'
+  | 'environment_inspection'
+  | 'unknown';
+
+export type DiagnosticSourceType =
+  | 'command_output'
+  | 'git_diff'
+  | 'environment_inspection'
+  | 'static_check'
+  | 'memory_vault'
+  | 'toolchain_check'
+  | 'llm_hypothesis';
+
+export type FindingStatus = 'verified' | 'hypothesis' | 'disproved';
+
+export interface EvidenceFinding {
+  finding_id: string;
+  task_id: string;
+  category: FindingCategory;
+  summary: string;
+  evidence_refs: string[];
+  source_type: DiagnosticSourceType;
+  observed_at?: string;
+  confidence: number; // 0.0 to 1.0
+  status: FindingStatus;
+  limitations?: string | null;
+}
+
+export interface ProposedAction {
+  action_id?: string;
+  action_type: 'file_patch' | 'file_write' | 'install_package' | 'command' | string;
+  target_path?: string | null;
+  diff_patch?: string | null;
+  content?: string | null;
+  command?: string | null;
+  risk_level: RiskLevel;
+  requires_approval: boolean;
+}
+
+export interface RepairProposal {
+  proposal_id: string;
+  task_id: string;
+  summary: string;
+  explanation: string;
+  supporting_evidence_ids: string[];
+  files_to_modify: string[];
+  exact_patch?: string | null;
+  actions: ProposedAction[];
+  risk_level: RiskLevel;
+  requires_approval: boolean;
+  expected_verification_commands: string[];
+  limitations?: string | null;
+  recovery_checkpoint_id?: string | null;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'FAILED' | string;
+  approval_id?: string | null;
+}
+
+export interface RecoveryOption {
+  recovery_id: string;
+  task_id: string;
+  description: string;
+  checkpoint_id?: string | null;
+  backup_path?: string | null;
+  is_available: boolean;
+  recovery_command?: string | null;
+}
+
+export interface VerificationResult {
+  verification_id: string;
+  task_id: string;
+  proposal_id?: string | null;
+  passed: boolean;
+  commands_executed: string[];
+  exit_codes: Record<string, number>;
+  outputs: Record<string, string>;
+  summary: string;
+  executed_at?: string;
+}
+
+export type DiagnosticTaskStatus =
+  | 'IDLE'
+  | 'INSPECTING'
+  | 'DIAGNOSED'
+  | 'AWAITING_APPROVAL'
+  | 'REPAIRING'
+  | 'VERIFIED'
+  | 'FAILED'
+  | 'RECOVERED'
+  | 'OFFLINE'
+  | 'ERROR';
+
+export interface DiagnosticReport {
+  task_id: string;
+  project_root: string;
+  user_request: string;
+  observed_facts: EvidenceFinding[];
+  relevant_memory: Record<string, unknown>[];
+  hypotheses: EvidenceFinding[];
+  proposed_repair?: RepairProposal | null;
+  approval_requirements?: Record<string, unknown>;
+  verification_results?: VerificationResult | null;
+  recovery_options: RecoveryOption[];
+  status: DiagnosticTaskStatus | string;
+  diagnosed_at?: string;
+}
+
+export interface BackendFlightRecorderEvent {
+  event_id: string;
+  task_id: string;
+  event_type: string;
+  timestamp: string;
+  details: Record<string, unknown>;
+  evidence_refs: string[];
+  source: string;
+}
+
+export interface AnalyzeProjectRequest {
+  project_root: string;
+  user_request?: string;
+}
+
+export interface ResolveRepairRequest {
+  approval_id: string;
+  decision: 'approved' | 'rejected';
+  notes?: string | null;
+}
+
+export type SSEStreamStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
