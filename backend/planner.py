@@ -194,8 +194,27 @@ CRITICAL PLANNING RULES:
                 if res.status_code == 200:
                     data = res.json()
                     return data.get("response")
+                else:
+                    logger.warning(
+                        f"Ollama endpoint '{self.ollama_endpoint}' returned HTTP {res.status_code}: {res.text}. "
+                        f"If the model is not found, pull it using: ollama pull {self.model}. "
+                        "Falling back to sovereign deterministic planner."
+                    )
+        except httpx.ConnectError:
+            logger.warning(
+                f"Ollama local endpoint '{self.ollama_endpoint}' is unreachable. "
+                "Ensure Ollama is installed (https://ollama.com) and running via 'ollama serve'. "
+                "Falling back to sovereign deterministic planner."
+            )
+        except httpx.TimeoutException:
+            logger.warning(
+                f"Ollama request to '{self.ollama_endpoint}' timed out after 2.5s. "
+                "Falling back to sovereign deterministic planner."
+            )
         except Exception as e:
-            logger.debug(f"Ollama local endpoint not available ({e}); using sovereign deterministic engine.")
+            logger.warning(
+                f"Ollama local endpoint error ({e}); using sovereign deterministic engine."
+            )
         return None
 
     def _parse_llm_dag(self, response_text: str) -> Optional[List[DAGStep]]:

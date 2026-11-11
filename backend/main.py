@@ -10,7 +10,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -35,10 +35,12 @@ def get_orchestrator() -> TaskOrchestrator:
         orchestrator = TaskOrchestrator(
             recovery_manager=SubsystemContainer.recovery_manager,
             permission_gateway=SubsystemContainer.permission_gateway,
+            flight_recorder=SubsystemContainer.flight_recorder,
         )
     else:
         orchestrator.recovery_manager = SubsystemContainer.recovery_manager
         orchestrator.permission_gateway = SubsystemContainer.permission_gateway
+        orchestrator.flight_recorder = SubsystemContainer.flight_recorder
     return orchestrator
 
 
@@ -89,7 +91,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Project Ragnarok Sovereign Agent & Orchestrator API",
+    title="MEMORAG Sovereign Agent & Orchestrator API (Project Ragnarok)",
     description=(
         "Local-first Sovereign AI Agent Orchestrator with memory handshake (gemma4:e2b), "
         "real-time SSE execution telemetry, and human-in-the-loop approval gates."
@@ -149,8 +151,9 @@ async def create_and_start_task(req: CreateTaskRequest):
     # Start DAG execution
     await task_orchestrator.start_task(dag.task_id)
 
-    return dag
-
+    # Return updated task from orchestrator reflecting current step statuses
+    updated_dag = task_orchestrator.get_task(dag.task_id)
+    return updated_dag or dag
 
 
 @app.get("/api/tasks", response_model=List[TaskDAG], tags=["Tasks & DAGs"])
@@ -175,14 +178,14 @@ def get_task_by_id(task_id: str):
     response_class=StreamingResponse,
     tags=["Tasks & DAGs"],
 )
-async def stream_task_events(task_id: str):
+async def stream_task_events(task_id: str, request: Request):
     """
     Milestone 6 Requirement:
     SSE event stream endpoint setting media_type='text/event-stream'
     and flushing task progress and approval events in real time.
     """
     task_orchestrator = get_orchestrator()
-    generator = task_orchestrator.event_generator(task_id)
+    generator = task_orchestrator.event_generator(task_id, request=request)
     return StreamingResponse(
         generator,
         media_type="text/event-stream",
@@ -256,7 +259,7 @@ async def approve_permission_alias(req: Dict[str, Any]):
 def root_info():
     """Service status and component metadata."""
     return {
-        "service": "GALACTUS / Ragnarok Sovereign Agent Orchestrator",
+        "service": "MEMORAG / GALACTUS (Project Ragnarok) Sovereign Agent Orchestrator",
         "version": "1.0.0",
         "status": "online",
         "model": os.environ.get("RAGNAROK_MODEL", "gemma4:e2b"),

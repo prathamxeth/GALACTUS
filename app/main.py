@@ -1,5 +1,5 @@
 """
-Main entry point for Project Ragnarok & GALACTUS Backend.
+Main entry point for Project Ragnarok & MEMORAG Backend.
 Exposes the unified FastAPI application with:
 - Milestone 5: Memory Handshake & Task Planner (gemma4:e2b)
 - Milestone 6: CORSMiddleware, Real-time SSE event stream, and DAG approval resumption

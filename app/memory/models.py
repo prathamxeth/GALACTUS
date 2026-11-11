@@ -1,5 +1,5 @@
 """
-Pydantic data models and schemas for GALACTUS / Ragnarok Memory & Security Subsystem.
+Pydantic data models and schemas for MEMORAG / Ragnarok Memory & Security Subsystem.
 Strictly local-first, zero-leak design.
 """
 
@@ -104,6 +104,7 @@ class MemoryRecord(BaseModel):
         None, description="Provenance reference (e.g. 'chat', 'tool', 'file')"
     )
     schema_version: int = Field(default=1, description="Payload schema version")
+    project_id: Optional[str] = Field(None, description="Project scope reference")
     payload: Dict[str, Any] = Field(..., description="Decrypted payload content")
     created_at: str = Field(default_factory=utc_now_iso, description="UTC ISO-8601 creation timestamp")
     updated_at: str = Field(default_factory=utc_now_iso, description="UTC ISO-8601 update timestamp")
@@ -148,6 +149,7 @@ class EventCreate(BaseModel):
     session_id: str = Field(..., description="Active session ID")
     event_type: str = Field(default="user_message", description="Event type")
     content: Dict[str, Any] = Field(..., description="Event content dictionary")
+    project_id: Optional[str] = Field(None, description="Optional project scope reference")
     source_ref: Optional[str] = Field(None, description="Origin source reference")
     ttl_seconds: Optional[int] = Field(None, description="Retention time-to-live in seconds")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
@@ -159,6 +161,7 @@ class SemanticMemoryCreate(BaseModel):
     subject: str = Field(..., description="Entity or topic the fact describes")
     predicate: str = Field(..., description="Relation or property name")
     object_value: Any = Field(..., description="Target value or structured data")
+    project_id: Optional[str] = Field(None, description="Optional project scope reference")
     verification_status: VerificationStatus = Field(default=VerificationStatus.USER_PROVIDED)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     source_ref: Optional[str] = Field(None, description="Origin source reference")
@@ -176,6 +179,7 @@ class MemoryUpdate(BaseModel):
 class MemorySearchQuery(BaseModel):
     """Request model for memory search."""
     query: Optional[str] = Field(None, description="Keyword search string")
+    project_id: Optional[str] = Field(None, description="Filter by project scope")
     memory_type: Optional[MemoryType] = Field(None, description="Filter by episodic or semantic")
     category: Optional[str] = Field(None, description="Filter by category")
     limit: int = Field(default=50, ge=1, le=500)
@@ -240,3 +244,162 @@ class PermissionDecision(BaseModel):
     reason: str = Field(..., description="Explanation of the authorization decision")
     approval_required: bool = Field(..., description="True if human confirmation is required")
     approval_id: Optional[str] = Field(None, description="Token identifier if approval is pending or granted")
+
+
+# ============================================================================
+# Flight Recorder & Provenance Schemas (FORGE Section 2 & 4)
+# ============================================================================
+
+class EventSourceType(str, Enum):
+    OBSERVATION = "observation"
+    INFERENCE = "inference"
+    SYSTEM = "system"
+    USER = "user"
+
+
+class FlightRecorderEventCreate(BaseModel):
+    """Input contract for publishing a flight recorder event."""
+    project_id: str = Field(..., description="Project identity or scoped root reference")
+    event_type: str = Field(..., description="Event classification (e.g. build.failed, test.passed)")
+    source_type: EventSourceType = Field(..., description="Strictly 'observation' for real OS/tools or 'inference' for LLM")
+    actor: str = Field(..., description="Actor/source name (e.g. subprocess.pytest, developer, agent)")
+    summary: str = Field(..., description="Redacted human-readable summary")
+    event_id: Optional[str] = Field(None, description="Stable UUID if pre-assigned")
+    task_id: Optional[str] = Field(None, description="Associated task ID if applicable")
+    phase: Optional[str] = Field(None, description="Lifecycle phase (e.g. triage, diagnosis, repair, verification)")
+    evidence_refs: List[str] = Field(default_factory=list, description="IDs of linked evidence records")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Redacted contextual metadata (exit codes, paths, durations)")
+
+
+class FlightRecorderEvent(BaseModel):
+    """Durable development flight recorder event record."""
+    event_id: str = Field(..., description="Stable UUID v4 identifier")
+    project_id: str = Field(..., description="Scoped project reference")
+    task_id: Optional[str] = Field(None, description="Associated task ID")
+    timestamp: str = Field(default_factory=utc_now_iso, description="UTC ISO-8601 creation timestamp")
+    event_type: str = Field(..., description="Event category")
+    source_type: EventSourceType = Field(..., description="observation vs inference")
+    actor: str = Field(..., description="Actor or tool source")
+    summary: str = Field(..., description="Redacted summary")
+    phase: Optional[str] = Field(None)
+    evidence_refs: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    schema_version: int = Field(default=1)
+
+
+class EvidenceRecordCreate(BaseModel):
+    """Input contract for storing bounded, redacted evidence."""
+    evidence_type: str = Field(..., description="subprocess_result, git_inspection, filesystem_stat, etc.")
+    evidence_id: Optional[str] = Field(None, description="Pre-computed content digest or UUID")
+    command: Optional[str] = Field(None, description="Command invoked (redacted)")
+    exit_code: Optional[int] = Field(None, description="Subprocess return code")
+    started_at: Optional[str] = Field(None)
+    completed_at: Optional[str] = Field(None)
+    duration_ms: Optional[int] = Field(None)
+    working_dir: Optional[str] = Field(None)
+    raw_stdout: Optional[str] = Field(None, description="Unfiltered stdout (will be digested and redacted into excerpt)")
+    raw_stderr: Optional[str] = Field(None, description="Unfiltered stderr (will be digested)")
+    redacted_excerpt: Optional[str] = Field(None, description="Pre-redacted bounded excerpt")
+    is_agent_hypothesis: bool = Field(default=False, description="True ONLY if model-generated diagnosis")
+
+
+class EvidenceRecord(BaseModel):
+    """Durable evidence record linked to flight recorder events."""
+    evidence_id: str
+    evidence_type: str
+    command: Optional[str] = None
+    exit_code: Optional[int] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    duration_ms: Optional[int] = None
+    working_dir: Optional[str] = None
+    stdout_digest: Optional[str] = None
+    stderr_digest: Optional[str] = None
+    redacted_excerpt: Optional[str] = None
+    is_agent_hypothesis: bool = False
+    created_at: str = Field(default_factory=utc_now_iso)
+
+
+class EventQueryFilter(BaseModel):
+    """Query filters for chronological flight recorder search."""
+    project_id: Optional[str] = None
+    task_id: Optional[str] = None
+    event_type: Optional[str] = None
+    source_type: Optional[EventSourceType] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    limit: int = Field(default=100, ge=1, le=1000)
+    offset: int = Field(default=0, ge=0)
+
+
+# ============================================================================
+# Project Checkpoints & Safe Recovery Schemas (FORGE Section 5)
+# ============================================================================
+
+class CheckpointLifecycleStatus(str, Enum):
+    CREATED = "created"
+    VALIDATED = "validated"
+    HEALTHY = "healthy"
+    RESTORABLE = "restorable"
+
+
+class TrackedFileChange(BaseModel):
+    """Tracks a single file status and hash within a project checkpoint."""
+    path: str = Field(..., description="Relative canonical path within project root")
+    sha256: str = Field(..., description="SHA-256 digest of file content")
+    status: str = Field(default="modified", description="modified, added, deleted")
+
+
+class GitRevisionInfo(BaseModel):
+    """Snapshot of Git revision state."""
+    commit_sha: Optional[str] = None
+    branch: Optional[str] = None
+    is_dirty: bool = False
+
+
+class ProjectCheckpointManifest(BaseModel):
+    """Comprehensive, inspectable project state checkpoint."""
+    checkpoint_id: str = Field(..., description="Unique checkpoint identifier")
+    project_id: str = Field(..., description="Target project scope")
+    permitted_root: str = Field(..., description="Canonical project filesystem root")
+    git_revision: GitRevisionInfo = Field(default_factory=GitRevisionInfo)
+    tracked_changes: List[TrackedFileChange] = Field(default_factory=list)
+    dependency_fingerprints: Dict[str, str] = Field(default_factory=dict)
+    toolchain_versions: Dict[str, str] = Field(default_factory=dict)
+    status: CheckpointLifecycleStatus = Field(default=CheckpointLifecycleStatus.CREATED)
+    integrity_hash: str = Field(..., description="Deterministic SHA-256 manifest hash")
+    validation_notes: Optional[str] = None
+    created_at: str = Field(default_factory=utc_now_iso)
+    updated_at: str = Field(default_factory=utc_now_iso)
+
+
+class CheckpointCreateRequest(BaseModel):
+    """Request to snapshot project state."""
+    project_id: str
+    permitted_root: str
+    git_revision: Optional[GitRevisionInfo] = None
+    tracked_changes: List[TrackedFileChange] = Field(default_factory=list)
+    dependency_fingerprints: Dict[str, str] = Field(default_factory=dict)
+    toolchain_versions: Dict[str, str] = Field(default_factory=dict)
+
+
+class CheckpointRestoreRequest(BaseModel):
+    """Request to safely recover project state."""
+    approval_token: Optional[str] = Field(None, description="Human approval token if modifying/reverting files")
+    dry_run: bool = Field(default=True, description="When true, computes preview of changes without disk writes")
+    target_files: Optional[List[str]] = Field(None, description="Optional subset of specific files to restore")
+
+
+class CheckpointRestoreResponse(BaseModel):
+    """Result of checkpoint restoration validation or execution."""
+    checkpoint_id: str
+    project_id: str
+    success: bool
+    dry_run: bool
+    status: str
+    restored_files: List[str] = Field(default_factory=list, description="Files successfully restored to target checkpoint state")
+    protected_files: List[str] = Field(default_factory=list, description="Untracked or dirty local files that were protected from being overwritten")
+    overridden_files: List[str] = Field(default_factory=list, description="Files with local changes that were overwritten under explicit user approval")
+    failed_files: List[str] = Field(default_factory=list, description="Files that encountered errors during restoration")
+    pre_restoration_snapshot_id: Optional[str] = None
+    message: str

@@ -1,5 +1,5 @@
 """
-FastAPI route handlers and SubsystemContainer re-exports for GALACTUS / Ragnarok Memory & Security Subsystem.
+FastAPI route handlers and SubsystemContainer re-exports for MEMORAG / Ragnarok Memory & Security Subsystem.
 Enables imports from either `app.memory.routes` or `app.api.routes`.
 """
 
